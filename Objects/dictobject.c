@@ -1,3 +1,15 @@
+/*
+
+TODO(matthias):
+
+Give Py_ssize_t ix access to outside functions.  Such access might be to an empty or unused etc bucket, or outside of bounds.  We also need to give access to size.
+
+See if we can give such access via an third party Cython module, or whether we need changes here.
+
+The use case is to allow random sampling from dictionaries in less than O(n) time.  (And random sampling from sets later, too.)
+
+*/
+
 /* Dictionary object implementation using a hash table */
 
 /* The distribution includes a separate file, Objects/dictnotes.txt,
@@ -44,7 +56,7 @@ dk_entries is array of PyDictKeyEntry when dk_kind == DICT_KEYS_GENERAL or
 PyDictUnicodeEntry otherwise. Its length is USABLE_FRACTION(dk_size).
 
 NOTE: Since negative value is used for DKIX_EMPTY and DKIX_DUMMY, type of
-dk_indices entry is signed integer and int16 is used for table which
+dk_indices entry is signed integer and int16 is used for table with
 dk_size == 256.
 */
 
@@ -1037,6 +1049,9 @@ _Py_dict_lookup() is general-purpose, and may return DKIX_ERROR if (and only if)
 comparison raises an exception.
 When the key isn't found a DKIX_EMPTY is returned.
 */
+// TODO(matthias): clients of this function use the returned index to do stuff.
+// We want to export that kind of functionality further so we can do random
+// access.
 Py_ssize_t
 _Py_dict_lookup(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject **value_addr)
 {
@@ -1946,6 +1961,7 @@ delete_index_from_values(PyDictValues *values, Py_ssize_t ix)
     *size_ptr = size -1;
 }
 
+// TODO(matthias): Here is a user of a raw index Py_ssize_t ix.
 static int
 delitem_common(PyDictObject *mp, Py_hash_t hash, Py_ssize_t ix,
                PyObject *old_value)
@@ -2115,6 +2131,11 @@ PyDict_Clear(PyObject *op)
  * Return 1 on success, return 0 when the reached the end of the dictionary
  * (or if op is not a dictionary)
  */
+// TODO(matthias): This one (and PyDict_Next) take a Py_ssize_t *ppos as a
+// parameter.  That means we can probably exploit them for index access?
+/*
+Iterate over all key-value pairs in the dictionary p. The Py_ssize_t referred to by ppos must be initialized to 0 prior to the first call to this function to start the iteration; the function returns true for each pair in the dictionary, and false once all pairs have been reported. The parameters pkey and pvalue should either point to PyObject* variables that will be filled in with each key and value, respectively, or may be NULL. Any references returned through them are borrowed. ppos should not be altered during iteration. Its value represents offsets within the internal dictionary structure, and since the structure is sparse, the offsets are not consecutive.
+*/
 int
 _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
              PyObject **pvalue, Py_hash_t *phash)
@@ -2130,13 +2151,19 @@ _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
     i = *ppos;
     if (mp->ma_values) {
         assert(mp->ma_used <= SHARED_KEYS_MAX_SIZE);
+        // TODO(matthias): We get a 0 returned, if we are too far out.  That's fine.
         if (i < 0 || i >= mp->ma_used)
             return 0;
+        // TODO(matthias): What happens when we give a wrong ppos (aka i)?
+        // Apparently, not much.
         int index = get_index_from_order(mp, i);
         value = mp->ma_values->values[index];
 
         key = DK_UNICODE_ENTRIES(mp->ma_keys)[index].me_key;
         hash = unicode_get_hash(key);
+        // TODO(matthias): can we hit this, if we give our own ppos?
+        // Since we don't do any handling here, and just increment further down,
+        // it looks like in this case, our dict is contiguous?
         assert(value != NULL);
     }
     else {
@@ -2145,6 +2172,8 @@ _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
             return 0;
         if (DK_IS_UNICODE(mp->ma_keys)) {
             PyDictUnicodeEntry *entry_ptr = &DK_UNICODE_ENTRIES(mp->ma_keys)[i];
+            // TODO(Matthias): here we are iterating up, to get over empty
+            // buckets.
             while (i < n && entry_ptr->me_value == NULL) {
                 entry_ptr++;
                 i++;
@@ -2157,6 +2186,8 @@ _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
         }
         else {
             PyDictKeyEntry *entry_ptr = &DK_ENTRIES(mp->ma_keys)[i];
+            // TODO(Matthias): here we are iterating up, to get over empty
+            // buckets.
             while (i < n && entry_ptr->me_value == NULL) {
                 entry_ptr++;
                 i++;
@@ -2168,6 +2199,8 @@ _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
             value = entry_ptr->me_value;
         }
     }
+    // TODO(Matthias): as a caller, we can check here, whether we hit an empty 
+    // bucket.
     *ppos = i+1;
     if (pkey)
         *pkey = key;

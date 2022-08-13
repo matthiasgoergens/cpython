@@ -105,6 +105,16 @@ struct _dictkeysobject {
     /* Number of used entries in dk_entries. */
     Py_ssize_t dk_nentries;
 
+    /* Number of empty entries at the start of dk_entries.
+       Just like dk_nentries allows quick access to the last entry without a
+       linear scan from the back, dk_nentries_skip allows quick access to the
+       first entry that has not yet been deleted.
+
+       As an invariant: there will never be active entries before
+       dk_nentries_skip, but there might be non-active entries after.
+    */
+    Py_ssize_t dk_nentries_skip;
+
     /* Actual hash table of dk_size entries. It holds indices in dk_entries,
        or DKIX_EMPTY(-1) or DKIX_DUMMY(-2).
 

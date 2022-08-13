@@ -458,6 +458,7 @@ static PyDictKeysObject empty_keys_struct = {
         1, /* dk_version */
         0, /* dk_usable (immutable) */
         0, /* dk_nentries */
+        0, /* dk_nentries_skip */
         {DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY,
          DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY}, /* dk_indices */
 };
@@ -515,6 +516,8 @@ _PyDict_CheckConsistency(PyObject *op, int check_content)
     CHECK(0 <= mp->ma_used && mp->ma_used <= usable);
     CHECK(0 <= keys->dk_usable && keys->dk_usable <= usable);
     CHECK(0 <= keys->dk_nentries && keys->dk_nentries <= usable);
+    CHECK(0 <= keys->dk_nentries_skip
+          && keys->dk_nentries_skip <= keys->dk_nentries);
     CHECK(keys->dk_usable + keys->dk_nentries <= usable);
 
     if (!splitted) {
@@ -645,6 +648,7 @@ new_keys_object(uint8_t log2_size, bool unicode)
     dk->dk_log2_index_bytes = log2_bytes;
     dk->dk_kind = unicode ? DICT_KEYS_UNICODE : DICT_KEYS_GENERAL;
     dk->dk_nentries = 0;
+    dk->dk_nentries_skip = 0;
     dk->dk_usable = usable;
     dk->dk_version = 0;
     memset(&dk->dk_indices[0], 0xff, ((size_t)1 << log2_bytes));
@@ -2178,6 +2182,22 @@ _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
     return 1;
 }
 
+int
+_PyDict_DelOldest(PyDictObject *mp)
+{
+    PyObject *key, *value;
+    Py_hash_t hash;
+
+    if(!_PyDict_Next((PyObject *)mp, &mp->ma_keys->dk_nentries_skip, &key, &value, &hash)) {
+        // We have run all the way to the end, nothing left in the dict.
+        assert(mp->ma_used == 0);
+        mp->ma_keys->dk_nentries_skip = 0;
+        mp->ma_keys->dk_nentries = 0;
+        return -1;
+    }
+    return delitem_common(mp, hash, mp->ma_keys->dk_nentries_skip-1, value);
+}
+
 /*
  * Iterate over a dict.  Use like so:
  *
@@ -2238,6 +2258,92 @@ _PyDict_Pop_KnownHash(PyObject *dict, PyObject *key, Py_hash_t hash, PyObject *d
 
     ASSERT_CONSISTENT(mp);
     return old_value;
+}
+
+/* Same as _PyDict_GetItem_KnownHash() but also moves the item to the back of
+   the dict, if found.
+*/
+PyObject *
+_PyDict_GetAndPushBack_KnownHash(PyObject *op, PyObject *key, Py_hash_t hash)
+{
+    Py_ssize_t ix; (void)ix;
+    PyDictObject *mp = (PyDictObject *)op;
+    PyObject *value;
+    PyDictKeysObject *keys;
+
+    if (!PyDict_Check(op)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+
+  resized:
+
+    // First: check whether we can find the key.  If not, return nothing.
+    ix = _Py_dict_lookup(mp, key, hash, &value);
+    assert(ix >= 0 || value == NULL);
+    if(value == NULL) {
+        return NULL;
+    }
+    // If we are here, we have found the item.
+    keys = mp->ma_keys;
+
+    // TODO: double check that this logic also works for split tables.
+    // I think PyDict_SetDefault suggests that it does.
+    if(ix + 1 >= keys->dk_nentries) {
+        // We can skip the shuffling, if our entry is already at the end.
+        return value;
+    }
+
+    keys->dk_version = 0;
+    mp->ma_version_tag = DICT_NEXT_VERSION();
+
+    if (_PyDict_HasSplitTable(mp)) {
+        delete_index_from_values(mp->ma_values, ix);
+        _PyDictValues_AddToInsertionOrder(mp->ma_values, ix);
+        return value;
+    }
+
+    // NOTE: dk_nentries can grow up to USABLE_FRACTION(DK_SIZE(keys)), but
+    // other parts of the code seem to take dk_usable as the limit.
+    if (keys->dk_nentries >= USABLE_FRACTION(DK_SIZE(keys))) {
+        /* Not enough space, need to resize. */
+
+        // Not sure about this unicode business.  The logic is adapted from
+        // insertdict.
+        int need_unicode = (DK_IS_UNICODE(keys) && !PyUnicode_CheckExact(key)) ? 0 : 1;
+        if (insertion_resize(mp, need_unicode) < 0) {
+            return NULL;
+        }
+        goto resized;
+    }
+
+    Py_ssize_t hashpos = lookdict_index(keys, hash, ix);
+    Py_ssize_t nix = keys->dk_nentries;
+
+    if (DK_IS_UNICODE(keys)) {
+        PyDictUnicodeEntry *ep = &DK_UNICODE_ENTRIES(keys)[ix];
+        DK_UNICODE_ENTRIES(keys)[nix] = *ep;
+        ep->me_key = NULL;
+        ep->me_value = NULL;
+    }
+    else {
+        PyDictKeyEntry *ep = &DK_ENTRIES(keys)[ix];
+        DK_ENTRIES(keys)[nix] = *ep;
+
+        ep->me_key = NULL;
+        ep->me_value = NULL;
+        ep->me_hash = 0;
+    }
+    dictkeys_set_index(keys, hashpos, nix);
+    // We are using up space in the entries, but not in the indices.
+    // So we only decrease dk_usable here, because insertdict (and other
+    // places) don't check dk_nentries directly.
+    keys->dk_usable--;
+    keys->dk_nentries++;
+
+    assert(value != NULL);
+
+    return value;
 }
 
 PyObject *
@@ -3523,6 +3629,12 @@ dict_popitem_impl(PyDictObject *self)
     /* We can't dk_usable++ since there is DKIX_DUMMY in indices */
     self->ma_keys->dk_nentries = i;
     self->ma_used--;
+    if(self->ma_keys->dk_nentries_skip >= self->ma_keys->dk_nentries) {
+        // We just popped the last item.
+        assert(self->ma_used==0);
+        self->ma_keys->dk_nentries = 0;
+        self->ma_keys->dk_nentries_skip = 0;
+    }
     self->ma_version_tag = DICT_NEXT_VERSION();
     ASSERT_CONSISTENT(self);
     return res;

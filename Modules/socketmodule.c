@@ -2075,7 +2075,10 @@ getsockaddrarg(PySocketSockObject *s, PyObject *args,
             }
             return 0;
         }
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wstringop-truncation"
         strncpy(ifr.ifr_name, interfaceName, sizeof(ifr.ifr_name));
+        #pragma GCC diagnostic pop
         ifr.ifr_name[(sizeof(ifr.ifr_name))-1] = '\0';
         if (ioctl(s->sock_fd, SIOCGIFINDEX, &ifr) < 0) {
             s->errorhandler();

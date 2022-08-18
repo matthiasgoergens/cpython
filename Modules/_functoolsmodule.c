@@ -755,13 +755,8 @@ typedef PyObject *(*lru_cache_ternaryfunc)(struct lru_cache_object *, PyObject *
 
 typedef struct lru_cache_object {
     PyObject_HEAD
-    /* To allow amortised O(1) deletion of old entries, instead of O(n),
-       we skip known deleted entries when scanning for the oldest entry
-       to delete.
-    */
-    Py_ssize_t first_active_entry;
-    /* to detect resizes. Cf. odictobject.c */
-    void *cache_resize_sentinel;
+    /* Speeds up deletion of oldest entry */
+    PyDictFinger finger;
     lru_cache_ternaryfunc wrapper;
     int typed;
     PyObject *cache;
@@ -910,10 +905,8 @@ infinite_lru_cache_wrapper(lru_cache_object *self, PyObject *args, PyObject *kwd
    - Potentially once to __eq__ for adding a new entry.
    - (Never for the deletion of the oldest cache entry.)
 
-   We don't need to worry too much about reentrancy, because we mostly
-   rely on the invariants that dict provides. The only invariant that
-   we manage is that self->already_deleted_entries should be set back
-   to 0 when the dict resizes.
+   We don't need to worry too much about reentrancy here, because we
+   rely on the invariants that dict provides.
 
    Another possible source of reentrancy is a decref which can trigger
    arbitrary code execution.  To make the code easier to reason about,
@@ -967,14 +960,8 @@ bounded_lru_cache_wrapper(lru_cache_object *self, PyObject *args, PyObject *kwds
 
     while (PyDict_GET_SIZE(self->cache) > self->maxsize)
     {
-        if (self->cache_resize_sentinel != ((PyDictObject *)self->cache)->ma_keys) {
-            // Resize happened, so reset first_active_entry
-            self->cache_resize_sentinel = ((PyDictObject *)self->cache)->ma_keys;
-            self->first_active_entry = 0;
-        }
-        // This does a decref and might potentially execute arbitrary code,
-        // but we restore our invariant at the start of the loop body.
-        _PyDict_DelNext((PyDictObject *)self->cache, &self->first_active_entry);
+        // This does a decref and thus might potentially execute arbitrary code.
+        _PyDict_DelOldest((PyDictObject *)self->cache, &self->finger);
     }
 
     Py_DECREF(key);
@@ -1040,8 +1027,7 @@ lru_cache_new(PyTypeObject *type, PyObject *args, PyObject *kw)
         return NULL;
     }
 
-    obj->first_active_entry = 0;
-    obj->cache_resize_sentinel = NULL;
+    obj->finger = _PyDict_NewFinger();
     obj->wrapper = wrapper;
     obj->typed = typed;
     obj->cache = cachedict;

@@ -2178,16 +2178,25 @@ _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
     return 1;
 }
 
+PyAPI_FUNC(PyDictFinger) _PyDict_NewFinger() {
+    return (PyDictFinger) {.sentinel = NULL, .skip_empty = 0};
+}
+
 int
-_PyDict_DelNext(PyDictObject *mp, Py_ssize_t *ppos)
+_PyDict_DelOldest(PyDictObject *mp, PyDictFinger *finger)
 {
     PyObject *key, *value;
     Py_hash_t hash;
 
-    if(!_PyDict_Next((PyObject *)mp, ppos, &key, &value, &hash)) {
+    if(finger->sentinel != mp->ma_keys) {
+        finger->sentinel = mp->ma_keys;
+        finger->skip_empty = 0;
+    }
+
+    if(!_PyDict_Next((PyObject *)mp, &finger->skip_empty, &key, &value, &hash)) {
         return -1;
     }
-    return delitem_common(mp, hash, *ppos-1, value);
+    return delitem_common(mp, hash, finger->skip_empty-1, value);
 }
 
 /*

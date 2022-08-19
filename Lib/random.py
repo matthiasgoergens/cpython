@@ -336,12 +336,18 @@ class Random(_random.Random):
 
     def choice(self, seq):
         """Choose a random element from a non-empty sequence."""
-        if not isinstance(seq, _Sequence):
-            raise TypeError("Population must be a sequence.  "
-                            "For dicts or sets, use sorted(d).")
         if not seq:
             raise IndexError('Cannot choose from an empty sequence')
-        return seq[self._randbelow(len(seq))]
+        try:
+            return seq[self._randbelow(len(seq))]
+        except KeyError as e:
+            if not isinstance(seq, _Sequence):
+                raise TypeError("Population must be a sequence.  "
+                                "For dicts or sets, use sorted(d)."
+                                ) from e
+            else:
+                raise
+
 
     def shuffle(self, x):
         """Shuffle list x in place, and return None."""

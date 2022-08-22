@@ -252,7 +252,7 @@ class Random(_random.Random):
             warn("Underlying random() generator does not supply \n"
                 "enough bits to choose from a population range this large.\n"
                 "To remove the range limitation, add a getrandbits() method.")
-            return floor(random() * n)
+            return floor(self.random() * n)
         rem = maxsize % n
         limit = (maxsize - rem) / maxsize   # int(limit * maxsize) % n == 0
         while (r := self.random()) >= limit:

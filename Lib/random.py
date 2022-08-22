@@ -52,7 +52,7 @@ from math import sqrt, acos, cos, sin
 from math import tau as TWOPI, floor, isfinite
 from math import lgamma, fabs, log2
 from os import urandom
-from _collections_abc import Sequence as _Sequence
+from _collections_abc import Sequence
 from operator import index
 from itertools import accumulate, repeat
 from bisect import bisect
@@ -396,7 +396,7 @@ class Random(_random.Random):
         # too many calls to _randbelow(), making them slower and
         # causing them to eat more entropy than necessary.
 
-        if not isinstance(population, _Sequence):
+        if not isinstance(population, Sequence):
             raise TypeError("Population must be a sequence.  "
                             "For dicts or sets, use sorted(d).")
         n = len(population)

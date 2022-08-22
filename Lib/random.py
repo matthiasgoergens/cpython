@@ -61,10 +61,10 @@ import _random
 
 try:
     # hashlib is pretty heavy to load, try lean internal module first
-    from _sha512 import sha512 as _sha512
+    from _sha512 import sha512
 except ImportError:
     # fallback to official implementation
-    from hashlib import sha512 as _sha512
+    from hashlib import sha512
 
 __all__ = [
     "Random",
@@ -157,7 +157,7 @@ class Random(_random.Random):
         elif version == 2 and isinstance(a, (str, bytes, bytearray)):
             if isinstance(a, str):
                 a = a.encode()
-            a = int.from_bytes(a + _sha512(a).digest())
+            a = int.from_bytes(a + sha512(a).digest())
 
         elif not isinstance(a, (type(None), int, float, str, bytes, bytearray)):
             raise TypeError('The only supported seed types are: None,\n'

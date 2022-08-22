@@ -61,7 +61,7 @@ class TestBasicOps:
         self.gen.seed(a)
         self.assertEqual(a, bytearray(b'1234'))
 
-    @unittest.mock.patch('random._urandom') # os.urandom
+    @unittest.mock.patch('random.urandom') # os.urandom
     def test_seed_when_randomness_source_not_found(self, urandom_mock):
         # Random.seed() uses time.time() when an operating system specific
         # randomness source is not found. To test this on machines where it
@@ -1181,12 +1181,12 @@ class TestDistributions(unittest.TestCase):
         #
         # while 1:
         #     u = random()
-        #     b = (_e + alpha)/_e
+        #     b = (random.e + alpha)/random.e
         #     p = b*u
         #     if p <= 1.0: # <=== (A)
         #         x = p ** (1.0/alpha)
         #     else: # <=== (B)
-        #         x = -_log((b-p)/alpha)
+        #         x = -random.log((b-p)/alpha)
         #     u1 = random()
         #     if p > 1.0: # <=== (C)
         #         if u1 <= x ** (alpha - 1.0): # <=== (D)
@@ -1206,12 +1206,9 @@ class TestDistributions(unittest.TestCase):
         # r2 <= _exp(-(p ** (1.0/alpha)))
         # r2 <= _exp(-((b*r1) ** (1.0/alpha)))
 
-        _e = random._e
-        _exp = random._exp
-        _log = random._log
         alpha = 0.35
         beta = 1.45
-        b = (_e + alpha)/_e
+        b = (random.e + alpha)/random.e
         epsilon = 0.01
 
         r1 = 0.8859296441566 # 1.0 / b

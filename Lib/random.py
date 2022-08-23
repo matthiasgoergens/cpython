@@ -46,25 +46,25 @@ General notes on the underlying Mersenne Twister core generator:
 # Adrian Baddeley.  Adapted by Raymond Hettinger for use with
 # the Mersenne Twister  and os.urandom() core generators.
 
-from warnings import warn as _warn
-from math import log as _log, exp as _exp, pi as _pi, e as _e, ceil as _ceil
-from math import sqrt as _sqrt, acos as _acos, cos as _cos, sin as _sin
-from math import tau as TWOPI, floor as _floor, isfinite as _isfinite
-from math import lgamma as _lgamma, fabs as _fabs, log2 as _log2
-from os import urandom as _urandom
-from _collections_abc import Sequence as _Sequence
-from operator import index as _index
-from itertools import accumulate as _accumulate, repeat as _repeat
-from bisect import bisect as _bisect
-import os as _os
+from warnings import warn
+from math import log, exp, pi, e, ceil
+from math import sqrt, acos, cos, sin
+from math import tau as TWOPI, floor, isfinite
+from math import lgamma, fabs, log2
+from os import urandom
+from _collections_abc import Sequence
+from operator import index
+from itertools import accumulate, repeat
+from bisect import bisect
+import os
 import _random
 
 try:
     # hashlib is pretty heavy to load, try lean internal module first
-    from _sha512 import sha512 as _sha512
+    from _sha512 import sha512
 except ImportError:
     # fallback to official implementation
-    from hashlib import sha512 as _sha512
+    from hashlib import sha512
 
 __all__ = [
     "Random",
@@ -95,9 +95,9 @@ __all__ = [
     "weibullvariate",
 ]
 
-NV_MAGICCONST = 4 * _exp(-0.5) / _sqrt(2.0)
-LOG4 = _log(4.0)
-SG_MAGICCONST = 1.0 + _log(4.5)
+NV_MAGICCONST = 4 * exp(-0.5) / sqrt(2.0)
+LOG4 = log(4.0)
+SG_MAGICCONST = 1.0 + log(4.5)
 BPF = 53        # Number of bits in a float
 RECIP_BPF = 2 ** -BPF
 _ONE = 1
@@ -157,7 +157,7 @@ class Random(_random.Random):
         elif version == 2 and isinstance(a, (str, bytes, bytearray)):
             if isinstance(a, str):
                 a = a.encode()
-            a = int.from_bytes(a + _sha512(a).digest())
+            a = int.from_bytes(a + sha512(a).digest())
 
         elif not isinstance(a, (type(None), int, float, str, bytes, bytearray)):
             raise TypeError('The only supported seed types are: None,\n'
@@ -238,11 +238,8 @@ class Random(_random.Random):
     def _randbelow_with_getrandbits(self, n):
         "Return a random int in the range [0,n).  Defined for n > 0."
 
-        getrandbits = self.getrandbits
-        k = n.bit_length()
-        r = getrandbits(k)  # 0 <= r < 2**k
-        while r >= n:
-            r = getrandbits(k)
+        while (r := self.getrandbits(n.bit_length())) >= n:
+            pass
         return r
 
     def _randbelow_without_getrandbits(self, n, maxsize=1<<BPF):
@@ -251,18 +248,16 @@ class Random(_random.Random):
         The implementation does not use getrandbits, but only random.
         """
 
-        random = self.random
         if n >= maxsize:
-            _warn("Underlying random() generator does not supply \n"
+            warn("Underlying random() generator does not supply \n"
                 "enough bits to choose from a population range this large.\n"
                 "To remove the range limitation, add a getrandbits() method.")
-            return _floor(random() * n)
+            return floor(self.random() * n)
         rem = maxsize % n
         limit = (maxsize - rem) / maxsize   # int(limit * maxsize) % n == 0
-        r = random()
-        while r >= limit:
-            r = random()
-        return _floor(r * maxsize) % n
+        while (r := self.random()) >= limit:
+            pass
+        return floor(r * maxsize) % n
 
     _randbelow = _randbelow_with_getrandbits
 
@@ -294,7 +289,7 @@ class Random(_random.Random):
 
         # This code is a bit messy to make it fast for the
         # common case while still doing adequate error checking.
-        istart = _index(start)
+        istart = index(start)
         if stop is None:
             # We don't check for "step != 1" because it hasn't been
             # type checked and converted to an integer yet.
@@ -305,9 +300,9 @@ class Random(_random.Random):
             raise ValueError("empty range for randrange()")
 
         # Stop argument supplied.
-        istop = _index(stop)
+        istop = index(stop)
         width = istop - istart
-        istep = _index(step)
+        istep = index(step)
         # Fast path.
         if istep == 1:
             if width > 0:
@@ -343,10 +338,9 @@ class Random(_random.Random):
     def shuffle(self, x):
         """Shuffle list x in place, and return None."""
 
-        randbelow = self._randbelow
         for i in reversed(range(1, len(x))):
             # pick an element in x[:i+1] with which to exchange x[i]
-            j = randbelow(i + 1)
+            j = self._randbelow(i + 1)
             x[i], x[j] = x[j], x[i]
 
     def sample(self, population, k, *, counts=None):
@@ -402,12 +396,12 @@ class Random(_random.Random):
         # too many calls to _randbelow(), making them slower and
         # causing them to eat more entropy than necessary.
 
-        if not isinstance(population, _Sequence):
+        if not isinstance(population, Sequence):
             raise TypeError("Population must be a sequence.  "
                             "For dicts or sets, use sorted(d).")
         n = len(population)
         if counts is not None:
-            cum_counts = list(_accumulate(counts))
+            cum_counts = list(accumulate(counts))
             if len(cum_counts) != n:
                 raise ValueError('The number of counts does not match the population')
             total = cum_counts.pop()
@@ -416,30 +410,28 @@ class Random(_random.Random):
             if total <= 0:
                 raise ValueError('Total of counts must be greater than zero')
             selections = self.sample(range(total), k=k)
-            bisect = _bisect
             return [population[bisect(cum_counts, s)] for s in selections]
-        randbelow = self._randbelow
         if not 0 <= k <= n:
             raise ValueError("Sample larger than population or is negative")
         result = [None] * k
         setsize = 21        # size of a small set minus size of an empty list
         if k > 5:
-            setsize += 4 ** _ceil(_log(k * 3, 4))  # table size for big sets
+            setsize += 4 ** ceil(log(k * 3, 4))  # table size for big sets
         if n <= setsize:
             # An n-length list is smaller than a k-length set.
             # Invariant:  non-selected at pool[0 : n-i]
             pool = list(population)
             for i in range(k):
-                j = randbelow(n - i)
+                j = self._randbelow(n - i)
                 result[i] = pool[j]
                 pool[j] = pool[n - i - 1]  # move non-selected item into vacancy
         else:
             selected = set()
             selected_add = selected.add
             for i in range(k):
-                j = randbelow(n)
+                j = self._randbelow(n)
                 while j in selected:
-                    j = randbelow(n)
+                    j = self._randbelow(n)
                 selected_add(j)
                 result[i] = population[j]
         return result
@@ -451,15 +443,13 @@ class Random(_random.Random):
         the selections are made with equal probability.
 
         """
-        random = self.random
         n = len(population)
         if cum_weights is None:
             if weights is None:
-                floor = _floor
                 n += 0.0    # convert to float for a small speed improvement
-                return [population[floor(random() * n)] for i in _repeat(None, k)]
+                return [population[floor(self.random() * n)] for i in repeat(None, k)]
             try:
-                cum_weights = list(_accumulate(weights))
+                cum_weights = list(accumulate(weights))
             except TypeError:
                 if not isinstance(weights, int):
                     raise
@@ -474,12 +464,11 @@ class Random(_random.Random):
         total = cum_weights[-1] + 0.0   # convert to float
         if total <= 0.0:
             raise ValueError('Total of weights must be greater than zero')
-        if not _isfinite(total):
+        if not isfinite(total):
             raise ValueError('Total of weights must be finite')
-        bisect = _bisect
         hi = n - 1
-        return [population[bisect(cum_weights, random() * total, 0, hi)]
-                for i in _repeat(None, k)]
+        return [population[bisect(cum_weights, self.random() * total, 0, hi)]
+                for i in repeat(None, k)]
 
 
     ## -------------------- real-valued distributions  -------------------
@@ -506,7 +495,7 @@ class Random(_random.Random):
             u = 1.0 - u
             c = 1.0 - c
             low, high = high, low
-        return low + (high - low) * _sqrt(u * c)
+        return low + (high - low) * sqrt(u * c)
 
     def normalvariate(self, mu=0.0, sigma=1.0):
         """Normal distribution.
@@ -519,13 +508,12 @@ class Random(_random.Random):
         # variables using the ratio of uniform deviates", ACM Trans
         # Math Software, 3, (1977), pp257-260.
 
-        random = self.random
         while True:
-            u1 = random()
-            u2 = 1.0 - random()
+            u1 = self.random()
+            u2 = 1.0 - self.random()
             z = NV_MAGICCONST * (u1 - 0.5) / u2
             zz = z * z / 4.0
-            if zz <= -_log(u2):
+            if zz <= -log(u2):
                 break
         return mu + z * sigma
 
@@ -556,14 +544,13 @@ class Random(_random.Random):
         # didn't want to slow this down in the serial case by using a
         # lock here.)
 
-        random = self.random
         z = self.gauss_next
         self.gauss_next = None
         if z is None:
-            x2pi = random() * TWOPI
-            g2rad = _sqrt(-2.0 * _log(1.0 - random()))
-            z = _cos(x2pi) * g2rad
-            self.gauss_next = _sin(x2pi) * g2rad
+            x2pi = self.random() * TWOPI
+            g2rad = sqrt(-2.0 * log(1.0 - self.random()))
+            z = cos(x2pi) * g2rad
+            self.gauss_next = sin(x2pi) * g2rad
 
         return mu + z * sigma
 
@@ -575,7 +562,7 @@ class Random(_random.Random):
         mu can have any value, and sigma must be greater than zero.
 
         """
-        return _exp(self.normalvariate(mu, sigma))
+        return exp(self.normalvariate(mu, sigma))
 
     def expovariate(self, lambd):
         """Exponential distribution.
@@ -592,7 +579,7 @@ class Random(_random.Random):
 
         # we use 1-random() instead of random() to preclude the
         # possibility of taking the log of zero.
-        return -_log(1.0 - self.random()) / lambd
+        return -log(1.0 - self.random()) / lambd
 
     def vonmisesvariate(self, mu, kappa):
         """Circular data distribution.
@@ -610,29 +597,28 @@ class Random(_random.Random):
         # Thanks to Magnus Kessler for a correction to the
         # implementation of step 4.
 
-        random = self.random
         if kappa <= 1e-6:
-            return TWOPI * random()
+            return TWOPI * self.random()
 
         s = 0.5 / kappa
-        r = s + _sqrt(1.0 + s * s)
+        r = s + sqrt(1.0 + s * s)
 
         while True:
-            u1 = random()
-            z = _cos(_pi * u1)
+            u1 = self.random()
+            z = cos(pi * u1)
 
             d = z / (r + z)
-            u2 = random()
-            if u2 < 1.0 - d * d or u2 <= (1.0 - d) * _exp(d):
+            u2 = self.random()
+            if u2 < 1.0 - d * d or u2 <= (1.0 - d) * exp(d):
                 break
 
         q = 1.0 / r
         f = (q + z) / (1.0 + q * z)
-        u3 = random()
+        u3 = self.random()
         if u3 > 0.5:
-            theta = (mu + _acos(f)) % TWOPI
+            theta = (mu + acos(f)) % TWOPI
         else:
-            theta = (mu - _acos(f)) % TWOPI
+            theta = (mu - acos(f)) % TWOPI
 
         return theta
 
@@ -655,49 +641,48 @@ class Random(_random.Random):
         if alpha <= 0.0 or beta <= 0.0:
             raise ValueError('gammavariate: alpha and beta must be > 0.0')
 
-        random = self.random
         if alpha > 1.0:
 
             # Uses R.C.H. Cheng, "The generation of Gamma
             # variables with non-integral shape parameters",
             # Applied Statistics, (1977), 26, No. 1, p71-74
 
-            ainv = _sqrt(2.0 * alpha - 1.0)
+            ainv = sqrt(2.0 * alpha - 1.0)
             bbb = alpha - LOG4
             ccc = alpha + ainv
 
             while True:
-                u1 = random()
+                u1 = self.random()
                 if not 1e-7 < u1 < 0.9999999:
                     continue
-                u2 = 1.0 - random()
-                v = _log(u1 / (1.0 - u1)) / ainv
-                x = alpha * _exp(v)
+                u2 = 1.0 - self.random()
+                v = log(u1 / (1.0 - u1)) / ainv
+                x = alpha * exp(v)
                 z = u1 * u1 * u2
                 r = bbb + ccc * v - x
-                if r + SG_MAGICCONST - 4.5 * z >= 0.0 or r >= _log(z):
+                if r + SG_MAGICCONST - 4.5 * z >= 0.0 or r >= log(z):
                     return x * beta
 
         elif alpha == 1.0:
             # expovariate(1/beta)
-            return -_log(1.0 - random()) * beta
+            return -log(1.0 - self.random()) * beta
 
         else:
             # alpha is between 0 and 1 (exclusive)
             # Uses ALGORITHM GS of Statistical Computing - Kennedy & Gentle
             while True:
-                u = random()
-                b = (_e + alpha) / _e
+                u = self.random()
+                b = (e + alpha) / e
                 p = b * u
                 if p <= 1.0:
                     x = p ** (1.0 / alpha)
                 else:
-                    x = -_log((b - p) / alpha)
-                u1 = random()
+                    x = -log((b - p) / alpha)
+                u1 = self.random()
                 if p > 1.0:
                     if u1 <= x ** (alpha - 1.0):
                         break
-                elif u1 <= _exp(-x):
+                elif u1 <= exp(-x):
                     break
             return x * beta
 
@@ -750,11 +735,9 @@ class Random(_random.Random):
                 return n
             raise ValueError("p must be in the range 0.0 <= p <= 1.0")
 
-        random = self.random
-
         # Fast path for a common case
         if n == 1:
-            return _index(random() < p)
+            return index(random() < p)
 
         # Exploit symmetry to establish:  p <= 0.5
         if p > 0.5:
@@ -764,11 +747,11 @@ class Random(_random.Random):
             # BG: Geometric method by Devroye with running time of O(np).
             # https://dl.acm.org/doi/pdf/10.1145/42372.42381
             x = y = 0
-            c = _log2(1.0 - p)
+            c = log2(1.0 - p)
             if not c:
                 return x
             while True:
-                y += _floor(_log2(random()) / c) + 1
+                y += floor(log2(self.random()) / c) + 1
                 if y > n:
                     return x
                 x += 1
@@ -778,7 +761,7 @@ class Random(_random.Random):
         assert n*p >= 10.0 and p <= 0.5
         setup_complete = False
 
-        spq = _sqrt(n * p * (1.0 - p))  # Standard deviation of the distribution
+        spq = sqrt(n * p * (1.0 - p))  # Standard deviation of the distribution
         b = 1.15 + 2.53 * spq
         a = -0.0873 + 0.0248 * b + 0.01 * p
         c = n * p + 0.5
@@ -786,16 +769,16 @@ class Random(_random.Random):
 
         while True:
 
-            u = random()
+            u = self.random()
             u -= 0.5
-            us = 0.5 - _fabs(u)
-            k = _floor((2.0 * a / us + b) * u + c)
+            us = 0.5 - fabs(u)
+            k = floor((2.0 * a / us + b) * u + c)
             if k < 0 or k > n:
                 continue
 
             # The early-out "squeeze" test substantially reduces
             # the number of acceptance condition evaluations.
-            v = random()
+            v = self.random()
             if us >= 0.07 and v <= vr:
                 return k
 
@@ -804,12 +787,12 @@ class Random(_random.Random):
             # when comparing to the log of the rescaled binomial distribution.
             if not setup_complete:
                 alpha = (2.83 + 5.1 / b) * spq
-                lpq = _log(p / (1.0 - p))
-                m = _floor((n + 1) * p)         # Mode of the distribution
-                h = _lgamma(m + 1) + _lgamma(n - m + 1)
+                lpq = log(p / (1.0 - p))
+                m = floor((n + 1) * p)          # Mode of the distribution
+                h = lgamma(m + 1) + lgamma(n - m + 1)
                 setup_complete = True           # Only needs to be done once
             v *= alpha / (a / (us * us) + b)
-            if _log(v) <= h - _lgamma(k + 1) - _lgamma(n - k + 1) + (k - m) * lpq:
+            if log(v) <= h - lgamma(k + 1) - lgamma(n - k + 1) + (k - m) * lpq:
                 return k
 
 
@@ -829,7 +812,7 @@ class Random(_random.Random):
         # Jain, pg. 499; bug fix courtesy Bill Arms
 
         u = 1.0 - self.random()
-        return alpha * (-_log(u)) ** (1.0 / beta)
+        return alpha * (-log(u)) ** (1.0 / beta)
 
 
 ## ------------------------------------------------------------------
@@ -847,21 +830,21 @@ class SystemRandom(Random):
 
     def random(self):
         """Get the next random number in the range [0.0, 1.0)."""
-        return (int.from_bytes(_urandom(7)) >> 3) * RECIP_BPF
+        return (int.from_bytes(urandom(7)) >> 3) * RECIP_BPF
 
     def getrandbits(self, k):
         """getrandbits(k) -> x.  Generates an int with k random bits."""
         if k < 0:
             raise ValueError('number of bits must be non-negative')
         numbytes = (k + 7) // 8                       # bits / 8 and rounded up
-        x = int.from_bytes(_urandom(numbytes))
+        x = int.from_bytes(urandom(numbytes))
         return x >> (numbytes * 8 - k)                # trim excess bits
 
     def randbytes(self, n):
         """Generate n random bytes."""
         # os.urandom(n) fails with ValueError for n < 0
         # and returns an empty bytes string for n == 0.
-        return _urandom(n)
+        return urandom(n)
 
     def seed(self, *args, **kwds):
         "Stub method.  Not used for a system random number generator."
@@ -915,7 +898,7 @@ def _test_generator(n, func, args):
     from time import perf_counter
 
     t0 = perf_counter()
-    data = [func(*args) for i in _repeat(None, n)]
+    data = [func(*args) for i in repeat(None, n)]
     t1 = perf_counter()
 
     xbar = mean(data)
@@ -951,8 +934,8 @@ def _test(N=10_000):
 ## ------------------------------------------------------
 ## ------------------ fork support  ---------------------
 
-if hasattr(_os, "fork"):
-    _os.register_at_fork(after_in_child=_inst.seed)
+if hasattr(os, "fork"):
+    os.register_at_fork(after_in_child=_inst.seed)
 
 
 if __name__ == '__main__':

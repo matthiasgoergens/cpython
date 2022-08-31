@@ -334,40 +334,26 @@ dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 
     if (log2size <= 8) {
         const uint8_t *indices = (const uint8_t*)(keys->dk_indices);
-        const uint8_t uix = indices[i];
-        if(uix >= (uint8_t)DKIX_LOWEST_RESERVED) {
-            ix = (int8_t) uix;
-        } else {
-            ix = uix;
-        }
+        ix = indices[i];
     }
     else if (log2size <= 16) {
         const uint16_t *indices = (const uint16_t*)(keys->dk_indices);
-        const uint16_t uix = indices[i];
-        if(uix >= (uint16_t)DKIX_LOWEST_RESERVED) {
-            ix = (int16_t) uix;
-        } else {
-            ix = uix;
-        }
+        ix = indices[i];
     }
 #if SIZEOF_VOID_P > 4
     else if (log2size >= 32) {
-        // 64 bits are enough eves as a signed number, no need to fiddle.
-        const int64_t *indices = (const int64_t*)(keys->dk_indices);
+        const uint64_t *indices = (const uint64_t*)(keys->dk_indices);
         ix = indices[i];
     }
 #endif
     else {
         const uint32_t *indices = (const uint32_t*)(keys->dk_indices);
-        const uint32_t u32_ix = indices[i];
-        if(u32_ix >= (uint32_t)DKIX_LOWEST_RESERVED) {
-            ix = (int32_t) u32_ix;
-        } else {
-            ix = u32_ix;
-        }
+        ix = indices[i];
     }
-    assert(ix >= DKIX_DUMMY);
-    return ix;
+
+    // Perhasp we should assert that it ain't too big?
+    assert(ix >= 0);
+    return ix + DKIX_LOWEST_RESERVED;
 }
 
 /* write to indices. */
@@ -376,29 +362,30 @@ dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
 {
     int log2size = DK_LOG_SIZE(keys);
 
-    assert(ix >= DKIX_DUMMY);
+    assert(ix >= DKIX_LOWEST_RESERVED);
     assert(keys->dk_version == 0);
+    const uint64_t uix = ix - DKIX_LOWEST_RESERVED;
 
     if (log2size <= 8) {
         uint8_t *indices = (uint8_t*)(keys->dk_indices);
-        assert(ix - DKIX_LOWEST_RESERVED < 0xff);
-        indices[i] = (uint8_t)ix;
+        assert(uix < 0xff);
+        indices[i] = uix;
     }
     else if (log2size <= 16) {
         uint16_t *indices = (uint16_t*)(keys->dk_indices);
-        assert(ix - DKIX_LOWEST_RESERVED < 0xffff);
-        indices[i] = (uint16_t)ix;
+        assert(uix < 0xffff);
+        indices[i] = uix;
     }
 #if SIZEOF_VOID_P > 4
     else if (log2size > 32) {
-        int64_t *indices = (int64_t*)(keys->dk_indices);
-        indices[i] = ix;
+        uint64_t *indices = (uint64_t*)(keys->dk_indices);
+        indices[i] = uix;
     }
 #endif
     else {
         uint32_t *indices = (uint32_t*)(keys->dk_indices);
-        assert(ix - DKIX_LOWEST_RESERVED < 0xffffffff);
-        indices[i] = (uint32_t)ix;
+        assert(uix < 0xffffffff);
+        indices[i] = uix;
     }
 }
 
@@ -662,8 +649,7 @@ new_keys_object(uint8_t log2_size, bool unicode)
     dk->dk_nentries = 0;
     dk->dk_usable = usable;
     dk->dk_version = 0;
-    memset(&dk->dk_indices[0], 0xff, ((size_t)1 << log2_bytes));
-    memset(&dk->dk_indices[(size_t)1 << log2_bytes], 0, entry_size * usable);
+    memset(&dk->dk_indices[0], 0, ((size_t)1 << log2_bytes) + entry_size * usable);
     return dk;
 }
 

@@ -72,10 +72,10 @@ extern int _PyObjectDict_SetItem(PyTypeObject *tp, PyObject **dictptr, PyObject 
 
 extern PyObject *_PyDict_Pop_KnownHash(PyObject *, PyObject *, Py_hash_t, PyObject *);
 
-#define DKIX_EMPTY (-1)
+#define DKIX_KEY_CHANGED (-1) /* Used internally */
 #define DKIX_DUMMY (-2)  /* Used internally */
 #define DKIX_ERROR (-3)
-#define DKIX_KEY_CHANGED (-4) /* Used internally */
+#define DKIX_EMPTY (-4)
 #define DKIX_LOWEST_RESERVED (-4) /* Used internally */
 
 typedef enum {

@@ -325,11 +325,24 @@ dictkeys_decref(PyDictKeysObject *dk)
     }
 }
 
+/* USABLE_FRACTION is the maximum dictionary load.
+ * Increasing this ratio makes dictionaries more dense resulting in more
+ * collisions.  Decreasing it improves sparseness at the expense of spreading
+ * indices over more cache lines and at the cost of total memory consumed.
+ *
+ * USABLE_FRACTION must obey the following:
+ *     (0 < USABLE_FRACTION(n) < n) for all n >= 2
+ *
+ * USABLE_FRACTION should be quick to calculate.
+ * Fractions around 1/2 to 2/3 seem to work well in practice.
+ */
+#define USABLE_FRACTION(n) (((n) << 1)/3)
+
 /* lookup indices.  returns DKIX_EMPTY, DKIX_DUMMY, or ix >=0 */
 static inline Py_ssize_t
 dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 {
-    int log2size = DK_LOG_SIZE(keys);
+    const int log2size = DK_LOG_SIZE(keys);
     Py_ssize_t ix;
 
     if (log2size <= 8) {
@@ -353,6 +366,14 @@ dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 
     // Perhasp we should assert that it ain't too big?
     assert(ix >= 0);
+    if(!(ix + DKIX_LOWEST_RESERVED <= USABLE_FRACTION((Py_ssize_t)1 << log2size))) {
+        printf("\n");
+        printf("ix: %ld\n", ix);
+        printf("log2size: %d\n", log2size);
+        printf("dk_log2_index_bytes: %d\n", keys->dk_log2_index_bytes);
+        printf("dk_usable: %ld\n", keys->dk_usable);
+    }
+    assert(ix + DKIX_LOWEST_RESERVED <= USABLE_FRACTION((Py_ssize_t)1 << log2size));
     return ix + DKIX_LOWEST_RESERVED;
 }
 
@@ -363,6 +384,7 @@ dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
     int log2size = DK_LOG_SIZE(keys);
 
     assert(ix >= DKIX_LOWEST_RESERVED);
+    assert(ix <= USABLE_FRACTION(1 << log2size));
     assert(keys->dk_version == 0);
     const uint64_t uix = ix - DKIX_LOWEST_RESERVED;
 
@@ -388,19 +410,6 @@ dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
         indices[i] = (uint32_t)uix;
     }
 }
-
-/* USABLE_FRACTION is the maximum dictionary load.
- * Increasing this ratio makes dictionaries more dense resulting in more
- * collisions.  Decreasing it improves sparseness at the expense of spreading
- * indices over more cache lines and at the cost of total memory consumed.
- *
- * USABLE_FRACTION must obey the following:
- *     (0 < USABLE_FRACTION(n) < n) for all n >= 2
- *
- * USABLE_FRACTION should be quick to calculate.
- * Fractions around 1/2 to 2/3 seem to work well in practice.
- */
-#define USABLE_FRACTION(n) (((n) << 1)/3)
 
 /* Find the smallest dk_size >= minsize. */
 static inline uint8_t
@@ -649,7 +658,10 @@ new_keys_object(uint8_t log2_size, bool unicode)
     dk->dk_nentries = 0;
     dk->dk_usable = usable;
     dk->dk_version = 0;
-    memset(&dk->dk_indices[0], 0, ((size_t)1 << log2_bytes) + entry_size * usable);
+    // memset(&dk->dk_indices[0], 0, ((size_t)1 << log2_bytes) + entry_size * usable);
+    memset(&dk->dk_indices[0], 0x0, ((size_t)1 << log2_bytes));
+    memset(&dk->dk_indices[(size_t)1 << log2_bytes], 0, entry_size * usable);
+
     return dk;
 }
 

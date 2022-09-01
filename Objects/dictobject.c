@@ -369,23 +369,23 @@ dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
     if (log2size <= 8) {
         uint8_t *indices = (uint8_t*)(keys->dk_indices);
         assert(uix < 0xff);
-        indices[i] = uix;
+        indices[i] = (uint8_t)uix;
     }
     else if (log2size <= 16) {
         uint16_t *indices = (uint16_t*)(keys->dk_indices);
         assert(uix < 0xffff);
-        indices[i] = uix;
+        indices[i] = (uint16_t)uix;
     }
 #if SIZEOF_VOID_P > 4
     else if (log2size > 32) {
         uint64_t *indices = (uint64_t*)(keys->dk_indices);
-        indices[i] = uix;
+        indices[i] = (uint64_t)uix;
     }
 #endif
     else {
         uint32_t *indices = (uint32_t*)(keys->dk_indices);
         assert(uix < 0xffffffff);
-        indices[i] = uix;
+        indices[i] = (uint32_t)uix;
     }
 }
 

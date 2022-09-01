@@ -658,8 +658,7 @@ new_keys_object(uint8_t log2_size, bool unicode)
     dk->dk_nentries = 0;
     dk->dk_usable = usable;
     dk->dk_version = 0;
-    // memset(&dk->dk_indices[0], 0, ((size_t)1 << log2_bytes) + entry_size * usable);
-    memset(&dk->dk_indices[0], 0x0, ((size_t)1 << log2_bytes));
+    memset(&dk->dk_indices[0], 0, ((size_t)1 << log2_bytes));
     memset(&dk->dk_indices[(size_t)1 << log2_bytes], 0, entry_size * usable);
 
     return dk;

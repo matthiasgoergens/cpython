@@ -364,8 +364,8 @@ dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
         ix = indices[i];
     }
 
-    // Perhasp we should assert that it ain't too big?
     assert(ix >= 0);
+    // Purely for my debugging:
     if(!(ix + DKIX_LOWEST_RESERVED <= USABLE_FRACTION((Py_ssize_t)1 << log2size))) {
         printf("\n");
         printf("ix: %ld\n", ix);

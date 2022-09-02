@@ -755,8 +755,6 @@ typedef PyObject *(*lru_cache_ternaryfunc)(struct lru_cache_object *, PyObject *
 
 typedef struct lru_cache_object {
     PyObject_HEAD
-    /* Speeds up deletion of oldest entry */
-    PyDictFinger finger;
     lru_cache_ternaryfunc wrapper;
     int typed;
     PyObject *cache;
@@ -961,7 +959,7 @@ bounded_lru_cache_wrapper(lru_cache_object *self, PyObject *args, PyObject *kwds
     while (PyDict_GET_SIZE(self->cache) > self->maxsize)
     {
         // This does a decref and thus might potentially execute arbitrary code.
-        _PyDict_DelOldest((PyDictObject *)self->cache, &self->finger);
+        _PyDict_DelOldest((PyDictObject *)self->cache);
     }
 
     Py_DECREF(key);

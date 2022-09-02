@@ -1414,6 +1414,8 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
         PyErr_NoMemory();
         return -1;
     }
+    // do we compare dk_log2_size vs log2_newsize?
+    // Answer: Yes, that's exactly what new_keys_object does.
     assert(log2_newsize >= PyDict_LOG_MINSIZE);
 
     oldkeys = mp->ma_keys;
@@ -1425,8 +1427,51 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
 
     /* NOTE: Current odict checks mp->ma_keys to detect resize happen.
      * So we can't reuse oldkeys even if oldkeys->dk_size == newsize.
-     * TODO: Try reusing oldkeys when reimplement odict.
+     * TODO: Try reusing oldkeys when reimplement odict!
      */
+
+    if((mp->ma_keys->dk_log2_size == log2_newsize)
+        && !_PyDict_HasSplitTable(mp)) {
+        // re-use!
+        if (oldkeys->dk_kind == DICT_KEYS_GENERAL) {     
+            // generic -> generic
+            PyDictKeyEntry *entries = DK_ENTRIES(oldkeys);
+            if (oldkeys->dk_nentries == numentries) {
+                // do nothing
+            } else if (oldkeys->dk_nentries - oldkeys->skip_empty == numentries) {
+                // TODO: double check the pointer arithmetic.
+                    memmove(entries, entries + oldkeys->skip_empty, numentries * sizeof(PyDictKeyEntry));
+                    // TODO: zero out the rest?  Nah, it's probably fine to have garbage in the rest.
+            } else { // actually compact things.
+                PyDictKeyEntry *ep = entries + oldkeys->skip_empty;
+                Py_ssize_t i = 0;
+                
+                // TODO: look at this optimisation.  Basically, skip doing 
+                // anything until we hit the first gap.
+                // while ((ep->me_value != NULL) && (i < numentries)) {
+                //         ep++; i++;
+                // }
+                for (Py_ssize_t i = 0; i < numentries; i++) {
+                    while (ep->me_value == NULL) // skip over gaps.
+                        ep++;
+                    newentries[i] = *ep++;
+                }
+                // TODO: do we need to zero out the rest, or does setting
+                // dk_nentries suffice?
+            }
+            // TODO: we need to 0 out the old indices?
+            memset(&oldkeys->dk_indices[0], 0xff, ((size_t)1 << log2_newsize));
+            build_indices_generic(mp->ma_keys, newentries, numentries);
+            // TODO: rest.
+            // return?
+        } else { // oldkeys is combined unicode
+            PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(oldkeys);
+            // If our unicode status between old and new changes, we just allocate a new one.  We don't re-use.
+            if (unicode) { // combined unicode -> combined unicode
+            } else {
+            }
+        }       
+    };
 
     /* Allocate a new table. */
     mp->ma_keys = new_keys_object(log2_newsize, unicode);

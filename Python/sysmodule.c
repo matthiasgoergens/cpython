@@ -1022,6 +1022,36 @@ function call.  See the debugger chapter in the library manual."
 );
 
 /*[clinic input]
+sys._settraceallthreads
+
+    arg: object
+    /
+
+Set the global debug tracing function in all running threads belonging to the current interpreter.
+
+It will be called on each function call. See the debugger chapter
+in the library manual.
+[clinic start generated code]*/
+
+static PyObject *
+sys__settraceallthreads(PyObject *module, PyObject *arg)
+/*[clinic end generated code: output=161cca30207bf3ca input=5906aa1485a50289]*/
+{
+    PyObject* argument = NULL;
+    Py_tracefunc func = NULL;
+
+    if (arg != Py_None) {
+        func = trace_trampoline;
+        argument = arg;
+    }
+
+
+    PyEval_SetTraceAllThreads(func, argument);
+
+    Py_RETURN_NONE;
+}
+
+/*[clinic input]
 sys.gettrace
 
 Return the global debug tracing function set with sys.settrace.
@@ -1065,6 +1095,35 @@ PyDoc_STRVAR(setprofile_doc,
 Set the profiling function.  It will be called on each function call\n\
 and return.  See the profiler chapter in the library manual."
 );
+
+/*[clinic input]
+sys._setprofileallthreads
+
+    arg: object
+    /
+
+Set the profiling function in all running threads belonging to the current interpreter.
+
+It will be called on each function call and return.  See the profiler chapter
+in the library manual.
+[clinic start generated code]*/
+
+static PyObject *
+sys__setprofileallthreads(PyObject *module, PyObject *arg)
+/*[clinic end generated code: output=2d61319e27b309fe input=d1a356d3f4f9060a]*/
+{
+    PyObject* argument = NULL;
+    Py_tracefunc func = NULL;
+
+    if (arg != Py_None) {
+        func = profile_trampoline;
+        argument = arg;
+    }
+
+    PyEval_SetProfileAllThreads(func, argument);
+
+    Py_RETURN_NONE;
+}
 
 /*[clinic input]
 sys.getprofile
@@ -1994,6 +2053,80 @@ sys_getandroidapilevel_impl(PyObject *module)
 }
 #endif   /* ANDROID_API_LEVEL */
 
+/*[clinic input]
+sys.activate_stack_trampoline
+
+    backend: str
+    /
+
+Activate the perf profiler trampoline.
+[clinic start generated code]*/
+
+static PyObject *
+sys_activate_stack_trampoline_impl(PyObject *module, const char *backend)
+/*[clinic end generated code: output=5783cdeb51874b43 input=b09020e3a17c78c5]*/
+{
+#ifdef PY_HAVE_PERF_TRAMPOLINE
+    if (strcmp(backend, "perf") == 0) {
+        _PyPerf_Callbacks cur_cb;
+        _PyPerfTrampoline_GetCallbacks(&cur_cb);
+        if (cur_cb.init_state != _Py_perfmap_callbacks.init_state) {
+            if (_PyPerfTrampoline_SetCallbacks(&_Py_perfmap_callbacks) < 0 ) {
+                PyErr_SetString(PyExc_ValueError, "can't activate perf trampoline");
+                return NULL;
+            }
+        }
+    }
+    else {
+        PyErr_Format(PyExc_ValueError, "invalid backend: %s", backend);
+        return NULL;
+    }
+    if (_PyPerfTrampoline_Init(1) < 0) {
+        return NULL;
+    }
+    Py_RETURN_NONE;
+#else
+    PyErr_SetString(PyExc_ValueError, "perf trampoline not available");
+    return NULL;
+#endif
+}
+
+
+/*[clinic input]
+sys.deactivate_stack_trampoline
+
+Dectivate the perf profiler trampoline.
+[clinic start generated code]*/
+
+static PyObject *
+sys_deactivate_stack_trampoline_impl(PyObject *module)
+/*[clinic end generated code: output=b50da25465df0ef1 input=491f4fc1ed615736]*/
+{
+    if  (_PyPerfTrampoline_Init(0) < 0) {
+        return NULL;
+    }
+    Py_RETURN_NONE;
+}
+
+/*[clinic input]
+sys.is_stack_trampoline_active
+
+Returns *True* if the perf profiler trampoline is active.
+[clinic start generated code]*/
+
+static PyObject *
+sys_is_stack_trampoline_active_impl(PyObject *module)
+/*[clinic end generated code: output=ab2746de0ad9d293 input=061fa5776ac9dd59]*/
+{
+#ifdef PY_HAVE_PERF_TRAMPOLINE
+    if (_PyIsPerfTrampolineActive()) {
+        Py_RETURN_TRUE;
+    }
+#endif
+    Py_RETURN_FALSE;
+}
+
+
 static PyMethodDef sys_methods[] = {
     /* Might as well keep this in alphabetic order */
     SYS_ADDAUDITHOOK_METHODDEF
@@ -2035,9 +2168,11 @@ static PyMethodDef sys_methods[] = {
     SYS_GETSWITCHINTERVAL_METHODDEF
     SYS_SETDLOPENFLAGS_METHODDEF
     {"setprofile", sys_setprofile, METH_O, setprofile_doc},
+    SYS__SETPROFILEALLTHREADS_METHODDEF
     SYS_GETPROFILE_METHODDEF
     SYS_SETRECURSIONLIMIT_METHODDEF
     {"settrace", sys_settrace, METH_O, settrace_doc},
+    SYS__SETTRACEALLTHREADS_METHODDEF
     SYS_GETTRACE_METHODDEF
     SYS_CALL_TRACING_METHODDEF
     SYS__DEBUGMALLOCSTATS_METHODDEF
@@ -2047,6 +2182,9 @@ static PyMethodDef sys_methods[] = {
      METH_VARARGS | METH_KEYWORDS, set_asyncgen_hooks_doc},
     SYS_GET_ASYNCGEN_HOOKS_METHODDEF
     SYS_GETANDROIDAPILEVEL_METHODDEF
+    SYS_ACTIVATE_STACK_TRAMPOLINE_METHODDEF
+    SYS_DEACTIVATE_STACK_TRAMPOLINE_METHODDEF
+    SYS_IS_STACK_TRAMPOLINE_ACTIVE_METHODDEF
     SYS_UNRAISABLEHOOK_METHODDEF
 #ifdef Py_STATS
     SYS__STATS_ON_METHODDEF

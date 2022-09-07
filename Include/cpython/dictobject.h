@@ -28,6 +28,17 @@ typedef struct {
     PyDictValues *ma_values;
 } PyDictObject;
 
+/*
+ * A 'finger' to allow deletion of oldest entries in amortised O(1).
+ * TODO: Does this need to be even more encapsulated and hidden?
+ */
+typedef struct {
+    PyDictKeysObject *sentinel;
+    Py_ssize_t skip_empty;
+} PyDictFinger;
+
+PyAPI_FUNC(PyObject *) _PyDict_GetAndPushBack_KnownHash(
+    PyObject *op, PyObject *key, Py_hash_t hash);
 PyAPI_FUNC(PyObject *) _PyDict_GetItem_KnownHash(PyObject *mp, PyObject *key,
                                        Py_hash_t hash);
 PyAPI_FUNC(PyObject *) _PyDict_GetItemWithError(PyObject *dp, PyObject *key);
@@ -42,6 +53,8 @@ PyAPI_FUNC(int) _PyDict_DelItem_KnownHash(PyObject *mp, PyObject *key,
                                           Py_hash_t hash);
 PyAPI_FUNC(int) _PyDict_DelItemIf(PyObject *mp, PyObject *key,
                                   int (*predicate)(PyObject *value));
+PyAPI_FUNC(PyDictFinger) _PyDict_NewFinger(void);
+PyAPI_FUNC(int) _PyDict_DelOldest(PyDictObject *mp, PyDictFinger *finger);
 PyAPI_FUNC(int) _PyDict_Next(
     PyObject *mp, Py_ssize_t *pos, PyObject **key, PyObject **value, Py_hash_t *hash);
 

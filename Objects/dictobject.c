@@ -458,6 +458,7 @@ static PyDictKeysObject empty_keys_struct = {
         1, /* dk_version */
         0, /* dk_usable (immutable) */
         0, /* dk_nentries */
+        0, /* skip_empty */
         {DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY,
          DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY}, /* dk_indices */
 };
@@ -515,6 +516,7 @@ _PyDict_CheckConsistency(PyObject *op, int check_content)
     CHECK(0 <= mp->ma_used && mp->ma_used <= usable);
     CHECK(0 <= keys->dk_usable && keys->dk_usable <= usable);
     CHECK(0 <= keys->dk_nentries && keys->dk_nentries <= usable);
+    // TODO: add check that everything is empty before skip_empty
     CHECK(keys->dk_usable + keys->dk_nentries <= usable);
 
     if (!splitted) {
@@ -645,6 +647,7 @@ new_keys_object(uint8_t log2_size, bool unicode)
     dk->dk_log2_index_bytes = log2_bytes;
     dk->dk_kind = unicode ? DICT_KEYS_UNICODE : DICT_KEYS_GENERAL;
     dk->dk_nentries = 0;
+    dk->skip_empty = 0;
     dk->dk_usable = usable;
     dk->dk_version = 0;
     memset(&dk->dk_indices[0], 0xff, ((size_t)1 << log2_bytes));
@@ -1411,6 +1414,8 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
         PyErr_NoMemory();
         return -1;
     }
+    // do we compare dk_log2_size vs log2_newsize?
+    // Answer: Yes, that's exactly what new_keys_object does.
     assert(log2_newsize >= PyDict_LOG_MINSIZE);
 
     oldkeys = mp->ma_keys;
@@ -1422,8 +1427,51 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
 
     /* NOTE: Current odict checks mp->ma_keys to detect resize happen.
      * So we can't reuse oldkeys even if oldkeys->dk_size == newsize.
-     * TODO: Try reusing oldkeys when reimplement odict.
+     * TODO: Try reusing oldkeys when reimplement odict!
      */
+
+    if((mp->ma_keys->dk_log2_size == log2_newsize)
+        && !_PyDict_HasSplitTable(mp)) {
+        // re-use!
+        if (oldkeys->dk_kind == DICT_KEYS_GENERAL) {     
+            // generic -> generic
+            PyDictKeyEntry *entries = DK_ENTRIES(oldkeys);
+            if (oldkeys->dk_nentries == numentries) {
+                // do nothing
+            } else if (oldkeys->dk_nentries - oldkeys->skip_empty == numentries) {
+                // TODO: double check the pointer arithmetic.
+                    memmove(entries, entries + oldkeys->skip_empty, numentries * sizeof(PyDictKeyEntry));
+                    // TODO: zero out the rest?  Nah, it's probably fine to have garbage in the rest.
+            } else { // actually compact things.
+                PyDictKeyEntry *ep = entries + oldkeys->skip_empty;
+                Py_ssize_t i = 0;
+                
+                // TODO: look at this optimisation.  Basically, skip doing 
+                // anything until we hit the first gap.
+                // while ((ep->me_value != NULL) && (i < numentries)) {
+                //         ep++; i++;
+                // }
+                for (Py_ssize_t i = 0; i < numentries; i++) {
+                    while (ep->me_value == NULL) // skip over gaps.
+                        ep++;
+                    newentries[i] = *ep++;
+                }
+                // TODO: do we need to zero out the rest, or does setting
+                // dk_nentries suffice?
+            }
+            // TODO: we need to 0 out the old indices?
+            memset(&oldkeys->dk_indices[0], 0xff, ((size_t)1 << log2_newsize));
+            build_indices_generic(mp->ma_keys, newentries, numentries);
+            // TODO: rest.
+            // return?
+        } else { // oldkeys is combined unicode
+            PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(oldkeys);
+            // If our unicode status between old and new changes, we just allocate a new one.  We don't re-use.
+            if (unicode) { // combined unicode -> combined unicode
+            } else {
+            }
+        }       
+    };
 
     /* Allocate a new table. */
     mp->ma_keys = new_keys_object(log2_newsize, unicode);
@@ -1559,6 +1607,7 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
 
     mp->ma_keys->dk_usable -= numentries;
     mp->ma_keys->dk_nentries = numentries;
+    mp->ma_keys->skip_empty = 0;
     ASSERT_CONSISTENT(mp);
     return 0;
 }
@@ -2140,6 +2189,18 @@ _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
     return 1;
 }
 
+int
+_PyDict_DelOldest(PyDictObject *mp)
+{
+    PyObject *key, *value;
+    Py_hash_t hash;
+
+    if(!_PyDict_Next((PyObject *)mp, &mp->skip_empty, &key, &value, &hash)) {
+        return -1;
+    }
+    return delitem_common(mp, hash, mp->skip_empty-1, value);
+}
+
 /*
  * Iterate over a dict.  Use like so:
  *
@@ -2200,6 +2261,92 @@ _PyDict_Pop_KnownHash(PyObject *dict, PyObject *key, Py_hash_t hash, PyObject *d
 
     ASSERT_CONSISTENT(mp);
     return old_value;
+}
+
+/* Same as _PyDict_GetItem_KnownHash() but also moves the item to the back of
+   the dict, if found.
+*/
+PyObject *
+_PyDict_GetAndPushBack_KnownHash(PyObject *op, PyObject *key, Py_hash_t hash)
+{
+    Py_ssize_t ix; (void)ix;
+    PyDictObject *mp = (PyDictObject *)op;
+    PyObject *value;
+    PyDictKeysObject *keys;
+
+    if (!PyDict_Check(op)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+
+  resized:
+
+    // First: check whether we can find the key.  If not, return nothing.
+    ix = _Py_dict_lookup(mp, key, hash, &value);
+    assert(ix >= 0 || value == NULL);
+    if(value == NULL) {
+        return NULL;
+    }
+    // If we are here, we have found the item.
+    keys = mp->ma_keys;
+
+    // TODO: double check that this logic also works for split tables.
+    // I think PyDict_SetDefault suggests that it does.
+    if(ix + 1 >= keys->dk_nentries) {
+        // We can skip the shuffling, if our entry is already at the end.
+        return value;
+    }
+
+    keys->dk_version = 0;
+    mp->ma_version_tag = DICT_NEXT_VERSION();
+
+    if (_PyDict_HasSplitTable(mp)) {
+        delete_index_from_values(mp->ma_values, ix);
+        _PyDictValues_AddToInsertionOrder(mp->ma_values, ix);
+        return value;
+    }
+
+    // NOTE: dk_nentries can grow up to USABLE_FRACTION(DK_SIZE(keys)), but
+    // other parts of the code seem to take dk_usable as the limit.
+    if (keys->dk_nentries >= USABLE_FRACTION(DK_SIZE(keys))) {
+        /* Not enough space, need to resize. */
+
+        // Not sure about this unicode business.  The logic is adapted from
+        // insertdict.
+        int need_unicode = (DK_IS_UNICODE(keys) && !PyUnicode_CheckExact(key)) ? 0 : 1;
+        if (insertion_resize(mp, need_unicode) < 0) {
+            return NULL;
+        }
+        goto resized;
+    }
+
+    Py_ssize_t hashpos = lookdict_index(keys, hash, ix);
+    Py_ssize_t nix = keys->dk_nentries;
+
+    if (DK_IS_UNICODE(keys)) {
+        PyDictUnicodeEntry *ep = &DK_UNICODE_ENTRIES(keys)[ix];
+        DK_UNICODE_ENTRIES(keys)[nix] = *ep;
+        ep->me_key = NULL;
+        ep->me_value = NULL;
+    }
+    else {
+        PyDictKeyEntry *ep = &DK_ENTRIES(keys)[ix];
+        DK_ENTRIES(keys)[nix] = *ep;
+
+        ep->me_key = NULL;
+        ep->me_value = NULL;
+        ep->me_hash = 0;
+    }
+    dictkeys_set_index(keys, hashpos, nix);
+    // We are using up space in the entries, but not in the indices.
+    // So we only decrease dk_usable here, because insertdict (and other
+    // places) don't check dk_nentries directly.
+    keys->dk_usable--;
+    keys->dk_nentries++;
+
+    assert(value != NULL);
+
+    return value;
 }
 
 PyObject *
@@ -3028,6 +3175,7 @@ PyDict_Copy(PyObject *o)
 
            (2) 'mp' is not a split-dict; and
 
+           // Huh?  del operation never resizes dict, or does it?
            (3) if 'mp' is non-compact ('del' operation does not resize dicts),
                do fast-copy only if it has at most 1/3 non-used keys.
 

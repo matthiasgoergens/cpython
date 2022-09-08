@@ -170,6 +170,7 @@ st_14linear2ulaw(int16_t pcm_val)       /* 2's complement (14-bit range) */
     if (seg >= 8)           /* out of range, return maximum value. */
         return (unsigned char) (0x7F ^ mask);
     else {
+        assert(0 <= seg);
         uval = (unsigned char) (seg << 4) | ((pcm_val >> (seg + 1)) & 0xF);
         return (uval ^ mask);
     }
@@ -346,11 +347,16 @@ static const int stepsizeTable[89] = {
             SETINT32((cp), (i), (val));         \
     } while(0)
 
+static inline int lshift_safe(int x, Py_ssize_t b) {
+    assert(0 <= x);
+    assert(x <= (INT_MAX >> b));
+    return x << b;
+}
 
 #define GETSAMPLE32(size, cp, i)  (                     \
-        (size == 1) ? (int)GETINT8((cp), (i)) << 24 :   \
-        (size == 2) ? (int)GETINT16((cp), (i)) << 16 :  \
-        (size == 3) ? (int)GETINT24((cp), (i)) << 8 :   \
+        (size == 1) ? lshift_safe((int)GETINT8((cp), (i)), 24) :   \
+        (size == 2) ? lshift_safe((int)GETINT16((cp), (i)), 16) :  \
+        (size == 3) ? lshift_safe((int)GETINT24((cp), (i)), 8) :   \
                       (int)GETINT32((cp), (i)))
 
 #define SETSAMPLE32(size, cp, i, val)  do {     \
@@ -1558,6 +1564,7 @@ audioop_ulaw2lin_impl(PyObject *module, Py_buffer *fragment, int width)
 
     cp = fragment->buf;
     for (i = 0; i < fragment->len*width; i += width) {
+        assert(0 <= st_ulaw2linear16(*cp));
         int val = st_ulaw2linear16(*cp++) << 16;
         SETSAMPLE32(width, ncp, i, val);
     }
@@ -1632,6 +1639,7 @@ audioop_alaw2lin_impl(PyObject *module, Py_buffer *fragment, int width)
     cp = fragment->buf;
 
     for (i = 0; i < fragment->len*width; i += width) {
+        assert(0 <= st_alaw2linear16(*cp));
         val = st_alaw2linear16(*cp++) << 16;
         SETSAMPLE32(width, ncp, i, val);
     }
@@ -1757,6 +1765,7 @@ audioop_lin2adpcm_impl(PyObject *module, Py_buffer *fragment, int width,
 
         /* Step 6 - Output value */
         if ( bufferstep ) {
+            assert (0 <= delta);
             outputbuffer = (delta << 4) & 0xf0;
         } else {
             *ncp++ = (delta & 0x0f) | outputbuffer;
@@ -1875,6 +1884,7 @@ audioop_adpcm2lin_impl(PyObject *module, Py_buffer *fragment, int width,
         step = stepsizeTable[index];
 
         /* Step 6 - Output value */
+        assert(0 <= valpred);
         SETSAMPLE32(width, ncp, i, valpred << 16);
     }
 

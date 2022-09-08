@@ -419,11 +419,13 @@ get_ulonglong(PyObject *v, unsigned long long *p)
 */
 #define GET_BITFIELD(v, size)                                           \
     if (NUM_BITS(size)) {                                               \
+        assert(0 <= v);                                                 \
         v <<= (sizeof(v)*8 - LOW_BIT(size) - NUM_BITS(size));           \
         v >>= (sizeof(v)*8 - NUM_BITS(size));                           \
     }
 
-/* This macro RETURNS the first parameter with the bit field CHANGED. */
+/* This macro RETURNS the second parameter (x) with the bit field CHANGED. */
+// TODO: this one has UB, but I can't quite figure out the assert.
 #define SET(type, x, v, size)                                                 \
     (NUM_BITS(size) ?                                                   \
      ( ( (type)x & ~(BIT_MASK(type, size) << LOW_BIT(size)) ) | ( ((type)v & BIT_MASK(type, size)) << LOW_BIT(size) ) ) \
@@ -769,6 +771,15 @@ l_set(void *ptr, PyObject *value, Py_ssize_t size)
     if (get_long(value, &val) < 0)
         return NULL;
     memcpy(&x, ptr, sizeof(x));
+    assert(
+        (NUM_BITS(size) - 1) < 63
+        );
+    assert(
+        NUM_BITS(size) ? (0 <= BIT_MASK(long, size)) : true
+    );
+
+    // TODO: figure out the proper assert here.
+    // Modules/_ctypes/cfield.c:789:9: runtime error: left shift of 1 by 63 places cannot be represented in type 'long'
     x = SET(long, x, val, size);
     memcpy(ptr, &x, sizeof(x));
     _RET(value);

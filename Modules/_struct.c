@@ -812,11 +812,16 @@ bu_int(_structmodulestate *state, const char *p, const formatdef *f)
     Py_ssize_t i = f->size;
     const unsigned char *bytes = (const unsigned char *)p;
     do {
+        assert(0 <= x);
+        assert(x <= (LLONG_MAX>>8));
         x = (x<<8) | *bytes++;
     } while (--i > 0);
     /* Extend the sign bit. */
-    if (SIZEOF_LONG > f->size)
+    if (SIZEOF_LONG > f->size) {
+        assert(8 * f->size - 1 < 8 * SIZEOF_LONG_LONG - 1);
+        assert(0 <= 8 * f->size - 1);
         x |= -(x & (1L << ((8 * f->size) - 1)));
+    }
     return PyLong_FromLong(x);
 }
 
@@ -839,11 +844,16 @@ bu_longlong(_structmodulestate *state, const char *p, const formatdef *f)
     Py_ssize_t i = f->size;
     const unsigned char *bytes = (const unsigned char *)p;
     do {
+        assert(x >= 0);
+        assert(x <= (LLONG_MAX>>8));
         x = (x<<8) | *bytes++;
     } while (--i > 0);
     /* Extend the sign bit. */
-    if (SIZEOF_LONG_LONG > f->size)
+    if (SIZEOF_LONG_LONG > f->size) {
+        assert(8 * f->size - 1 < 8 * SIZEOF_LONG_LONG - 1);
+        assert(0 <= 8 * f->size - 1);
         x |= -(x & ((long long)1 << ((8 * f->size) - 1)));
+    }
     return PyLong_FromLongLong(x);
 }
 
@@ -1033,11 +1043,16 @@ lu_int(_structmodulestate *state, const char *p, const formatdef *f)
     Py_ssize_t i = f->size;
     const unsigned char *bytes = (const unsigned char *)p;
     do {
+        assert(0 <= x);
+        assert(x <= (LONG_MAX>>8));
         x = (x<<8) | bytes[--i];
     } while (i > 0);
     /* Extend the sign bit. */
-    if (SIZEOF_LONG > f->size)
+    if (SIZEOF_LONG > f->size) {
+        assert(8 * f->size - 1 < 8 * SIZEOF_LONG - 1);
+        assert(0 <= 8 * f->size - 1);
         x |= -(x & (1L << ((8 * f->size) - 1)));
+    }
     return PyLong_FromLong(x);
 }
 
@@ -1060,11 +1075,16 @@ lu_longlong(_structmodulestate *state, const char *p, const formatdef *f)
     Py_ssize_t i = f->size;
     const unsigned char *bytes = (const unsigned char *)p;
     do {
+        assert(0 <= x);
+        assert(x <= (LLONG_MAX>>8));
         x = (x<<8) | bytes[--i];
     } while (i > 0);
     /* Extend the sign bit. */
-    if (SIZEOF_LONG_LONG > f->size)
+    if (SIZEOF_LONG_LONG > f->size) {
+        assert(8 * f->size - 1 < 8 * SIZEOF_LONG_LONG - 1);
+        assert(0 <= 8 * f->size - 1);
         x |= -(x & ((long long)1 << ((8 * f->size) - 1)));
+    }
     return PyLong_FromLongLong(x);
 }
 

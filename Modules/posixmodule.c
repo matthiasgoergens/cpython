@@ -2475,6 +2475,11 @@ posix_do_stat(PyObject *module, const char *function_name, path_t *path,
               int dir_fd, int follow_symlinks)
 {
     STRUCT_STAT st;
+    #if defined(__has_feature)
+    #  if __has_feature(memory_sanitizer)
+    memset(&st, 0, sizeof(STRUCT_STAT));
+    #  endif
+    #endif
     int result;
 
 #ifdef HAVE_FSTATAT

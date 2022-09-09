@@ -5645,11 +5645,11 @@ AS_VAR_IF([ac_cv_x87_double_rounding], [yes], [
 LIBS_SAVE=$LIBS
 LIBS="$LIBS $LIBM"
 
-AC_CHECK_FUNCS(
-  [acosh asinh atanh erf erfc expm1 log1p log2],
-  [],
-  [AC_MSG_ERROR([Python requires C99 compatible libm])]
-)
+# AC_CHECK_FUNCS(
+#   [acosh asinh atanh erf erfc expm1 log1p log2],
+#   [],
+#   [AC_MSG_ERROR([Python requires C99 compatible libm])]
+# )
 LIBS=$LIBS_SAVE
 
 dnl For multiprocessing module, check that sem_open

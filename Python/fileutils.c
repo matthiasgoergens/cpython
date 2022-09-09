@@ -1166,6 +1166,11 @@ _Py_fstat_noraise(int fd, struct _Py_stat_struct *status)
     status->st_ino = (((uint64_t)info.nFileIndexHigh) << 32) + info.nFileIndexLow;
     return 0;
 #else
+    #if defined(__has_feature)
+    #  if __has_feature(memory_sanitizer)
+    memset(status, 0, sizeof(struct _Py_stat_struct));
+    #  endif
+    #endif
     return fstat(fd, status);
 #endif
 }

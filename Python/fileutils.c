@@ -1230,6 +1230,11 @@ _Py_wstat(const wchar_t* path, struct stat *buf)
         errno = EINVAL;
         return -1;
     }
+    #if defined(__has_feature)
+    #  if __has_feature(memory_sanitizer)
+    memset(buf, 0, sizeof(struct stat));
+    #  endif
+    #endif
     err = stat(fname, buf);
     PyMem_RawFree(fname);
 #endif

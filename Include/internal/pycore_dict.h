@@ -105,6 +105,11 @@ struct _dictkeysobject {
     /* Number of used entries in dk_entries. */
     Py_ssize_t dk_nentries;
 
+    // Prototype to avoid the finger.
+    // TODO: set to 0 on resize and when creating the _dictkeysobject
+    // DONE: set when creating.
+    Py_ssize_t skip_empty;
+
     /* Actual hash table of dk_size entries. It holds indices in dk_entries,
        or DKIX_EMPTY(-1) or DKIX_DUMMY(-2).
 

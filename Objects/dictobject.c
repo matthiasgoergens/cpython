@@ -458,7 +458,7 @@ static PyDictKeysObject empty_keys_struct = {
         1, /* dk_version */
         0, /* dk_usable (immutable) */
         0, /* dk_nentries */
-        // 0, /* skip_empty */
+        0, /* skip_empty */
         {DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY,
          DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY, DKIX_EMPTY}, /* dk_indices */
 };
@@ -647,7 +647,7 @@ new_keys_object(uint8_t log2_size, bool unicode)
     dk->dk_log2_index_bytes = log2_bytes;
     dk->dk_kind = unicode ? DICT_KEYS_UNICODE : DICT_KEYS_GENERAL;
     dk->dk_nentries = 0;
-    // dk->skip_empty = 0;
+    dk->skip_empty = 0;
     dk->dk_usable = usable;
     dk->dk_version = 0;
     memset(&dk->dk_indices[0], 0xff, ((size_t)1 << log2_bytes));
@@ -1503,6 +1503,7 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
             build_indices_generic(mp->ma_keys, entries, numentries);
         }
 
+        mp->ma_keys->skip_empty = 0;
         mp->ma_keys->dk_nentries = numentries;
         mp->ma_keys->dk_usable -= numentries;
         // Table must be large enough.
@@ -1653,7 +1654,7 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
 
     mp->ma_keys->dk_usable -= numentries;
     mp->ma_keys->dk_nentries = numentries;
-    // mp->ma_keys->skip_empty = 0;
+    mp->ma_keys->skip_empty = 0;
     ASSERT_CONSISTENT(mp);
     return 0;
     }
@@ -2236,17 +2237,17 @@ _PyDict_Next(PyObject *op, Py_ssize_t *ppos, PyObject **pkey,
     return 1;
 }
 
-// int
-// _PyDict_DelOldest(PyDictObject *mp)
-// {
-//     PyObject *key, *value;
-//     Py_hash_t hash;
+int
+_PyDict_DelOldest(PyDictObject *mp)
+{
+    PyObject *key, *value;
+    Py_hash_t hash;
 
-//     if(!_PyDict_Next((PyObject *)mp, &mp->skip_empty, &key, &value, &hash)) {
-//         return -1;
-//     }
-//     return delitem_common(mp, hash, mp->skip_empty-1, value);
-// }
+    if(!_PyDict_Next((PyObject *)mp, &mp->ma_keys->skip_empty, &key, &value, &hash)) {
+        return -1;
+    }
+    return delitem_common(mp, hash, mp->ma_keys->skip_empty-1, value);
+}
 
 /*
  * Iterate over a dict.  Use like so:

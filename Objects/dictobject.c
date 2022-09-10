@@ -1448,27 +1448,37 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
         if (DK_IS_UNICODE(mp->ma_keys)) {
             PyDictUnicodeEntry *entries = DK_UNICODE_ENTRIES(mp->ma_keys);
 
-            Py_ssize_t src = 0;
-            
-            // Skip copying until we hit the first gap.
-            while(entries[src].me_value != NULL) {
-                assert(src < mp->ma_keys->dk_usable);
-                assert(src + numentries < mp->ma_keys->dk_usable);
-                assert(src < numentries);
-                src++;
-            }
-            Py_ssize_t dst = src;
-
-            // If gaps are far apart, we could use memmove instead?
-            while(dst < numentries) {
-                while (entries[src].me_value == NULL) { // skip over gaps.
-                    src++;
-                    assert(src < mp->ma_keys->dk_usable);
+            assert(mp->ma_keys->skip_empty >= 0);
+            if(mp->ma_keys->skip_empty + numentries == mp->ma_keys->dk_nentries) {
+                memmove(entries, entries+mp->ma_keys->skip_empty, numentries*sizeof(PyDictUnicodeEntry));
+            } else {
+                Py_ssize_t src = 0;
+                Py_ssize_t dst;
+                if(mp->ma_keys->skip_empty > 0) {
+                    dst = 0;
+                    src = mp->ma_keys->skip_empty;
+                } else {
+                    // Skip copying until we hit the first gap.
+                    while(entries[src].me_value != NULL) {
+                        assert(src < mp->ma_keys->dk_usable);
+                        assert(src + numentries < mp->ma_keys->dk_usable);
+                        assert(src < numentries);
+                        src++;
+                    }
+                    dst = src;
                 }
-                assert(dst <= src);
-                entries[dst++] = entries[src++];
+                // If gaps are far apart, we could use memmove instead?
+                while(dst < numentries) {
+                    while (entries[src].me_value == NULL) { // skip over gaps.
+                        src++;
+                        assert(src < mp->ma_keys->dk_usable);
+                    }
+                    assert(dst <= src);
+                    entries[dst++] = entries[src++];
+                }
+                assert(dst == numentries);
             }
-            memset(entries + dst, 0, sizeof(PyDictUnicodeEntry) * (mp->ma_keys->dk_usable - dst));
+            memset(entries + numentries, 0, sizeof(PyDictUnicodeEntry) * (mp->ma_keys->dk_usable - numentries));
 
             build_indices_unicode(mp->ma_keys, entries, numentries);
         } else {
@@ -1477,28 +1487,38 @@ dictresize(PyDictObject *mp, uint8_t log2_newsize, int unicode)
             // We can optionally check for
             // mp->ma_keys->dk_nentries == numentries
             // and mp->ma_keys->dk_nentries - skip_empty == numentries 
-
-            Py_ssize_t src = 0;
-            
-            // Skip copying until we hit the first gap.
-            while(entries[src].me_value != NULL) {
-                assert(src < mp->ma_keys->dk_usable);
-                assert(src + numentries < mp->ma_keys->dk_usable);
-                assert(src < numentries);
-                src++;
-            }
-            Py_ssize_t dst = src;
-
-            // If gaps are far apart, we could use memmove instead?
-            while(dst < numentries) {
-                while (entries[src].me_value == NULL) { // skip over gaps.
-                    assert(src < mp->ma_keys->dk_usable);
-                    src++;
+            assert(mp->ma_keys->skip_empty >= 0);
+            if(mp->ma_keys->skip_empty + numentries == mp->ma_keys->dk_nentries) {
+                memmove(entries, entries+mp->ma_keys->skip_empty, numentries*sizeof(PyDictKeyEntry));
+            } else {
+                Py_ssize_t src = 0;
+                Py_ssize_t dst;
+                if(mp->ma_keys->skip_empty > 0) {
+                    dst = 0;
+                    src = mp->ma_keys->skip_empty;
+                } else {
+                    // Skip copying until we hit the first gap.
+                    while(entries[src].me_value != NULL) {
+                        assert(src < mp->ma_keys->dk_usable);
+                        assert(src + numentries < mp->ma_keys->dk_usable);
+                        assert(src < numentries);
+                        src++;
+                    }
+                    dst = src;
                 }
-                assert(dst <= src);
-                entries[dst++] = entries[src++];
+                // If gaps are far apart, we could use memmove instead?
+                while(dst < numentries) {
+                    while (entries[src].me_value == NULL) { // skip over gaps.
+                        src++;
+                        assert(src < mp->ma_keys->dk_usable);
+                    }
+                    assert(dst <= src);
+                    entries[dst++] = entries[src++];
+                }
+                assert(dst == numentries);
             }
-            memset(entries + dst, 0, sizeof(PyDictKeyEntry) * (mp->ma_keys->dk_usable - dst));
+
+            memset(entries + numentries, 0, sizeof(PyDictKeyEntry) * (mp->ma_keys->dk_usable - numentries));
 
             build_indices_generic(mp->ma_keys, entries, numentries);
         }

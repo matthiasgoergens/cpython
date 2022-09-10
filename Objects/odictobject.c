@@ -591,7 +591,7 @@ _odict_get_index(PyODictObject *od, PyObject *key, Py_hash_t hash)
     keys = ((PyDictObject *)od)->ma_keys;
 
     /* Ensure od_fast_nodes and dk_entries are in sync. */
-    if (od->od_resize_sentinel != keys ||
+    if (true || od->od_resize_sentinel != keys ||
         od->od_fast_nodes_size != (ONE << (keys->dk_log2_size))) {
         int resize_res = _odict_resize(od);
         if (resize_res < 0)

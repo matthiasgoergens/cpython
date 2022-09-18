@@ -2105,7 +2105,7 @@ AC_ARG_WITH(strict-overflow,
   AS_HELP_STRING(
     [--with-strict-overflow],
     [choose between -fstrict-overflow or -fno-strict-overflow (default is no for backwards compatibility)]),,
-  with_fstrict_overflow=no)
+  with_strict_overflow=no)
 AC_MSG_RESULT($with_strict_overflow)
 
 # Check if CC supports -Og optimization level
@@ -2264,10 +2264,9 @@ AC_DEFUN([PY_CHECK_CC_WARNING], [
   AS_VAR_POPDEF([py_var])
 ])
 
+BASECFLAGS="$BASECFLAGS $STRICT_OVERFLOW_CFLAGS"
+
 # tweak BASECFLAGS based on compiler and platform
-AS_VAR_IF([with_strict_overflow], [yes],
-          [BASECFLAGS="$BASECFLAGS $STRICT_OVERFLOW_CFLAGS"],
-          [BASECFLAGS="$BASECFLAGS $NO_STRICT_OVERFLOW_CFLAGS"])
 
 case $GCC in
 yes)

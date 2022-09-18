@@ -8473,7 +8473,7 @@ $as_echo_n "checking for --with-strict-overflow... " >&6; }
 if test "${with_strict_overflow+set}" = set; then :
   withval=$with_strict_overflow;
 else
-  with_fstrict_overflow=no
+  with_strict_overflow=no
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_strict_overflow" >&5
@@ -8675,12 +8675,9 @@ UNIVERSAL_ARCH_FLAGS=
 
 
 
+BASECFLAGS="$BASECFLAGS $STRICT_OVERFLOW_CFLAGS"
+
 # tweak BASECFLAGS based on compiler and platform
-if test "x$with_strict_overflow" = xyes; then :
-  BASECFLAGS="$BASECFLAGS $STRICT_OVERFLOW_CFLAGS"
-else
-  BASECFLAGS="$BASECFLAGS $NO_STRICT_OVERFLOW_CFLAGS"
-fi
 
 case $GCC in
 yes)

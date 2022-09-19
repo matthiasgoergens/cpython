@@ -963,7 +963,7 @@ error:
         self->rowcount = -1L;
         return NULL;
     }
-    if (self->statement && !sqlite3_stmt_busy(self->statement->st)) {
+    if (self->statement != NULL && !sqlite3_stmt_busy(self->statement->st)) {
         Py_CLEAR(self->statement);
     }
     return Py_NewRef((PyObject *)self);

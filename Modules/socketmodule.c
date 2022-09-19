@@ -2710,12 +2710,14 @@ static int
 cmsg_min_space(struct msghdr *msg, struct cmsghdr *cmsgh, size_t space)
 {
     size_t cmsg_offset;
-    static const size_t cmsg_len_end = (offsetof(struct cmsghdr, cmsg_len) +
-                                        sizeof(cmsgh->cmsg_len));
 
     /* Note that POSIX allows msg_controllen to be of signed type. */
     if (cmsgh == NULL || msg->msg_control == NULL)
         return 0;
+
+    static const size_t cmsg_len_end = (offsetof(struct cmsghdr, cmsg_len) +
+                                        sizeof(cmsgh->cmsg_len));
+
     /* Note that POSIX allows msg_controllen to be of a signed type. This is
        annoying under OS X as it's unsigned there and so it triggers a
        tautological comparison warning under Clang when compared against 0.

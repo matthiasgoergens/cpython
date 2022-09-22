@@ -2112,13 +2112,13 @@ then
     yes)
         # For gcc 4.x we need to use -fwrapv so lets check if its supported
         if "$CC" -v --help 2>/dev/null |grep -- -fwrapv > /dev/null; then
-           WRAP="-fwrapv"
+           WRAP="-fstrict-overflow"
         fi
 
         if test -n "${cc_is_clang}"
         then
             # Clang also needs -fwrapv
-            WRAP="-fwrapv"
+            WRAP="-fstrict-overflow"
             # bpo-30104: disable strict aliasing to compile correctly dtoa.c,
             # see Makefile.pre.in for more information
             CFLAGS_ALIASING="-fno-strict-aliasing"

@@ -2269,7 +2269,6 @@ AC_DEFUN([PY_CHECK_CC_WARNING], [
 BASECFLAGS="$BASECFLAGS $STRICT_OVERFLOW_CFLAGS"
 
 # tweak BASECFLAGS based on compiler and platform
-
 case $GCC in
 yes)
     CFLAGS_NODIST="$CFLAGS_NODIST -std=c11"
@@ -7256,7 +7255,7 @@ PY_STDLIB_MOD_SIMPLE([_posixsubprocess])
 PY_STDLIB_MOD_SIMPLE([_queue])
 PY_STDLIB_MOD_SIMPLE([_random])
 PY_STDLIB_MOD_SIMPLE([select])
-PY_STDLIB_MOD_SIMPLE([_struct], [$NO_STRICT_OVERFLOW_CFLAGS])
+PY_STDLIB_MOD_SIMPLE([_struct])
 PY_STDLIB_MOD_SIMPLE([_typing])
 PY_STDLIB_MOD_SIMPLE([_xxsubinterpreters])
 PY_STDLIB_MOD_SIMPLE([_zoneinfo])
@@ -7270,7 +7269,7 @@ PY_STDLIB_MOD([_posixshmem],
   [$POSIXSHMEM_CFLAGS], [$POSIXSHMEM_LIBS])
 
 dnl needs libm
-PY_STDLIB_MOD_SIMPLE([audioop], [$NO_STRICT_OVERFLOW_CFLAGS], [$LIBM])
+PY_STDLIB_MOD_SIMPLE([audioop], [], [$LIBM])
 PY_STDLIB_MOD_SIMPLE([_statistics], [], [$LIBM])
 PY_STDLIB_MOD_SIMPLE([cmath], [], [$LIBM])
 PY_STDLIB_MOD_SIMPLE([math], [], [$LIBM])
@@ -7331,7 +7330,7 @@ PY_STDLIB_MOD([_crypt],
   [$LIBCRYPT_CFLAGS], [$LIBCRYPT_LIBS])
 PY_STDLIB_MOD([_ctypes],
   [], [test "$have_libffi" = yes],
-  [$NO_STRICT_OVERFLOW_CFLAGS $LIBFFI_CFLAGS], [$LIBFFI_LIBS])
+  [$LIBFFI_CFLAGS], [$LIBFFI_LIBS])
 PY_STDLIB_MOD([_curses],
   [], [test "$have_curses" != "no"],
   [$CURSES_CFLAGS], [$CURSES_LIBS]

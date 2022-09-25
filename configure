@@ -1830,8 +1830,7 @@ Optional Packages:
                           enable Link-Time-Optimization in any build (default
                           is no)
   --with-strict-overflow  choose between -fstrict-overflow or
-                          -fno-strict-overflow (default is no for backwards
-                          compatibility)
+                          -fno-strict-overflow (default is no)
   --with-dsymutil         link debug information into final executable with
                           dsymutil in macOS (default is no)
   --with-address-sanitizer
@@ -8460,9 +8459,6 @@ case $CC in
         fi
 esac
 
-# Historically, some of our code assumed that signed integer overflow
-# is defined behaviour via twos-complement.  Prepare some flags so that
-# we can mark the modules that still do so.
 save_CFLAGS=$CFLAGS
 CFLAGS="-fstrict-overflow -fno-strict-overflow"
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if $CC supports -fstrict-overflow and -fno-strict-overflow" >&5
@@ -27883,7 +27879,7 @@ fi
   as_fn_append MODULE_BLOCK "MODULE__TESTCAPI_STATE=$py_cv_module__testcapi$as_nl"
   if test "x$py_cv_module__testcapi" = xyes; then :
 
-    as_fn_append MODULE_BLOCK "MODULE__TESTCAPI_CFLAGS=$NO_STRICT_OVERFLOW_CFLAGS$as_nl"
+
 
 
 fi

@@ -2082,9 +2082,9 @@ case $CC in
         fi
 esac
 
-# Historically, some of our code assumed that signed integer overflow
-# is defined behaviour via twos-complement.  Prepare some flags so that
-# we can mark the modules that still do so.
+dnl Historically, some of our code assumed that signed integer overflow
+dnl is defined behaviour via twos-complement.  Prepare some flags so that
+dnl we can mark the modules that still do so.
 _SAVE_VAR([CFLAGS])
 CFLAGS="-fstrict-overflow -fno-strict-overflow"
 AC_CACHE_CHECK([if $CC supports -fstrict-overflow and -fno-strict-overflow],
@@ -2106,7 +2106,7 @@ AC_MSG_CHECKING(for --with-strict-overflow)
 AC_ARG_WITH(strict-overflow,
   AS_HELP_STRING(
     [--with-strict-overflow],
-    [choose between -fstrict-overflow or -fno-strict-overflow (default is no for backwards compatibility)]),,
+    [choose between -fstrict-overflow or -fno-strict-overflow (default is no)]),,
   with_strict_overflow=no)
 AC_MSG_RESULT($with_strict_overflow)
 
@@ -7381,7 +7381,7 @@ PY_STDLIB_MOD([_hashlib], [], [test "$ac_cv_working_openssl_hashlib" = yes],
   [$OPENSSL_INCLUDES], [$OPENSSL_LDFLAGS $OPENSSL_LDFLAGS_RPATH $LIBCRYPTO_LIBS])
 
 dnl test modules
-PY_STDLIB_MOD([_testcapi], [test "$TEST_MODULES" = yes], [], [$NO_STRICT_OVERFLOW_CFLAGS])
+PY_STDLIB_MOD([_testcapi], [test "$TEST_MODULES" = yes])
 PY_STDLIB_MOD([_testinternalcapi], [test "$TEST_MODULES" = yes])
 PY_STDLIB_MOD([_testbuffer], [test "$TEST_MODULES" = yes])
 PY_STDLIB_MOD([_testimportmultiple], [test "$TEST_MODULES" = yes], [test "$ac_cv_func_dlopen" = yes])

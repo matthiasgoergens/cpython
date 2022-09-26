@@ -2093,7 +2093,7 @@ AC_CACHE_CHECK([if $CC supports -fstrict-overflow and -fno-strict-overflow],
     [
       AC_LANG_PROGRAM([[]], [[]])
     ],[
-      STRICT_OVERFLOW_CFLAGS="-fstrict-overflow"
+      STRICT_OVERFLOW_CFLAGS="-fwrapv"
       NO_STRICT_OVERFLOW_CFLAGS="-fno-strict-overflow"
     ],[
       STRICT_OVERFLOW_CFLAGS=""

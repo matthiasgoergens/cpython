@@ -56,6 +56,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
                 Py_ssize_t *psize, Py_ssize_t *poffset, Py_ssize_t *palign,
                 int pack, int big_endian)
 {
+    printf("\nPyCField_FromDesc bitsize: %i\tindex: %li\tpbitsof: %i\tpfield_size: %li\n", bitsize, index, *pbitofs, *pfield_size);
     CFieldObject *self;
     PyObject *proto;
     Py_ssize_t size, align;
@@ -78,6 +79,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         Py_DECREF(self);
         return NULL;
     }
+    printf("dict->size: %zx align: %zx\n", dict->size, dict->align);
     if (bitsize /* this is a bitfield request */
         && *pfield_size /* we have a bitfield open */
 #ifdef MS_WIN32
@@ -88,23 +90,24 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         && dict->size * 8 <= *pfield_size
 #endif
         && (*pbitofs + bitsize) <= *pfield_size) {
-        /* continue bit field */
+        printf("/* continue bit field */\n");
         fieldtype = CONT_BITFIELD;
 #ifndef MS_WIN32
     } else if (bitsize /* this is a bitfield request */
         && *pfield_size /* we have a bitfield open */
         && dict->size * 8 >= *pfield_size
         && (*pbitofs + bitsize) <= dict->size * 8) {
-        /* expand bit field */
+        printf("/* expand bit field */\n");
         fieldtype = EXPAND_BITFIELD;
 #endif
     } else if (bitsize) {
-        /* start new bitfield */
+        printf("/* start new bitfield */\t!\n");
         fieldtype = NEW_BITFIELD;
         *pbitofs = 0;
+        // TODO(Matthias): I suspect we can't just set *pfield_size to dict->size * 8.  What about shorts and long longs?
         *pfield_size = dict->size * 8;
     } else {
-        /* not a bit field */
+        printf("/* not a bit field */\n");
         fieldtype = NO_BITFIELD;
         *pbitofs = 0;
         *pfield_size = 0;
@@ -607,11 +610,12 @@ H_set_sw(void *ptr, PyObject *value, Py_ssize_t size)
 static PyObject *
 H_get(void *ptr, Py_ssize_t size)
 {
-    unsigned long long val;
+    // unsigned long long val;
+    unsigned short val;
     memcpy(&val, ptr, sizeof(val));
     // printf("size: %lx\n", size);
-    if(size == 0)
-        size = 8 * sizeof(unsigned short);
+    // if(size == 0)
+    //     size = 8 * sizeof(unsigned short);
     GET_BITFIELD(val, size);
     return PyLong_FromLong(val);
 }

@@ -607,8 +607,11 @@ H_set_sw(void *ptr, PyObject *value, Py_ssize_t size)
 static PyObject *
 H_get(void *ptr, Py_ssize_t size)
 {
-    unsigned short val;
+    unsigned long long val;
     memcpy(&val, ptr, sizeof(val));
+    // printf("size: %lx\n", size);
+    if(size == 0)
+        size = 8 * sizeof(unsigned short);
     GET_BITFIELD(val, size);
     return PyLong_FromLong(val);
 }

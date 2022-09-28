@@ -408,8 +408,14 @@ get_ulonglong(PyObject *v, unsigned long long *p)
  */
 
 /* how to decode the size field, for integer get/set functions */
-#define LOW_BIT(x)  ((x) & 0xFFFF)
-#define NUM_BITS(x) ((x) >> 16)
+static inline
+Py_ssize_t LOW_BIT(Py_ssize_t x) {
+    return x & 0xFFFF;
+}
+static inline
+Py_ssize_t NUM_BITS(Py_ssize_t x) {
+    return x >> 16;
+}
 
 /* Doesn't work if NUM_BITS(size) == 0, but it never happens in SET() call. */
 #define BIT_MASK(type, size) \

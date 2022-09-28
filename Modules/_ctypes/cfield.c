@@ -427,8 +427,8 @@ Py_ssize_t NUM_BITS(Py_ssize_t x) {
 */
 #define GET_BITFIELD(v, size)                                           \
     if (NUM_BITS(size)) {                                               \
-        v *= 1ULL << (sizeof(v)*8 - LOW_BIT(size) - NUM_BITS(size));    \
-        v >>= (sizeof(v)*8 - NUM_BITS(size));                           \
+        v *= 1ULL << (Py_ssize_t)(sizeof(v)*8 - LOW_BIT(size) - NUM_BITS(size));    \
+        v >>= (Py_ssize_t)(sizeof(v)*8 - NUM_BITS(size));                           \
     }
 
 /* This macro RETURNS the first parameter with the bit field CHANGED. */

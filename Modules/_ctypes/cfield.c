@@ -185,20 +185,24 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
 
         *pfield_size = dict->size * 8;
 
-        if (big_endian)
+        if (big_endian) {
             self->size = (bitsize << 16) + *pfield_size - *pbitofs - bitsize;
-        else
+        } else {
             self->size = (bitsize << 16) + *pbitofs;
+        }
 
         self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
         *pbitofs += bitsize;
         break;
 
     case CONT_BITFIELD:
-        if (big_endian)
+        if (big_endian) {
+            printf("big endian\n");
             self->size = (bitsize << 16) + *pfield_size - *pbitofs - bitsize;
-        else
+        } else {
+            printf("little endian; bitsize: %i bitsof: %i\n", bitsize, *pbitofs);
             self->size = (bitsize << 16) + *pbitofs;
+        }
 
         self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
         *pbitofs += bitsize;
@@ -727,6 +731,8 @@ bool_get(void *ptr, Py_ssize_t size)
     return PyBool_FromLong((long)*(_Bool *)ptr);
 }
 
+// This is already wrong.  At least it conflicts with PyCField_FromDesc for 
+// bitfields.
 static PyObject *
 I_set(void *ptr, PyObject *value, Py_ssize_t size)
 {
@@ -734,9 +740,14 @@ I_set(void *ptr, PyObject *value, Py_ssize_t size)
     unsigned int x;
     if (get_ulong(value, &val) < 0)
         return  NULL;
+    printf("I_set: val %lx sizeof %lx\n", val, sizeof(val));
+    printf("I_set %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
     memcpy(&x, ptr, sizeof(x));
+    printf("x: %x\n", x);
     x = SET(unsigned int, x, val, size);
+    printf("x SET: %x\n", x);
     memcpy(ptr, &x, sizeof(x));
+    printf("\n");
     _RET(value);
 }
 
@@ -760,8 +771,19 @@ I_set_sw(void *ptr, PyObject *value, Py_ssize_t size)
 static PyObject *
 I_get(void *ptr, Py_ssize_t size)
 {
+    {
+        unsigned long long int val;
+        memcpy(&val, ((unsigned int*)ptr) - 1, sizeof(val));
+        printf("I_get val: %llx\n", val);
+        printf("I_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
+        GET_BITFIELD(val, size);
+        printf("val: %llx\n", val);
+    }
+
     unsigned int val;
     memcpy(&val, ptr, sizeof(val));
+    printf("I_get val: %x\n", val);
+    printf("I_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
     GET_BITFIELD(val, size);
     return PyLong_FromUnsignedLong(val);
 }

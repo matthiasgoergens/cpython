@@ -255,6 +255,44 @@ class BitFieldTest(unittest.TestCase):
         a.B = 1
         self.assertEqual(1, a.B)
 
+    @unittest.skipIf(sys.platform == 'win32', "Doesn't fail on Windows")
+    @unittest.expectedFailure  # gh-97588
+    def test_mixed_7(self):
+        class X(Structure):
+            _fields_ = [
+                ("A", c_uint),
+                ('B', c_uint, 20),
+                ('C', c_ulonglong, 24)]
+        self.assertEqual(16, sizeof(X))
+
+    @unittest.skipIf(sys.platform == 'win32', "Doesn't fail on Windows")
+    @unittest.expectedFailure  # gh-97588
+    def test_mixed_8(self):
+        class Foo(Structure):
+            _fields_ = [
+                ("A", c_uint),
+                ("B", c_uint, 32),
+                ("C", c_ulonglong, 1),
+                ]
+
+        class Bar(Structure):
+            _fields_ = [
+                ("A", c_uint),
+                ("B", c_uint),
+                ("C", c_ulonglong, 1),
+                ]
+        self.assertEqual(sizeof(Foo), sizeof(Bar))
+
+    @unittest.skipIf(sys.platform == 'win32', "Doesn't fail on Windows")
+    @unittest.expectedFailure  # gh-97588
+    def test_mixed_9(self):
+        class X(Structure):
+            _fields_ = [
+                ("A", c_uint8),
+                ("B", c_uint, 1),
+                ]
+        self.assertEqual(4, sizeof(X))
+
     def test_anon_bitfields(self):
         # anonymous bit-fields gave a strange error message
         class X(Structure):

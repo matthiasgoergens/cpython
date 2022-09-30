@@ -54,6 +54,11 @@ int round_down(int numToRound, int multiple)
     return (numToRound / multiple) * multiple;
 }
 
+static inline
+Py_ssize_t LOW_BIT(Py_ssize_t x);
+static inline
+Py_ssize_t NUM_BITS(Py_ssize_t x);
+
 /*
  * Expects the size, index and offset for the current field in *psize and
  * *poffset, stores the total size so far in *psize, the offset for the next
@@ -99,15 +104,29 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     //
     // (*pbitofs + bitsize) <= *pfield_size;
     // Detect a straddle.
-    if(!big_endian) {
-        if(round_down(*pbitofs, 8 * dict->align) < round_down(*pbitofs + bitsize - 1, 8 * dict->align)) {
+    // if(!pack) {
+    // TODO: handle big endian.  Do we need to go backwards?
+    // Or will this just work?  This might depend on the alignment of the very start of the field?
+    // Just treat everything as gcc-packed for now.
+    // Hmm, actually, we cannot, because our downstream stuff doesn't support straddling boundaries!
+#ifndef MS_WIN32
+    if (bitsize /* this is a bitfield request */
+        && *pfield_size /* we have a bitfield open */
+        && *pfield_size >= 8 * dict->size
+        // We would be straddling alignment units.
+        && round_down(*pbitofs, 8 * dict->align) < round_down(*pbitofs + bitsize - 1, 8 * dict->align)) {
+
         // if(*pbitofs / (8 * dict->align) != (*pbitofs + bitsize - 1) / (8 * dict->align)) {
             // Straddle detected.
             // Move to the next aligned address.
             // round up to next multiple of 8 * dict->align
-            *pbitofs = round_up(*pbitofs, 8*dict->align);
+        *pbitofs = round_up(*pbitofs, 8*dict->align);
+        if(*pbitofs >= *pfield_size) {
+            printf("*pbitofs < *pfield_size: %i !< %zi\n", *pbitofs, *pfield_size);
         }
+        assert(*pbitofs <= *pfield_size);
     }
+#endif
 
     //
     if (bitsize /* this is a bitfield request */
@@ -127,6 +146,8 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
 #ifndef MS_WIN32
     } else if (bitsize /* this is a bitfield request */
         && *pfield_size /* we have a bitfield open */
+        // TODO(Matthias): does this case also need alignment sorted out?
+        // It looks like, no?  Unless? there's some weirdness with alignment?
         && dict->size * 8 >= *pfield_size
         && (*pbitofs + bitsize) <= dict->size * 8) {
         printf("/* expand bit field */\n");
@@ -304,6 +325,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         break;
     }
 
+    assert(LOW_BIT(self->size) <= self->size * 8);
     return (PyObject *)self;
 }
 

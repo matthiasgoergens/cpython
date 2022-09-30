@@ -97,12 +97,14 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     //
     // (*pbitofs + bitsize) <= *pfield_size;
     // Detect a straddle.
-    if(round_down(*pbitofs, 8 * dict->align) < round_down(*pbitofs + bitsize - 1, 8 * dict->align)) {
-    // if(*pbitofs / (8 * dict->align) != (*pbitofs + bitsize - 1) / (8 * dict->align)) {
-        // Straddle detected.
-        // Move to the next aligned address.
-        // round up to next multiple of 8 * dict->align
-        *pbitofs = round_up(*pbitofs, 8*dict->align);
+    if((1==0) && !big_endian) {
+        if(round_down(*pbitofs, 8 * dict->align) < round_down(*pbitofs + bitsize - 1, 8 * dict->align)) {
+        // if(*pbitofs / (8 * dict->align) != (*pbitofs + bitsize - 1) / (8 * dict->align)) {
+            // Straddle detected.
+            // Move to the next aligned address.
+            // round up to next multiple of 8 * dict->align
+            *pbitofs = round_up(*pbitofs, 8*dict->align);
+        }
     }
 
     //
@@ -228,18 +230,24 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         // The logic should actually be something like:
         // if we can fit it into current alignment boundaries, do so.
         // if not, go into next alignment.
-        
+
         // Py_ssize_t prev_offset = 8 * (*poffset - *palign);
 
         // This need to do something about alignment, to match gcc?
         self->offset = 0;
-        if (big_endian) {
+        if (big_endian)
+        {
             printf("big endian\n");
             self->size = (bitsize << 16) + *pfield_size - *pbitofs - bitsize;
             // This is bogus.
-            self->offset = *poffset - dict->size; /* poffset is already updated updated for the NEXT field */
+
+            // self->offset = *poffset - dict->size; /* poffset is already updated updated for the NEXT field */
+
             // self->offset = *poffset - *palign + size; /* poffset is already updated updated for the NEXT field */
-        } else {
+            self->offset = *poffset - dict->size; /* poffset is already updated for the NEXT field */
+        }
+        else
+        {
             printf("little endian; bitsize: %i bitsof: %i\n", bitsize, *pbitofs);
             // little endian; bitsize: 24 bitsof: 20
             // From counting the output, we expect 52 = 32 + 20.
@@ -249,27 +257,31 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
             assert(bitsize <= dict->size * 8);
 
 
-            // in bytes.
-            Py_ssize_t old_offset = *poffset - *palign;
-            // This ain't true.
-            // assert(*pbitofs % (8 * dict->align) == 0);
-            
-            Py_ssize_t effective_offset = round_down(*pbitofs / 8, dict->align);
-            Py_ssize_t effective_bitofs = *pbitofs - effective_offset * 8;
-            assert(effective_bitofs <= dict->size * 8);
-            assert(bitsize+effective_bitofs <= dict->size * 8);
-            assert(effective_offset <= *palign);
-            self->offset = old_offset + effective_offset;
-            self->size = (bitsize << 16) + effective_bitofs;
+            // // in bytes.
+            // Py_ssize_t old_offset = *poffset - *palign;
+            // // This ain't true.
+            // // assert(*pbitofs % (8 * dict->align) == 0);
+
+            // Py_ssize_t effective_offset = round_down(*pbitofs / 8, dict->align);
+            // Py_ssize_t effective_bitofs = *pbitofs - effective_offset * 8;
+            // assert(effective_bitofs <= dict->size * 8);
+            // assert(bitsize+effective_bitofs <= dict->size * 8);
+            // assert(effective_offset <= *palign);
+            // self->offset = old_offset + effective_offset;
+            // self->size = (bitsize << 16) + effective_bitofs;
+
+            self->size = (bitsize << 16) + *pbitofs;
 
             // self->offset
 
-            // self->size = (bitsize << 16) + *pbitofs;
+            // Wrong!
+            self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
         }
 
         // This is wrong!
         // need to do something like *poffset - dict->align;
         assert(size == dict->size);
+        self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
         // self->offset = *poffset - *palign + size; /* poffset is already updated for the NEXT field */
         printf("self->offset: %zi\n", self->offset);
         *pbitofs += bitsize;

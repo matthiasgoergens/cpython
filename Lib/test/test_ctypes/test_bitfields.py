@@ -235,8 +235,6 @@ class BitFieldTest(unittest.TestCase):
         else:
             self.assertEqual(sizeof(X), sizeof(c_int) * 2)
 
-    @unittest.skipIf(sys.platform == 'win32', "Doesn't fail on Windows")
-    @unittest.expectedFailure  # gh-97588
     def test_mixed_5(self):
         class X(Structure):
             _fields_ = [
@@ -247,8 +245,6 @@ class BitFieldTest(unittest.TestCase):
         a.B = 1
         self.assertEqual(1, a.B)
 
-    @unittest.skipIf(sys.platform == 'win32', "Doesn't fail on Windows")
-    @unittest.expectedFailure  # gh-97588
     def test_mixed_6(self):
         class X(Structure):
             _fields_ = [

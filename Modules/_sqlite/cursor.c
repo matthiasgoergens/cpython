@@ -842,6 +842,7 @@ _pysqlite_query_execute(pysqlite_Cursor* self, int multiple, PyObject* operation
         goto error;
     }
 
+    assert(self->statement != NULL);
     if (sqlite3_stmt_busy(self->statement->st)) {
         Py_SETREF(self->statement,
                   pysqlite_statement_create(self->connection, operation));
@@ -962,7 +963,7 @@ error:
         self->rowcount = -1L;
         return NULL;
     }
-    if (self->statement && !sqlite3_stmt_busy(self->statement->st)) {
+    if (self->statement != NULL && !sqlite3_stmt_busy(self->statement->st)) {
         Py_CLEAR(self->statement);
     }
     return Py_NewRef((PyObject *)self);

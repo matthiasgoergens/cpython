@@ -252,6 +252,7 @@ _sharedexception_bind(PyObject *exctype, PyObject *exc, PyObject *tb)
 finally:
     if (failure != NULL) {
         PyErr_Clear();
+        assert(err != NULL);
         if (err->name != NULL) {
             PyMem_Free(err->name);
             err->name = NULL;

@@ -41,14 +41,16 @@ PyCField_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 static inline
 int round_up(int numToRound, int multiple)
 {
-    assert(multiple > 0);
+    if (multiple == 0)
+        return numToRound;
     return ((numToRound + multiple - 1) / multiple) * multiple;
 }
 
 static inline
 int round_down(int numToRound, int multiple)
 {
-    assert(multiple > 0);
+    if (multiple == 0)
+        return numToRound;
     return (numToRound / multiple) * multiple;
 }
 
@@ -97,7 +99,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     //
     // (*pbitofs + bitsize) <= *pfield_size;
     // Detect a straddle.
-    if((1==0) && !big_endian) {
+    if(!big_endian) {
         if(round_down(*pbitofs, 8 * dict->align) < round_down(*pbitofs + bitsize - 1, 8 * dict->align)) {
         // if(*pbitofs / (8 * dict->align) != (*pbitofs + bitsize - 1) / (8 * dict->align)) {
             // Straddle detected.
@@ -254,11 +256,20 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
             // 8 * (-*palign + size)
 
             assert(0 < bitsize);
-            assert(bitsize <= dict->size * 8);
+            assert(bitsize <= size * 8);
+
+            /* poffset is already updated for the NEXT field */
+            Py_ssize_t old_offset_B = *poffset - (*pfield_size / 8);
+            Py_ssize_t delta_b = round_down(*pbitofs, 8*dict->align);
+            Py_ssize_t delta_B = delta_b / 8;
+            Py_ssize_t effective_bitsof = *pbitofs - delta_b;
+
+            self->offset = old_offset_B + delta_B;
+
+            assert(self->offset >= old_offset_B);
+            assert(self->offset <= *poffset);
 
 
-            // // in bytes.
-            // Py_ssize_t old_offset = *poffset - *palign;
             // // This ain't true.
             // // assert(*pbitofs % (8 * dict->align) == 0);
 
@@ -270,18 +281,23 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
             // self->offset = old_offset + effective_offset;
             // self->size = (bitsize << 16) + effective_bitofs;
 
-            self->size = (bitsize << 16) + *pbitofs;
+            self->size = (bitsize << 16) + effective_bitsof;
+
+            // assert(old_offset + *pbitofs)
+
+            assert(effective_bitsof <= dict->size * 8);
+
+            assert(delta_b + effective_bitsof == *pbitofs);
 
             // self->offset
 
-            // Wrong!
-            self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
+            // self->offset = *poffset - (*pfield_size / 8); /* poffset is already updated for the NEXT field */
         }
 
         // This is wrong!
         // need to do something like *poffset - dict->align;
         assert(size == dict->size);
-        self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
+        // self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
         // self->offset = *poffset - *palign + size; /* poffset is already updated for the NEXT field */
         printf("self->offset: %zi\n", self->offset);
         *pbitofs += bitsize;
@@ -850,15 +866,15 @@ I_set_sw(void *ptr, PyObject *value, Py_ssize_t size)
 static PyObject *
 I_get(void *ptr, Py_ssize_t size)
 {
-    {
-        unsigned long long int val;
-        memcpy(&val, ((unsigned int*)ptr) - 1, sizeof(val));
-        // memcpy(&val, ptr, sizeof(val));
-        printf("I_get val: %llx\n", val);
-        printf("I_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
-        GET_BITFIELD(val, size);
-        printf("val: %llx\n", val);
-    }
+    // {
+    //     unsigned long long int val;
+    //     memcpy(&val, ((unsigned int*)ptr) - 1, sizeof(val));
+    //     // memcpy(&val, ptr, sizeof(val));
+    //     printf("I_get val: %llx\n", val);
+    //     printf("I_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
+    //     GET_BITFIELD(val, size);
+    //     printf("val: %llx\n", val);
+    // }
 
     unsigned int val;
     memcpy(&val, ptr, sizeof(val));

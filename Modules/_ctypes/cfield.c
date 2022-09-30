@@ -38,6 +38,20 @@ PyCField_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     return (PyObject *)obj;
 }
 
+static inline
+int round_up(int numToRound, int multiple)
+{
+    assert(multiple > 0);
+    return ((numToRound + multiple - 1) / multiple) * multiple;
+}
+
+static inline
+int round_down(int numToRound, int multiple)
+{
+    assert(multiple > 0);
+    return (numToRound / multiple) * multiple;
+}
+
 /*
  * Expects the size, index and offset for the current field in *psize and
  * *poffset, stores the total size so far in *psize, the offset for the next
@@ -56,7 +70,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
                 Py_ssize_t *psize, Py_ssize_t *poffset, Py_ssize_t *palign,
                 int pack, int big_endian)
 {
-    printf("\nPyCField_FromDesc bitsize: %i\tindex: %li\tpbitsof: %i\tpfield_size: %li\n", bitsize, index, *pbitofs, *pfield_size);
+    printf("PyCField_FromDesc bitsize: %i\tindex: %li\tpbitsof: %i\tpfield_size: %li\t8*poffset: %li\n", bitsize, index, *pbitofs, *pfield_size, 8 * *poffset);
     CFieldObject *self;
     PyObject *proto;
     Py_ssize_t size, align;
@@ -79,7 +93,19 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         Py_DECREF(self);
         return NULL;
     }
-    printf("dict->size: %zx align: %zx\n", dict->size, dict->align);
+    printf("8*dict->size: %zd 8*dict->align: %zd\n", 8 * dict->size, 8 * dict->align);
+    //
+    // (*pbitofs + bitsize) <= *pfield_size;
+    // Detect a straddle.
+    if(round_down(*pbitofs, 8 * dict->align) < round_down(*pbitofs + bitsize - 1, 8 * dict->align)) {
+    // if(*pbitofs / (8 * dict->align) != (*pbitofs + bitsize - 1) / (8 * dict->align)) {
+        // Straddle detected.
+        // Move to the next aligned address.
+        // round up to next multiple of 8 * dict->align
+        *pbitofs = round_up(*pbitofs, 8*dict->align);
+    }
+
+    //
     if (bitsize /* this is a bitfield request */
         && *pfield_size /* we have a bitfield open */
 #ifdef MS_WIN32
@@ -89,6 +115,8 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         /* GCC */
         && dict->size * 8 <= *pfield_size
 #endif
+        // This condition is wrong?
+        // Or rather, it only works when alignment is the same.
         && (*pbitofs + bitsize) <= *pfield_size) {
         printf("/* continue bit field */\n");
         fieldtype = CONT_BITFIELD;
@@ -191,20 +219,59 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
             self->size = (bitsize << 16) + *pbitofs;
         }
 
+        // TODO(Matthias): this is likely also bogus.
         self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
         *pbitofs += bitsize;
         break;
 
     case CONT_BITFIELD:
+        // The logic should actually be something like:
+        // if we can fit it into current alignment boundaries, do so.
+        // if not, go into next alignment.
+        
+        // Py_ssize_t prev_offset = 8 * (*poffset - *palign);
+
+        // This need to do something about alignment, to match gcc?
+        self->offset = 0;
         if (big_endian) {
             printf("big endian\n");
             self->size = (bitsize << 16) + *pfield_size - *pbitofs - bitsize;
+            // This is bogus.
+            self->offset = *poffset - dict->size; /* poffset is already updated updated for the NEXT field */
+            // self->offset = *poffset - *palign + size; /* poffset is already updated updated for the NEXT field */
         } else {
             printf("little endian; bitsize: %i bitsof: %i\n", bitsize, *pbitofs);
-            self->size = (bitsize << 16) + *pbitofs;
+            // little endian; bitsize: 24 bitsof: 20
+            // From counting the output, we expect 52 = 32 + 20.
+            // 8 * (-*palign + size)
+
+            assert(0 < bitsize);
+            assert(bitsize <= dict->size * 8);
+
+
+            // in bytes.
+            Py_ssize_t old_offset = *poffset - *palign;
+            // This ain't true.
+            // assert(*pbitofs % (8 * dict->align) == 0);
+            
+            Py_ssize_t effective_offset = round_down(*pbitofs / 8, dict->align);
+            Py_ssize_t effective_bitofs = *pbitofs - effective_offset * 8;
+            assert(effective_bitofs <= dict->size * 8);
+            assert(bitsize+effective_bitofs <= dict->size * 8);
+            assert(effective_offset <= *palign);
+            self->offset = old_offset + effective_offset;
+            self->size = (bitsize << 16) + effective_bitofs;
+
+            // self->offset
+
+            // self->size = (bitsize << 16) + *pbitofs;
         }
 
-        self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
+        // This is wrong!
+        // need to do something like *poffset - dict->align;
+        assert(size == dict->size);
+        // self->offset = *poffset - *palign + size; /* poffset is already updated for the NEXT field */
+        printf("self->offset: %zi\n", self->offset);
         *pbitofs += bitsize;
         break;
     }
@@ -774,6 +841,7 @@ I_get(void *ptr, Py_ssize_t size)
     {
         unsigned long long int val;
         memcpy(&val, ((unsigned int*)ptr) - 1, sizeof(val));
+        // memcpy(&val, ptr, sizeof(val));
         printf("I_get val: %llx\n", val);
         printf("I_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
         GET_BITFIELD(val, size);
@@ -880,6 +948,15 @@ L_set_sw(void *ptr, PyObject *value, Py_ssize_t size)
 static PyObject *
 L_get(void *ptr, Py_ssize_t size)
 {
+    {
+        unsigned long int val;
+        memcpy(&val, ptr, sizeof(val));
+        printf("L_get val: %lx\n", val);
+        printf("L_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
+        GET_BITFIELD(val, size);
+        printf("val: %lx\n", val);
+    }
+
     unsigned long val;
     memcpy(&val, ptr, sizeof(val));
     GET_BITFIELD(val, size);
@@ -976,6 +1053,15 @@ Q_set_sw(void *ptr, PyObject *value, Py_ssize_t size)
 static PyObject *
 Q_get(void *ptr, Py_ssize_t size)
 {
+    {
+        unsigned long long int val;
+        memcpy(&val, ((unsigned int*)ptr) - 1, sizeof(val));
+        printf("Q_get val: %llx\n", val);
+        printf("Q_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
+        GET_BITFIELD(val, size);
+        printf("val: %llx\n", val);
+    }
+
     unsigned long long val;
     memcpy(&val, ptr, sizeof(val));
     GET_BITFIELD(val, size);

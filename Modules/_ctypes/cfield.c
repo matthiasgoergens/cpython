@@ -77,12 +77,11 @@ Py_ssize_t NUM_BITS(Py_ssize_t x);
 // How to handle big-endian bitfields?
 // We need to recreate what they are doing when alignment stays the same.
 PyObject *
-PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
+PyCField_FromDesc_old(PyObject *desc, Py_ssize_t index,
                 Py_ssize_t *pfield_size, int bitsize, int *pbitofs,
                 Py_ssize_t *psize, Py_ssize_t *poffset, Py_ssize_t *palign,
                 int pack, int big_endian)
 {
-    printf("PyCField_FromDesc bitsize: %i\tindex: %li\tpbitsof: %i\tpfield_size: %li\t8*poffset: %li\n", bitsize, index, *pbitofs, *pfield_size, 8 * *poffset);
     CFieldObject *self;
     PyObject *proto;
     Py_ssize_t size, align;
@@ -105,7 +104,171 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         Py_DECREF(self);
         return NULL;
     }
-    printf("8*dict->size: %zd 8*dict->align: %zd\n", 8 * dict->size, 8 * dict->align);
+    if (bitsize /* this is a bitfield request */
+        && *pfield_size /* we have a bitfield open */
+#ifdef MS_WIN32
+        /* MSVC, GCC with -mms-bitfields */
+        && dict->size * 8 == *pfield_size
+#else
+        /* GCC */
+        && dict->size * 8 <= *pfield_size
+#endif
+        && (*pbitofs + bitsize) <= *pfield_size) {
+        /* continue bit field */
+        fieldtype = CONT_BITFIELD;
+#ifndef MS_WIN32
+    } else if (bitsize /* this is a bitfield request */
+        && *pfield_size /* we have a bitfield open */
+        && dict->size * 8 >= *pfield_size
+        && (*pbitofs + bitsize) <= dict->size * 8) {
+        /* expand bit field */
+        fieldtype = EXPAND_BITFIELD;
+#endif
+    } else if (bitsize) {
+        /* start new bitfield */
+        fieldtype = NEW_BITFIELD;
+        *pbitofs = 0;
+        *pfield_size = dict->size * 8;
+    } else {
+        /* not a bit field */
+        fieldtype = NO_BITFIELD;
+        *pbitofs = 0;
+        *pfield_size = 0;
+    }
+
+    size = dict->size;
+    proto = desc;
+
+    /*  Field descriptors for 'c_char * n' are be scpecial cased to
+        return a Python string instead of an Array object instance...
+    */
+    if (PyCArrayTypeObject_Check(proto)) {
+        StgDictObject *adict = PyType_stgdict(proto);
+        StgDictObject *idict;
+        if (adict && adict->proto) {
+            idict = PyType_stgdict(adict->proto);
+            if (!idict) {
+                PyErr_SetString(PyExc_TypeError,
+                                "has no _stginfo_");
+                Py_DECREF(self);
+                return NULL;
+            }
+            if (idict->getfunc == _ctypes_get_fielddesc("c")->getfunc) {
+                struct fielddesc *fd = _ctypes_get_fielddesc("s");
+                getfunc = fd->getfunc;
+                setfunc = fd->setfunc;
+            }
+            if (idict->getfunc == _ctypes_get_fielddesc("u")->getfunc) {
+                struct fielddesc *fd = _ctypes_get_fielddesc("U");
+                getfunc = fd->getfunc;
+                setfunc = fd->setfunc;
+            }
+        }
+    }
+
+    self->setfunc = setfunc;
+    self->getfunc = getfunc;
+    self->index = index;
+
+    Py_INCREF(proto);
+    self->proto = proto;
+
+    switch (fieldtype) {
+    case NEW_BITFIELD:
+        if (big_endian)
+            self->size = (bitsize << 16) + *pfield_size - *pbitofs - bitsize;
+        else
+            self->size = (bitsize << 16) + *pbitofs;
+        *pbitofs = bitsize;
+        /* fall through */
+    case NO_BITFIELD:
+        if (pack)
+            align = min(pack, dict->align);
+        else
+            align = dict->align;
+        if (align && *poffset % align) {
+            Py_ssize_t delta = align - (*poffset % align);
+            *psize += delta;
+            *poffset += delta;
+        }
+
+        if (bitsize == 0)
+            self->size = size;
+        *psize += size;
+
+        self->offset = *poffset;
+        *poffset += size;
+
+        *palign = align;
+        break;
+
+    case EXPAND_BITFIELD:
+        *poffset += dict->size - *pfield_size/8;
+        *psize += dict->size - *pfield_size/8;
+
+        *pfield_size = dict->size * 8;
+
+        if (big_endian)
+            self->size = (bitsize << 16) + *pfield_size - *pbitofs - bitsize;
+        else
+            self->size = (bitsize << 16) + *pbitofs;
+
+        self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
+        *pbitofs += bitsize;
+        break;
+
+    case CONT_BITFIELD:
+        if (big_endian)
+            self->size = (bitsize << 16) + *pfield_size - *pbitofs - bitsize;
+        else
+            self->size = (bitsize << 16) + *pbitofs;
+
+        self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
+        *pbitofs += bitsize;
+        break;
+    }
+
+    return (PyObject *)self;
+}
+
+PyObject *
+PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
+                Py_ssize_t *pfield_size, int bitsize, int *pbitofs,
+                Py_ssize_t *psize, Py_ssize_t *poffset, Py_ssize_t *palign,
+                int pack, int big_endian)
+{
+    // TODO(Matthias): We don't handle neither big_endian nor pack, yet.
+    // I don't know enough about them.  Fall back to old logic.
+    if(big_endian || pack) {
+        return PyCField_FromDesc_old(desc, index,
+                pfield_size, bitsize, pbitofs,
+                psize, poffset, palign,
+                pack, big_endian);
+    }
+    fprintf(stderr, "PyCField_FromDesc bitsize: %i\tindex: %li\tpbitsof: %i\tpfield_size: %li\t8*poffset: %li\n", bitsize, index, *pbitofs, *pfield_size, 8 * *poffset);
+    CFieldObject *self;
+    PyObject *proto;
+    Py_ssize_t size, align;
+    SETFUNC setfunc = NULL;
+    GETFUNC getfunc = NULL;
+    StgDictObject *dict;
+    int fieldtype;
+#define NO_BITFIELD 0
+#define NEW_BITFIELD 1
+#define CONT_BITFIELD 2
+#define EXPAND_BITFIELD 3
+
+    self = (CFieldObject *)_PyObject_CallNoArgs((PyObject *)&PyCField_Type);
+    if (self == NULL)
+        return NULL;
+    dict = PyType_stgdict(desc);
+    if (!dict) {
+        PyErr_SetString(PyExc_TypeError,
+                        "has no _stginfo_");
+        Py_DECREF(self);
+        return NULL;
+    }
+    fprintf(stderr, "8*dict->size: %zd 8*dict->align: %zd\n", 8 * dict->size, 8 * dict->align);
     //
     // (*pbitofs + bitsize) <= *pfield_size;
     // Detect a straddle.
@@ -127,7 +290,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
             // round up to next multiple of 8 * dict->align
         *pbitofs = round_up(*pbitofs, 8*dict->align);
         if(*pbitofs >= *pfield_size) {
-            printf("*pbitofs < *pfield_size: %i !< %zi\n", *pbitofs, *pfield_size);
+            fprintf(stderr, "*pbitofs < *pfield_size: %i !< %zi\n", *pbitofs, *pfield_size);
         }
         assert(*pbitofs <= *pfield_size);
     }
@@ -145,7 +308,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         // This condition is wrong?
         // Or rather, it only works when alignment is the same.
         && (*pbitofs + bitsize) <= *pfield_size) {
-        printf("/* continue bit field */\n");
+        fprintf(stderr, "/* continue bit field */\n");
         fieldtype = CONT_BITFIELD;
 #ifndef MS_WIN32
     } else if (bitsize /* this is a bitfield request */
@@ -154,17 +317,17 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         // It looks like, no?  Unless? there's some weirdness with alignment?
         && dict->size * 8 >= *pfield_size
         && (*pbitofs + bitsize) <= dict->size * 8) {
-        printf("/* expand bit field */\n");
+        fprintf(stderr, "/* expand bit field */\n");
         fieldtype = EXPAND_BITFIELD;
 #endif
     } else if (bitsize) {
-        printf("/* start new bitfield */\t!\n");
+        fprintf(stderr, "/* start new bitfield */\t!\n");
         fieldtype = NEW_BITFIELD;
         *pbitofs = 0;
         // TODO(Matthias): I suspect we can't just set *pfield_size to dict->size * 8.  What about shorts and long longs?
         *pfield_size = dict->size * 8;
     } else {
-        printf("/* not a bit field */\n");
+        fprintf(stderr, "/* not a bit field */\n");
         fieldtype = NO_BITFIELD;
         *pbitofs = 0;
         *pfield_size = 0;
@@ -264,7 +427,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         self->offset = 0;
         if (big_endian)
         {
-            printf("big endian\n");
+            fprintf(stderr, "big endian\n");
             self->size = (bitsize << 16) + *pfield_size - *pbitofs - bitsize;
             // This is bogus.
 
@@ -275,7 +438,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         }
         else
         {
-            printf("little endian; bitsize: %i bitsof: %i\n", bitsize, *pbitofs);
+            fprintf(stderr, "little endian; bitsize: %i bitsof: %i\n", bitsize, *pbitofs);
             // little endian; bitsize: 24 bitsof: 20
             // From counting the output, we expect 52 = 32 + 20.
             // 8 * (-*palign + size)
@@ -324,7 +487,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         assert(size == dict->size);
         // self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
         // self->offset = *poffset - *palign + size; /* poffset is already updated for the NEXT field */
-        printf("self->offset: %zi\n", self->offset);
+        fprintf(stderr, "self->offset: %zi\n", self->offset);
         *pbitofs += bitsize;
         break;
     }
@@ -738,7 +901,7 @@ H_get(void *ptr, Py_ssize_t size)
     // unsigned long long val;
     unsigned short val;
     memcpy(&val, ptr, sizeof(val));
-    // printf("size: %lx\n", size);
+    // fprintf(stderr, "size: %lx\n", size);
     // if(size == 0)
     //     size = 8 * sizeof(unsigned short);
     GET_BITFIELD(val, size);
@@ -861,14 +1024,14 @@ I_set(void *ptr, PyObject *value, Py_ssize_t size)
     unsigned int x;
     if (get_ulong(value, &val) < 0)
         return  NULL;
-    printf("I_set: val %lx sizeof %lx\n", val, sizeof(val));
-    printf("I_set %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
+    fprintf(stderr, "I_set: val %lx sizeof %lx\n", val, sizeof(val));
+    fprintf(stderr, "I_set %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
     memcpy(&x, ptr, sizeof(x));
-    printf("x: %x\n", x);
+    fprintf(stderr, "x: %x\n", x);
     x = SET(unsigned int, x, val, size);
-    printf("x SET: %x\n", x);
+    fprintf(stderr, "x SET: %x\n", x);
     memcpy(ptr, &x, sizeof(x));
-    printf("\n");
+    fprintf(stderr, "\n");
     _RET(value);
 }
 
@@ -896,16 +1059,16 @@ I_get(void *ptr, Py_ssize_t size)
     //     unsigned long long int val;
     //     memcpy(&val, ((unsigned int*)ptr) - 1, sizeof(val));
     //     // memcpy(&val, ptr, sizeof(val));
-    //     printf("I_get val: %llx\n", val);
-    //     printf("I_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
+    //     fprintf(stderr, "I_get val: %llx\n", val);
+    //     fprintf(stderr, "I_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
     //     GET_BITFIELD(val, size);
-    //     printf("val: %llx\n", val);
+    //     fprintf(stderr, "val: %llx\n", val);
     // }
 
     unsigned int val;
     memcpy(&val, ptr, sizeof(val));
-    printf("I_get val: %x\n", val);
-    printf("I_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
+    fprintf(stderr, "I_get val: %x\n", val);
+    fprintf(stderr, "I_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
     GET_BITFIELD(val, size);
     return PyLong_FromUnsignedLong(val);
 }
@@ -1005,10 +1168,10 @@ L_get(void *ptr, Py_ssize_t size)
     {
         unsigned long int val;
         memcpy(&val, ptr, sizeof(val));
-        printf("L_get val: %lx\n", val);
-        printf("L_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
+        fprintf(stderr, "L_get val: %lx\n", val);
+        fprintf(stderr, "L_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
         GET_BITFIELD(val, size);
-        printf("val: %lx\n", val);
+        fprintf(stderr, "val: %lx\n", val);
     }
 
     unsigned long val;
@@ -1110,10 +1273,10 @@ Q_get(void *ptr, Py_ssize_t size)
     {
         unsigned long long int val;
         memcpy(&val, ((unsigned int*)ptr) - 1, sizeof(val));
-        printf("Q_get val: %llx\n", val);
-        printf("Q_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
+        fprintf(stderr, "Q_get val: %llx\n", val);
+        fprintf(stderr, "Q_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
         GET_BITFIELD(val, size);
-        printf("val: %llx\n", val);
+        fprintf(stderr, "val: %llx\n", val);
     }
 
     unsigned long long val;

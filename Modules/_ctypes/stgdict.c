@@ -347,7 +347,7 @@ MakeAnonFields(PyObject *type)
 int
 PyCStructUnionType_update_stgdict(PyObject *type, PyObject *fields, int isStruct)
 {
-    printf("\nPyCStructUnionType_update_stgdict\n");
+    fprintf(stderr, "\nPyCStructUnionType_update_stgdict\n");
     _Py_IDENTIFIER(_swappedbytes_);
     _Py_IDENTIFIER(_use_broken_old_ctypes_structure_semantics_);
     _Py_IDENTIFIER(_pack_);
@@ -568,7 +568,7 @@ PyCStructUnionType_update_stgdict(PyObject *type, PyObject *fields, int isStruct
         } else
             bitsize = 0;
 
-        // printf("\nfieldname: %s\n", PyUnicode_AsUTF8(name));
+        // fprintf(stderr, "\nfieldname: %s\n", PyUnicode_AsUTF8(name));
 
         if (isStruct && !isPacked) {
             const char *fieldfmt = dict->format ? dict->format : "B";

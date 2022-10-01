@@ -41,6 +41,7 @@ PyCField_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 static inline
 Py_ssize_t round_down(Py_ssize_t numToRound, Py_ssize_t multiple)
 {
+    assert(numToRound >= 0);
     if (multiple == 0)
         return numToRound;
     return (numToRound / multiple) * multiple;
@@ -49,6 +50,7 @@ Py_ssize_t round_down(Py_ssize_t numToRound, Py_ssize_t multiple)
 static inline
 Py_ssize_t round_up(Py_ssize_t numToRound, Py_ssize_t multiple)
 {
+    assert(numToRound >= 0);
     if (multiple == 0)
         return numToRound;
     return ((numToRound + multiple - 1) / multiple) * multiple;

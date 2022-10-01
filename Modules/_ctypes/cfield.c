@@ -239,12 +239,10 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     // yet. I don't know enough about them.  Fall back to old logic.
     // Same for *poffset not 0.  There's some basedict logic in our caller that 
     // I don't understand.
-    fprintf(stderr, "PyCField_FromDesc bitsize: %i\tindex: %li\tpbitsof: %i\tpfield_size: %li\t8*poffset: %li\n", bitsize, index, *pbitofs, *pfield_size, 8 * *poffset);
     #ifndef MS_WIN32
     if(big_endian || pack || *poffset || *pfield_size)
     #endif
     {
-        fprintf(stderr, "Falling back\n");
         return PyCField_FromDesc_old(desc, index,
                 pfield_size, bitsize, pbitofs,
                 psize, poffset, palign,
@@ -275,37 +273,17 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         Py_DECREF(self);
         return NULL;
     }
-    fprintf(stderr, "8*dict->size: %zd 8*dict->align: %zd\n", 8 * dict->size, 8 * dict->align);
-    //
-    // (*pbitofs + bitsize) <= *pfield_size;
-    // Detect a straddle.
-    // if(!pack) {
-    // TODO: handle big endian.  Do we need to go backwards?
-    // Or will this just work?  This might depend on the alignment of the very start of the field?
-    // Just treat everything as gcc-packed for now.
-    // Hmm, actually, we cannot, because our downstream stuff doesn't support straddling boundaries!
     
-    // Handle everything as if it was a bit-field.
     int is_bitfield = !!bitsize;
     if(!is_bitfield) {
         bitsize = 8 * dict->size; // might still be 0 afterwards.
     }
 
-
     if (round_down(*pbitofs, 8 * dict->align) < round_down(*pbitofs + bitsize - 1, 8 * dict->align)) {
         // We would be straddling alignment units.
-        // if(*pbitofs / (8 * dict->align) != (*pbitofs + bitsize - 1) / (8 * dict->align)) {
-            // Straddle detected.
-            // Move to the next aligned address.
-            // round up to next multiple of 8 * dict->align
         *pbitofs = round_up(*pbitofs, 8*dict->align);
-        // if(*pbitofs >= *pfield_size) {
-        //     fprintf(stderr, "*pbitofs < *pfield_size: %i !< %zi\n", *pbitofs, *pfield_size);
-        // }
-        // assert(*pbitofs <= *pfield_size);
     }
 
-    Py_ssize_t size = dict->size;
     PyObject* proto = desc;
 
     /*  Field descriptors for 'c_char * n' are be scpecial cased to
@@ -342,60 +320,27 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     Py_INCREF(proto);
     self->proto = proto;
 
-
-    fprintf(stderr, "little endian; bitsize: %i bitsof: %i\n", bitsize, *pbitofs);
-    // little endian; bitsize: 24 bitsof: 20
-    // From counting the output, we expect 52 = 32 + 20.
-    // 8 * (-*palign + size)
-
-    // assert(0 < bitsize);
-    assert(bitsize <= size * 8);
-
+    assert(bitsize <= dict->size * 8);
     assert(*poffset == 0);
     
     // We need to fit both within alignment and within size.
     // But we only really care when we have a bitfield.
     if(is_bitfield) {
         self->offset = round_down(*pbitofs, 8*dict->size) / 8;
+        Py_ssize_t effective_bitsof = *pbitofs - 8 * self->offset;
+        self->size = (bitsize << 16 ) + effective_bitsof;
+        assert(dict->size == dict->align);
+        assert(effective_bitsof <= dict->size * 8);
     } else {
         self->offset = round_down(*pbitofs, 8*dict->align) / 8;
-    }
-    fprintf(stderr, "offset %zi\n", self->offset);
-    Py_ssize_t effective_bitsof = *pbitofs - 8 * self->offset;
-    // assert(0 <= effective_bitsof);
-    // assert(effective_bitsof < 8 * dict->align);
-    // assert(effective_bitsof < 8 * dict->size);
-
-    if(is_bitfield) {
-        self->size = (bitsize << 16 ) + effective_bitsof;
-    } else {
         self->size = dict->size;
     }
-
-    // Worry about size vs alignment?
-    // For now, only handle the case where the size is a multiple of alignment.
-    // fprintf(stderr, "dict->size ? dict->align: %zi ? %zi\n", dict->size, dict->align);
-    // assert(round_down(dict->size, dict->align) == dict->size);
-    // assert(dict->size == dict->align);
-    assert(effective_bitsof <= dict->size * 8);
-
-    // self->offset
-
-    // self->offset = *poffset - (*pfield_size / 8); /* poffset is already updated for the NEXT field */
-
-    // This is wrong!
-    // need to do something like *poffset - dict->align;
-    assert(size == dict->size);
-    // self->offset = *poffset - size; /* poffset is already updated for the NEXT field */
-    // self->offset = *poffset - *palign + size; /* poffset is already updated for the NEXT field */
-    fprintf(stderr, "self->offset: %zi\n", self->offset);
     
     *pbitofs += bitsize;
     *psize = round_up(*pbitofs, 8) / 8;
     *palign = dict->align;
 
-
-    assert(LOW_BIT(self->size) <= self->size * 8);
+    assert(!is_bitfield || (LOW_BIT(self->size) <= self->size * 8));
     return (PyObject *)self;
 }
 

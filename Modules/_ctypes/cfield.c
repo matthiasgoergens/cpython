@@ -241,6 +241,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     // yet. I don't know enough about them.  Fall back to old logic.
     // Same for *poffset not 0.  There's some basedict logic in our caller that 
     // I don't understand.
+    fprintf(stderr, "PyCField_FromDesc bitsize: %i\tindex: %li\tpbitsof: %i\tpfield_size: %li\t8*poffset: %li\n", bitsize, index, *pbitofs, *pfield_size, 8 * *poffset);
     #ifndef MS_WIN32
     if(big_endian || pack || *poffset)
     #endif
@@ -263,10 +264,8 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     // How does size work?  I think we just need to give it the size of how 
     // many bits we need.  We can calculate that from pbitsof afresh.
 
-    fprintf(stderr, "PyCField_FromDesc bitsize: %i\tindex: %li\tpbitsof: %i\tpfield_size: %li\t8*poffset: %li\n", bitsize, index, *pbitofs, *pfield_size, 8 * *poffset);
     SETFUNC setfunc = NULL;
     GETFUNC getfunc = NULL;
-#define NO_BITFIELD 0
 #define NEW_BITFIELD 1
 #define CONT_BITFIELD 2
 #define EXPAND_BITFIELD 3
@@ -290,6 +289,12 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     // Or will this just work?  This might depend on the alignment of the very start of the field?
     // Just treat everything as gcc-packed for now.
     // Hmm, actually, we cannot, because our downstream stuff doesn't support straddling boundaries!
+    
+    // Handle everything as if it was a bit-field.
+    if(!bitsize) {
+        bitsize = 8 * dict->size;
+    }
+    
     if (bitsize /* this is a bitfield request */
         && *pfield_size /* we have a bitfield open */
         && *pfield_size >= 8 * dict->size
@@ -325,17 +330,12 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         && (*pbitofs + bitsize) <= dict->size * 8) {
         fprintf(stderr, "/* expand bit field */\n");
         fieldtype = EXPAND_BITFIELD;
-    } else if (bitsize) {
+    } else {
         fprintf(stderr, "/* start new bitfield */\t!\n");
         fieldtype = NEW_BITFIELD;
         *pbitofs = 0;
         // TODO(Matthias): I suspect we can't just set *pfield_size to dict->size * 8.  What about shorts and long longs?
         *pfield_size = dict->size * 8;
-    } else {
-        fprintf(stderr, "/* not a bit field */\n");
-        fieldtype = NO_BITFIELD;
-        *pbitofs = 0;
-        *pfield_size = 0;
     }
 
     Py_ssize_t size = dict->size;
@@ -383,7 +383,6 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
             self->size = (bitsize << 16) + *pbitofs;
         *pbitofs = bitsize;
         /* fall through */
-    case NO_BITFIELD:
         {
             Py_ssize_t align;
             if (pack)

@@ -47,9 +47,11 @@ Py_ssize_t round_down(Py_ssize_t numToRound, Py_ssize_t multiple)
 }
 
 static inline
-Py_ssize_t round_up(Py_ssize_t numToRound, Py_ssize_t multiple)
+Py_ssize_t round_up_clever(Py_ssize_t numToRound, Py_ssize_t multiple)
 {
-    return -round_down(-numToRound, multiple);
+    if (multiple == 0)
+        return numToRound;
+    return ((numToRound + multiple - 1) / multiple) * multiple;
 }
 
 static inline

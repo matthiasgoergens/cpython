@@ -739,12 +739,8 @@ H_set_sw(void *ptr, PyObject *value, Py_ssize_t size)
 static PyObject *
 H_get(void *ptr, Py_ssize_t size)
 {
-    // unsigned long long val;
     unsigned short val;
     memcpy(&val, ptr, sizeof(val));
-    // fprintf(stderr, "size: %lx\n", size);
-    // if(size == 0)
-    //     size = 8 * sizeof(unsigned short);
     GET_BITFIELD(val, size);
     return PyLong_FromLong(val);
 }
@@ -856,8 +852,6 @@ bool_get(void *ptr, Py_ssize_t size)
     return PyBool_FromLong((long)*(_Bool *)ptr);
 }
 
-// This is already wrong.  At least it conflicts with PyCField_FromDesc for
-// bitfields.
 static PyObject *
 I_set(void *ptr, PyObject *value, Py_ssize_t size)
 {
@@ -865,14 +859,9 @@ I_set(void *ptr, PyObject *value, Py_ssize_t size)
     unsigned int x;
     if (get_ulong(value, &val) < 0)
         return  NULL;
-    fprintf(stderr, "I_set: val %lx sizeof %lx\n", val, sizeof(val));
-    fprintf(stderr, "I_set %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
     memcpy(&x, ptr, sizeof(x));
-    fprintf(stderr, "x: %x\n", x);
     x = SET(unsigned int, x, val, size);
-    fprintf(stderr, "x SET: %x\n", x);
     memcpy(ptr, &x, sizeof(x));
-    fprintf(stderr, "\n");
     _RET(value);
 }
 
@@ -896,20 +885,8 @@ I_set_sw(void *ptr, PyObject *value, Py_ssize_t size)
 static PyObject *
 I_get(void *ptr, Py_ssize_t size)
 {
-    // {
-    //     unsigned long long int val;
-    //     memcpy(&val, ((unsigned int*)ptr) - 1, sizeof(val));
-    //     // memcpy(&val, ptr, sizeof(val));
-    //     fprintf(stderr, "I_get val: %llx\n", val);
-    //     fprintf(stderr, "I_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
-    //     GET_BITFIELD(val, size);
-    //     fprintf(stderr, "val: %llx\n", val);
-    // }
-
     unsigned int val;
     memcpy(&val, ptr, sizeof(val));
-    fprintf(stderr, "I_get val: %x\n", val);
-    fprintf(stderr, "I_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
     GET_BITFIELD(val, size);
     return PyLong_FromUnsignedLong(val);
 }
@@ -1006,15 +983,6 @@ L_set_sw(void *ptr, PyObject *value, Py_ssize_t size)
 static PyObject *
 L_get(void *ptr, Py_ssize_t size)
 {
-    {
-        unsigned long int val;
-        memcpy(&val, ptr, sizeof(val));
-        fprintf(stderr, "L_get val: %lx\n", val);
-        fprintf(stderr, "L_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
-        GET_BITFIELD(val, size);
-        fprintf(stderr, "val: %lx\n", val);
-    }
-
     unsigned long val;
     memcpy(&val, ptr, sizeof(val));
     GET_BITFIELD(val, size);
@@ -1111,15 +1079,6 @@ Q_set_sw(void *ptr, PyObject *value, Py_ssize_t size)
 static PyObject *
 Q_get(void *ptr, Py_ssize_t size)
 {
-    {
-        unsigned long long int val;
-        memcpy(&val, ((unsigned int*)ptr) - 1, sizeof(val));
-        fprintf(stderr, "Q_get val: %llx\n", val);
-        fprintf(stderr, "Q_get %zi\tnum: %zi\n", LOW_BIT(size), NUM_BITS(size));
-        GET_BITFIELD(val, size);
-        fprintf(stderr, "val: %llx\n", val);
-    }
-
     unsigned long long val;
     memcpy(&val, ptr, sizeof(val));
     GET_BITFIELD(val, size);

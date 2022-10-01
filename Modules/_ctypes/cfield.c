@@ -39,19 +39,17 @@ PyCField_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 }
 
 static inline
-int round_up(int numToRound, int multiple)
-{
-    if (multiple == 0)
-        return numToRound;
-    return ((numToRound + multiple - 1) / multiple) * multiple;
-}
-
-static inline
 int round_down(int numToRound, int multiple)
 {
     if (multiple == 0)
         return numToRound;
     return (numToRound / multiple) * multiple;
+}
+
+static inline
+int round_up(int numToRound, int multiple)
+{
+    return -round_down(-numToRound, multiple);
 }
 
 static inline

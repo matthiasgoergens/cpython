@@ -239,8 +239,10 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
 {
     // TODO(Matthias): We don't handle neither windows nor big_endian nor pack, 
     // yet. I don't know enough about them.  Fall back to old logic.
+    // Same for *poffset not 0.  There's some basedict logic in our caller that 
+    // I don't understand.
     #ifndef MS_WIN32
-    if(big_endian || pack)
+    if(big_endian || pack || *poffset)
     #endif
     {
         fprintf(stderr, "Falling back\n");
@@ -250,23 +252,29 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
                 pack, big_endian);
     }
 
+    // Change:
+    // * pbitofs is now relative to the start of the struct, not the start of 
+    // the current field
+    // * we don't need pfield_size anymore
+    // * same for poffset, unless it's in use by our caller?
+    //      poffset doesn't seem to be used after this function returns.
+    //      Though we might have to honour it's starting point?
+    //      I guess fall back, if it ain't zero?
+    // How does size work?  I think we just need to give it the size of how 
+    // many bits we need.  We can calculate that from pbitsof afresh.
+
     fprintf(stderr, "PyCField_FromDesc bitsize: %i\tindex: %li\tpbitsof: %i\tpfield_size: %li\t8*poffset: %li\n", bitsize, index, *pbitofs, *pfield_size, 8 * *poffset);
-    CFieldObject *self;
-    PyObject *proto;
-    Py_ssize_t size, align;
     SETFUNC setfunc = NULL;
     GETFUNC getfunc = NULL;
-    StgDictObject *dict;
-    int fieldtype;
 #define NO_BITFIELD 0
 #define NEW_BITFIELD 1
 #define CONT_BITFIELD 2
 #define EXPAND_BITFIELD 3
 
-    self = (CFieldObject *)_PyObject_CallNoArgs((PyObject *)&PyCField_Type);
+    CFieldObject* self = (CFieldObject *)_PyObject_CallNoArgs((PyObject *)&PyCField_Type);
     if (self == NULL)
         return NULL;
-    dict = PyType_stgdict(desc);
+    StgDictObject* dict = PyType_stgdict(desc);
     if (!dict) {
         PyErr_SetString(PyExc_TypeError,
                         "has no _stginfo_");
@@ -282,7 +290,6 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     // Or will this just work?  This might depend on the alignment of the very start of the field?
     // Just treat everything as gcc-packed for now.
     // Hmm, actually, we cannot, because our downstream stuff doesn't support straddling boundaries!
-#ifndef MS_WIN32
     if (bitsize /* this is a bitfield request */
         && *pfield_size /* we have a bitfield open */
         && *pfield_size >= 8 * dict->size
@@ -299,23 +306,17 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         }
         assert(*pbitofs <= *pfield_size);
     }
-#endif
 
+    int fieldtype;
     if (bitsize /* this is a bitfield request */
         && *pfield_size /* we have a bitfield open */
-#ifdef MS_WIN32
-        /* MSVC, GCC with -mms-bitfields */
-        && dict->size * 8 == *pfield_size
-#else
         /* GCC */
         && dict->size * 8 <= *pfield_size
-#endif
         // This condition is wrong?
         // Or rather, it only works when alignment is the same.
         && (*pbitofs + bitsize) <= *pfield_size) {
         fprintf(stderr, "/* continue bit field */\n");
         fieldtype = CONT_BITFIELD;
-#ifndef MS_WIN32
     } else if (bitsize /* this is a bitfield request */
         && *pfield_size /* we have a bitfield open */
         // TODO(Matthias): does this case also need alignment sorted out?
@@ -324,7 +325,6 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         && (*pbitofs + bitsize) <= dict->size * 8) {
         fprintf(stderr, "/* expand bit field */\n");
         fieldtype = EXPAND_BITFIELD;
-#endif
     } else if (bitsize) {
         fprintf(stderr, "/* start new bitfield */\t!\n");
         fieldtype = NEW_BITFIELD;
@@ -338,8 +338,8 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         *pfield_size = 0;
     }
 
-    size = dict->size;
-    proto = desc;
+    Py_ssize_t size = dict->size;
+    PyObject* proto = desc;
 
     /*  Field descriptors for 'c_char * n' are be scpecial cased to
         return a Python string instead of an Array object instance...
@@ -384,26 +384,28 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         *pbitofs = bitsize;
         /* fall through */
     case NO_BITFIELD:
-        if (pack)
-            align = min(pack, dict->align);
-        else
-            align = dict->align;
-        if (align && *poffset % align) {
-            Py_ssize_t delta = align - (*poffset % align);
-            *psize += delta;
-            *poffset += delta;
+        {
+            Py_ssize_t align;
+            if (pack)
+                align = min(pack, dict->align);
+            else
+                align = dict->align;
+            if (align && *poffset % align) {
+                Py_ssize_t delta = align - (*poffset % align);
+                *psize += delta;
+                *poffset += delta;
+            }
+
+            if (bitsize == 0)
+                self->size = size;
+            *psize += size;
+
+            self->offset = *poffset;
+            *poffset += size;
+
+            *palign = align;
         }
-
-        if (bitsize == 0)
-            self->size = size;
-        *psize += size;
-
-        self->offset = *poffset;
-        *poffset += size;
-
-        *palign = align;
         break;
-
     case EXPAND_BITFIELD:
         *poffset += dict->size - *pfield_size/8;
         *psize += dict->size - *pfield_size/8;

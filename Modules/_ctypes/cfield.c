@@ -234,7 +234,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     if(big_endian || pack || *poffset || *pfield_size)
     #endif
     {
-        // Fall back to old behaviour for cases that I don't understand well 
+        // Fall back to old behaviour for cases that I don't understand well
         // enough.
         // TODO(Matthias): Learn enough so we don't need to fall back.
         return PyCField_FromDesc_old(desc, index,
@@ -244,14 +244,14 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     }
 
     // Change:
-    // * pbitofs is now relative to the start of the struct, not the start of 
+    // * pbitofs is now relative to the start of the struct, not the start of
     // the current field
     // * we don't need pfield_size anymore
     // * same for poffset, unless it's in use by our caller?
     //      poffset doesn't seem to be used after this function returns.
     //      Though we might have to honour it's starting point?
     //      I guess fall back, if it ain't zero?
-    // How does size work?  I think we just need to give it the size of how 
+    // How does size work?  I think we just need to give it the size of how
     // many bits we need.  We can calculate that from pbitsof afresh.
 
     CFieldObject* self = (CFieldObject *)_PyObject_CallNoArgs((PyObject *)&PyCField_Type);
@@ -264,7 +264,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         Py_DECREF(self);
         return NULL;
     }
-    
+
     int is_bitfield = !!bitsize;
     if(!is_bitfield) {
         bitsize = 8 * dict->size; // might still be 0 afterwards.
@@ -315,7 +315,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
 
     assert(bitsize <= dict->size * 8);
     assert(*poffset == 0);
-    
+
     // We need to fit within alignment and within size.
     // But we only really care about size, when we have a bitfield.
     if(is_bitfield) {
@@ -328,7 +328,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         self->offset = round_down(*pbitofs, 8*dict->align) / 8;
         self->size = dict->size;
     }
-    
+
     *pbitofs += bitsize;
     *psize = round_up(*pbitofs, 8) / 8;
     *palign = dict->align;
@@ -856,7 +856,7 @@ bool_get(void *ptr, Py_ssize_t size)
     return PyBool_FromLong((long)*(_Bool *)ptr);
 }
 
-// This is already wrong.  At least it conflicts with PyCField_FromDesc for 
+// This is already wrong.  At least it conflicts with PyCField_FromDesc for
 // bitfields.
 static PyObject *
 I_set(void *ptr, PyObject *value, Py_ssize_t size)

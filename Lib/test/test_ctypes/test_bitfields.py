@@ -3,7 +3,6 @@ from test.test_ctypes import need_symbol
 from test import support
 import unittest
 import os
-import sys
 
 import _ctypes_test
 
@@ -279,6 +278,7 @@ class BitFieldTest(unittest.TestCase):
                 ]
         self.assertEqual(sizeof(Foo), sizeof(Bar))
 
+    @unittest.skipIf(sys.platform == 'win32', "Doesn't work on Windows, yet")
     def test_mixed_9(self):
         class X(Structure):
             _fields_ = [
@@ -287,6 +287,7 @@ class BitFieldTest(unittest.TestCase):
                 ]
         self.assertEqual(4, sizeof(X))
 
+    @unittest.skipIf(sys.platform == 'win32', "Doesn't work on Windows, yet")
     def test_mixed_10(self):
         class X(Structure):
             _fields_ = [

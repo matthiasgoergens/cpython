@@ -42,7 +42,7 @@ class CFuncPtrTestCase(unittest.TestCase):
         if not WINFUNCTYPE is CFUNCTYPE:
             self.assertRaises(TypeError, s, 1, 2, 3)
 
-    def _test_structures(self):
+    def test_structures(self):
         WNDPROC = WINFUNCTYPE(c_long, c_int, c_int, c_int, c_int)
 
         def wndproc(hwnd, msg, wParam, lParam):

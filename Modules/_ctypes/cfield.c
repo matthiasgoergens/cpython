@@ -255,8 +255,6 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     //      poffset doesn't seem to be used after this function returns.
     //      Though we might have to honour it's starting point?
     //      I guess fall back, if it ain't zero?
-    // How does size work?  I think we just need to give it the size of how
-    // many bits we need.  We can calculate that from pbitsof afresh.
 
     CFieldObject* self = (CFieldObject *)_PyObject_CallNoArgs((PyObject *)&PyCField_Type);
     if (self == NULL)

@@ -69,11 +69,6 @@ Py_ssize_t NUM_BITS(Py_ssize_t x);
  * pbitofs points to the current bit offset, this will be updated.
  * prev_desc points to the type of the previous bitfield, if any.
  */
-// OK, this needs a redesign.  It's a mess.
-// We can keep a structure-global pbitofs around,
-// and create the offset as required.
-// How to handle big-endian bitfields?
-// We need to recreate what they are doing when alignment stays the same.
 PyObject *
 PyCField_FromDesc_old(PyObject *desc, Py_ssize_t index,
                 Py_ssize_t *pfield_size, int bitsize, int *pbitofs,
@@ -235,14 +230,13 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
                 Py_ssize_t *psize, Py_ssize_t *poffset, Py_ssize_t *palign,
                 int pack, int big_endian)
 {
-    // TODO(Matthias): We don't handle neither windows nor big_endian nor pack, 
-    // yet. I don't know enough about them.  Fall back to old logic.
-    // Same for *poffset not 0.  There's some basedict logic in our caller that 
-    // I don't understand.
     #ifndef MS_WIN32
     if(big_endian || pack || *poffset || *pfield_size)
     #endif
     {
+        // Fall back to old behaviour for cases that I don't understand well 
+        // enough.
+        // TODO(Matthias): Learn enough so we don't need to fall back.
         return PyCField_FromDesc_old(desc, index,
                 pfield_size, bitsize, pbitofs,
                 psize, poffset, palign,
@@ -259,9 +253,6 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     //      I guess fall back, if it ain't zero?
     // How does size work?  I think we just need to give it the size of how 
     // many bits we need.  We can calculate that from pbitsof afresh.
-
-    SETFUNC setfunc = NULL;
-    GETFUNC getfunc = NULL;
 
     CFieldObject* self = (CFieldObject *)_PyObject_CallNoArgs((PyObject *)&PyCField_Type);
     if (self == NULL)
@@ -289,6 +280,8 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     /*  Field descriptors for 'c_char * n' are be scpecial cased to
         return a Python string instead of an Array object instance...
     */
+    SETFUNC setfunc = NULL;
+    GETFUNC getfunc = NULL;
     if (PyCArrayTypeObject_Check(proto)) {
         StgDictObject *adict = PyType_stgdict(proto);
         StgDictObject *idict;
@@ -323,8 +316,8 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     assert(bitsize <= dict->size * 8);
     assert(*poffset == 0);
     
-    // We need to fit both within alignment and within size.
-    // But we only really care when we have a bitfield.
+    // We need to fit within alignment and within size.
+    // But we only really care about size, when we have a bitfield.
     if(is_bitfield) {
         self->offset = round_down(*pbitofs, 8*dict->size) / 8;
         Py_ssize_t effective_bitsof = *pbitofs - 8 * self->offset;

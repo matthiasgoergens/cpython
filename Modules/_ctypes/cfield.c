@@ -243,6 +243,7 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     if(big_endian || pack)
     #endif
     {
+        fprintf(stderr, "Falling back\n");
         return PyCField_FromDesc_old(desc, index,
                 pfield_size, bitsize, pbitofs,
                 psize, poffset, palign,

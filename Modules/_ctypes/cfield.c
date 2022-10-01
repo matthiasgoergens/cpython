@@ -39,7 +39,7 @@ PyCField_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 }
 
 static inline
-int round_down(int numToRound, int multiple)
+Py_ssize_t round_down(Py_ssize_t numToRound, Py_ssize_t multiple)
 {
     if (multiple == 0)
         return numToRound;
@@ -47,7 +47,7 @@ int round_down(int numToRound, int multiple)
 }
 
 static inline
-int round_up(int numToRound, int multiple)
+Py_ssize_t round_up(Py_ssize_t numToRound, Py_ssize_t multiple)
 {
     return -round_down(-numToRound, multiple);
 }

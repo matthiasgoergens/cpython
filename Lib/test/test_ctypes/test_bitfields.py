@@ -3,7 +3,6 @@ from test.test_ctypes import need_symbol
 from test import support
 import unittest
 import os
-import sys
 
 import _ctypes_test
 

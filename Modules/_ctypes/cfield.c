@@ -272,7 +272,9 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
         bitsize = 8 * dict->size; // might still be 0 afterwards.
     }
 
-    if (round_down(*pbitofs, 8 * dict->align) < round_down(*pbitofs + bitsize - 1, 8 * dict->align)) {
+    if ((bitsize > 0)
+         && (round_down(*pbitofs, 8 * dict->align)
+            < round_down(*pbitofs + bitsize - 1, 8 * dict->align))) {
         // We would be straddling alignment units.
         *pbitofs = round_up(*pbitofs, 8*dict->align);
     }

@@ -10,3 +10,4 @@ nice make -j8
 
 ./python -m pytest ~/prog/python/bitfields/test.py
 ./python -E  /home/matthias/prog/python/cpythons/bitfields/Tools/scripts/run_tests.py test_ctypes
+nice make test

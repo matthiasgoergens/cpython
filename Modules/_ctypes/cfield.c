@@ -266,9 +266,6 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
 
     SETFUNC setfunc = NULL;
     GETFUNC getfunc = NULL;
-#define NEW_BITFIELD 1
-#define CONT_BITFIELD 2
-#define EXPAND_BITFIELD 3
 
     CFieldObject* self = (CFieldObject *)_PyObject_CallNoArgs((PyObject *)&PyCField_Type);
     if (self == NULL)
@@ -291,11 +288,12 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     // Hmm, actually, we cannot, because our downstream stuff doesn't support straddling boundaries!
     
     // Handle everything as if it was a bit-field.
-    if(!bitsize) {
-        bitsize = 8 * dict->size;
+    int is_bitfield = !!bitsize;
+    if(!is_bitfield) {
+        bitsize = 8 * dict->size; // might still be 0 afterwards.
     }
-    
-    
+
+
     if (round_down(*pbitofs, 8 * dict->align) < round_down(*pbitofs + bitsize - 1, 8 * dict->align)) {
         // We would be straddling alignment units.
         // if(*pbitofs / (8 * dict->align) != (*pbitofs + bitsize - 1) / (8 * dict->align)) {
@@ -352,19 +350,29 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     // From counting the output, we expect 52 = 32 + 20.
     // 8 * (-*palign + size)
 
-    assert(0 < bitsize);
+    // assert(0 < bitsize);
     assert(bitsize <= size * 8);
 
     assert(*poffset == 0);
     
-    self->offset = round_down(*pbitofs, 8*dict->align) / 8;
+    // We need to fit both within alignment and within size.
+    // But we only really care when we have a bitfield.
+    if(is_bitfield) {
+        self->offset = round_down(*pbitofs, 8*dict->size) / 8;
+    } else {
+        self->offset = round_down(*pbitofs, 8*dict->align) / 8;
+    }
     fprintf(stderr, "offset %zi\n", self->offset);
     Py_ssize_t effective_bitsof = *pbitofs - 8 * self->offset;
-    assert(0 <= effective_bitsof);
-    assert(effective_bitsof < 8 * dict->align);
-    assert(effective_bitsof < 8 * dict->size);
+    // assert(0 <= effective_bitsof);
+    // assert(effective_bitsof < 8 * dict->align);
+    // assert(effective_bitsof < 8 * dict->size);
 
-    self->size = (bitsize << 16) + effective_bitsof;
+    if(is_bitfield) {
+        self->size = (bitsize << 16 ) + effective_bitsof;
+    } else {
+        self->size = dict->size;
+    }
 
     // Worry about size vs alignment?
     // For now, only handle the case where the size is a multiple of alignment.

@@ -71,6 +71,11 @@ Py_ssize_t NUM_BITS(Py_ssize_t x);
  * pbitofs points to the current bit offset, this will be updated.
  * prev_desc points to the type of the previous bitfield, if any.
  */
+// OK, this needs a redesign.  It's a mess.
+// We can keep a structure-global pbitofs around,
+// and create the offset as required.
+// How to handle big-endian bitfields?
+// We need to recreate what they are doing when alignment stays the same.
 PyObject *
 PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
                 Py_ssize_t *pfield_size, int bitsize, int *pbitofs,
@@ -128,7 +133,6 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
     }
 #endif
 
-    //
     if (bitsize /* this is a bitfield request */
         && *pfield_size /* we have a bitfield open */
 #ifdef MS_WIN32

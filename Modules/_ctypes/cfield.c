@@ -237,14 +237,18 @@ PyCField_FromDesc(PyObject *desc, Py_ssize_t index,
                 Py_ssize_t *psize, Py_ssize_t *poffset, Py_ssize_t *palign,
                 int pack, int big_endian)
 {
-    // TODO(Matthias): We don't handle neither big_endian nor pack, yet.
-    // I don't know enough about them.  Fall back to old logic.
-    if(big_endian || pack) {
+    // TODO(Matthias): We don't handle neither windows nor big_endian nor pack, 
+    // yet. I don't know enough about them.  Fall back to old logic.
+    #ifndef MS_WIN32
+    if(big_endian || pack)
+    #endif
+    {
         return PyCField_FromDesc_old(desc, index,
                 pfield_size, bitsize, pbitofs,
                 psize, poffset, palign,
                 pack, big_endian);
     }
+
     fprintf(stderr, "PyCField_FromDesc bitsize: %i\tindex: %li\tpbitsof: %i\tpfield_size: %li\t8*poffset: %li\n", bitsize, index, *pbitofs, *pfield_size, 8 * *poffset);
     CFieldObject *self;
     PyObject *proto;

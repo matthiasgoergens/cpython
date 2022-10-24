@@ -325,68 +325,6 @@ dictkeys_decref(PyDictKeysObject *dk)
     }
 }
 
-/* lookup indices.  returns DKIX_EMPTY, DKIX_DUMMY, or ix >=0 */
-static inline Py_ssize_t
-dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
-{
-    int log2size = DK_LOG_SIZE(keys);
-    Py_ssize_t ix;
-
-    if (log2size < 8) {
-        const int8_t *indices = (const int8_t*)(keys->dk_indices);
-        ix = indices[i];
-    }
-    else if (log2size < 16) {
-        const int16_t *indices = (const int16_t*)(keys->dk_indices);
-        ix = indices[i];
-    }
-#if SIZEOF_VOID_P > 4
-    else if (log2size >= 32) {
-        const int64_t *indices = (const int64_t*)(keys->dk_indices);
-        ix = indices[i];
-    }
-#endif
-    else {
-        const int32_t *indices = (const int32_t*)(keys->dk_indices);
-        ix = indices[i];
-    }
-    assert(ix >= DKIX_DUMMY);
-    return ix;
-}
-
-/* write to indices. */
-static inline void
-dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
-{
-    int log2size = DK_LOG_SIZE(keys);
-
-    assert(ix >= DKIX_DUMMY);
-    assert(keys->dk_version == 0);
-
-    if (log2size < 8) {
-        int8_t *indices = (int8_t*)(keys->dk_indices);
-        assert(ix <= 0x7f);
-        indices[i] = (char)ix;
-    }
-    else if (log2size < 16) {
-        int16_t *indices = (int16_t*)(keys->dk_indices);
-        assert(ix <= 0x7fff);
-        indices[i] = (int16_t)ix;
-    }
-#if SIZEOF_VOID_P > 4
-    else if (log2size >= 32) {
-        int64_t *indices = (int64_t*)(keys->dk_indices);
-        indices[i] = ix;
-    }
-#endif
-    else {
-        int32_t *indices = (int32_t*)(keys->dk_indices);
-        assert(ix <= 0x7fffffff);
-        indices[i] = (int32_t)ix;
-    }
-}
-
-
 /* USABLE_FRACTION is the maximum dictionary load.
  * Increasing this ratio makes dictionaries more dense resulting in more
  * collisions.  Decreasing it improves sparseness at the expense of spreading
@@ -399,6 +337,79 @@ dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
  * Fractions around 1/2 to 2/3 seem to work well in practice.
  */
 #define USABLE_FRACTION(n) (((n) << 1)/3)
+
+/* lookup indices.  returns DKIX_EMPTY, DKIX_DUMMY, or ix >=0 */
+static inline Py_ssize_t
+dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
+{
+    const int log2size = DK_LOG_SIZE(keys);
+    Py_ssize_t ix;
+
+    if (log2size <= 8) {
+        const uint8_t *indices = (const uint8_t*)(keys->dk_indices);
+        ix = indices[i];
+    }
+    else if (log2size <= 16) {
+        const uint16_t *indices = (const uint16_t*)(keys->dk_indices);
+        ix = indices[i];
+    }
+#if SIZEOF_VOID_P > 4
+    else if (log2size >= 32) {
+        const uint64_t *indices = (const uint64_t*)(keys->dk_indices);
+        ix = indices[i];
+    }
+#endif
+    else {
+        const uint32_t *indices = (const uint32_t*)(keys->dk_indices);
+        ix = indices[i];
+    }
+
+    assert(ix >= 0);
+    // Purely for my debugging:
+    if(!(ix + DKIX_LOWEST_RESERVED <= USABLE_FRACTION((Py_ssize_t)1 << log2size))) {
+        printf("\n");
+        printf("ix: %ld\n", ix);
+        printf("log2size: %d\n", log2size);
+        printf("dk_log2_index_bytes: %d\n", keys->dk_log2_index_bytes);
+        printf("dk_usable: %ld\n", keys->dk_usable);
+    }
+    assert(ix + DKIX_LOWEST_RESERVED <= USABLE_FRACTION((Py_ssize_t)1 << log2size));
+    return ix + DKIX_LOWEST_RESERVED;
+}
+
+/* write to indices. */
+static inline void
+dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
+{
+    int log2size = DK_LOG_SIZE(keys);
+
+    assert(ix >= DKIX_LOWEST_RESERVED);
+    assert(ix <= USABLE_FRACTION(1 << log2size));
+    assert(keys->dk_version == 0);
+    const uint64_t uix = ix - DKIX_LOWEST_RESERVED;
+
+    if (log2size <= 8) {
+        uint8_t *indices = (uint8_t*)(keys->dk_indices);
+        assert(uix < 0xff);
+        indices[i] = (uint8_t)uix;
+    }
+    else if (log2size <= 16) {
+        uint16_t *indices = (uint16_t*)(keys->dk_indices);
+        assert(uix < 0xffff);
+        indices[i] = (uint16_t)uix;
+    }
+#if SIZEOF_VOID_P > 4
+    else if (log2size > 32) {
+        uint64_t *indices = (uint64_t*)(keys->dk_indices);
+        indices[i] = (uint64_t)uix;
+    }
+#endif
+    else {
+        uint32_t *indices = (uint32_t*)(keys->dk_indices);
+        assert(uix < 0xffffffff);
+        indices[i] = (uint32_t)uix;
+    }
+}
 
 /* Find the smallest dk_size >= minsize. */
 static inline uint8_t
@@ -601,14 +612,14 @@ new_keys_object(uint8_t log2_size, bool unicode)
     assert(log2_size >= PyDict_LOG_MINSIZE);
 
     usable = USABLE_FRACTION(1<<log2_size);
-    if (log2_size < 8) {
+    if (log2_size <= 8) {
         log2_bytes = log2_size;
     }
-    else if (log2_size < 16) {
+    else if (log2_size <= 16) {
         log2_bytes = log2_size + 1;
     }
 #if SIZEOF_VOID_P > 4
-    else if (log2_size >= 32) {
+    else if (log2_size > 32) {
         log2_bytes = log2_size + 3;
     }
 #endif
@@ -647,8 +658,9 @@ new_keys_object(uint8_t log2_size, bool unicode)
     dk->dk_nentries = 0;
     dk->dk_usable = usable;
     dk->dk_version = 0;
-    memset(&dk->dk_indices[0], 0xff, ((size_t)1 << log2_bytes));
+    memset(&dk->dk_indices[0], 0, ((size_t)1 << log2_bytes));
     memset(&dk->dk_indices[(size_t)1 << log2_bytes], 0, entry_size * usable);
+
     return dk;
 }
 

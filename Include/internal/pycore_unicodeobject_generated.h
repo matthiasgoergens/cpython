@@ -588,6 +588,9 @@ _PyUnicode_InitStaticStrings(void) {
     string = &_Py_ID(_loop);
     assert(_PyUnicode_CheckConsistency(string, 1));
     PyUnicode_InternInPlace(&string);
+    string = &_Py_ID(_ms_struct_);
+    assert(_PyUnicode_CheckConsistency(string, 1));
+    PyUnicode_InternInPlace(&string);
     string = &_Py_ID(_needs_com_addref_);
     assert(_PyUnicode_CheckConsistency(string, 1));
     PyUnicode_InternInPlace(&string);

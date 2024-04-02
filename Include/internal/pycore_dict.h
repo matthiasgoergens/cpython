@@ -116,6 +116,7 @@ extern int _PyDict_Pop_KnownHash(
 #define DKIX_DUMMY (-2)  /* Used internally */
 #define DKIX_ERROR (-3)
 #define DKIX_KEY_CHANGED (-4) /* Used internally */
+#define DKIX_TOTAL_RESERVED_VALUES (4) /* Used internally */
 
 typedef enum {
     DICT_KEYS_GENERAL = 0,
@@ -131,7 +132,7 @@ struct _dictkeysobject {
     uint8_t dk_log2_size;
 
     /* Size of the hash table (dk_indices) by bytes. */
-    uint8_t dk_log2_index_bytes;
+    uint8_t dk_log2_size_fixup;
 
     /* Kind of keys */
     uint8_t dk_kind;
@@ -193,7 +194,8 @@ struct _dictvalues {
 
 static inline void* _DK_ENTRIES(PyDictKeysObject *dk) {
     int8_t *indices = (int8_t*)(dk->dk_indices);
-    size_t index = (size_t)1 << dk->dk_log2_index_bytes;
+    const size_t log2_size = dk->dk_log2_size;
+    const size_t index = (log2_size << log2_size) / 8 + dk->dk_log2_size_fixup;
     return (&indices[index]);
 }
 static inline PyDictKeyEntry* DK_ENTRIES(PyDictKeysObject *dk) {

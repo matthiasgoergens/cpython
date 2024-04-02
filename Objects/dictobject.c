@@ -19,7 +19,7 @@ layout:
 +---------------------+
 | dk_refcnt           |
 | dk_log2_size        |
-| dk_log2_index_bytes |
+| dk_log2_size_fixup  |
 | dk_kind             |
 | dk_version          |
 | dk_usable           |
@@ -218,6 +218,8 @@ static inline void split_keys_entry_added(PyDictKeysObject *keys)
 #define LOAD_KEYS_NENTIRES(keys) keys->dk_nentries
 #define IS_DICT_SHARED(mp) (false)
 #define SET_DICT_SHARED(mp)
+// Neither of those are used in the GIL world at the moment.
+// TODO: make the no-GIL version work.
 #define LOAD_INDEX(keys, size, idx) ((const int##size##_t*)(keys->dk_indices))[idx]
 #define STORE_INDEX(keys, size, idx, value) ((int##size##_t*)(keys->dk_indices))[idx] = (int##size##_t)value
 
@@ -482,22 +484,30 @@ static inline Py_ssize_t
 dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 {
     int log2size = DK_LOG_SIZE(keys);
-    Py_ssize_t ix;
-
     if (log2size < 8) {
+        Py_ssize_t ix;
         ix = LOAD_INDEX(keys, 8, i);
+        assert(ix >= DKIX_DUMMY);
+        return ix;
     }
-    else if (log2size < 16) {
-        ix = LOAD_INDEX(keys, 16, i);
-    }
-#if SIZEOF_VOID_P > 4
-    else if (log2size >= 32) {
-        ix = LOAD_INDEX(keys, 64, i);
-    }
-#endif
-    else {
-        ix = LOAD_INDEX(keys, 32, i);
-    }
+
+    assert(log2size <= 64 - 8);
+    assert(0 < log2size);
+
+    const uint64_t start = i * log2size;
+    const uint64_t start_byte = start / 8;
+    const uint64_t start_bit = start % 8;
+
+    const char* position = &(keys->dk_indices[start_byte]);
+    uint64_t value;
+    memcpy(&value, position, sizeof(uint64_t));
+    value += DKIX_TOTAL_RESERVED_VALUES << start_bit;
+    value <<= 64 - start_bit - log2size;
+    // To prepare for arithmetic right shift:
+
+    value >>= 64 - log2size;
+    value -= DKIX_TOTAL_RESERVED_VALUES;
+    Py_ssize_t ix = value;
     assert(ix >= DKIX_DUMMY);
     return ix;
 }
@@ -514,20 +524,30 @@ dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
     if (log2size < 8) {
         assert(ix <= 0x7f);
         STORE_INDEX(keys, 8, i, ix);
+        return;
     }
-    else if (log2size < 16) {
-        assert(ix <= 0x7fff);
-        STORE_INDEX(keys, 16, i, ix);
-    }
-#if SIZEOF_VOID_P > 4
-    else if (log2size >= 32) {
-        STORE_INDEX(keys, 64, i, ix);
-    }
-#endif
-    else {
-        assert(ix <= 0x7fffffff);
-        STORE_INDEX(keys, 32, i, ix);
-    }
+
+    assert(log2size <= 64 - 8);
+    assert(0 < log2size);
+
+    const uint64_t start = i * log2size;
+    const uint64_t start_byte = start / 8;
+    const uint64_t start_bit = start % 8;
+
+    char* position = &(keys->dk_indices[start_byte]);
+    uint64_t prev_value;
+    memcpy(&prev_value, position, sizeof(uint64_t));
+
+    uint64_t mask = UINT64_MAX >> (64 - log2size);
+
+    uint64_t value = ix;
+
+    value <<= start_bit;
+    mask <<= start_bit;
+
+    uint64_t new_value = (prev_value & ~mask) | (value & mask);
+
+    memcpy(position, &new_value, sizeof(uint64_t));
 }
 
 
@@ -597,7 +617,7 @@ estimate_log2_keysize(Py_ssize_t n)
 static PyDictKeysObject empty_keys_struct = {
         _Py_IMMORTAL_REFCNT, /* dk_refcnt */
         0, /* dk_log2_size */
-        0, /* dk_log2_index_bytes */
+        0, /* dk_log2_size_fixup */
         DICT_KEYS_UNICODE, /* dk_kind */
 #ifdef Py_GIL_DISABLED
         {0}, /* dk_mutex */
@@ -742,25 +762,30 @@ new_keys_object(PyInterpreterState *interp, uint8_t log2_size, bool unicode)
 {
     PyDictKeysObject *dk;
     Py_ssize_t usable;
-    int log2_bytes;
+    int log2_size_fixup;
     size_t entry_size = unicode ? sizeof(PyDictUnicodeEntry) : sizeof(PyDictKeyEntry);
 
     assert(log2_size >= PyDict_LOG_MINSIZE);
 
     usable = USABLE_FRACTION((size_t)1<<log2_size);
+
+    uint simple_size = (log2_size << log2_size) / 8;
+
+    size_t accurate_size;
     if (log2_size < 8) {
-        log2_bytes = log2_size;
+        accurate_size = 1ul << log2_size;
+    } else {
+        uint size_in_bits = log2_size << log2_size;
+        // Round up to nearest 64 bytes.
+        uint size_in_words = (size_in_bits + 63) / 64;
+        uint size_in_bytes = size_in_words * 8;
+        accurate_size = size_in_bytes;
     }
-    else if (log2_size < 16) {
-        log2_bytes = log2_size + 1;
-    }
-#if SIZEOF_VOID_P > 4
-    else if (log2_size >= 32) {
-        log2_bytes = log2_size + 3;
-    }
-#endif
-    else {
-        log2_bytes = log2_size + 2;
+    assert(accurate_size >= simple_size);
+    assert(accurate_size <= simple_size + 255);
+    log2_size_fixup = accurate_size - simple_size;
+    {
+        assert((log2_size << log2_size) / 8 + log2_size_fixup == (int) accurate_size);
     }
 
 #ifdef WITH_FREELISTS
@@ -773,7 +798,7 @@ new_keys_object(PyInterpreterState *interp, uint8_t log2_size, bool unicode)
 #endif
     {
         dk = PyMem_Malloc(sizeof(PyDictKeysObject)
-                          + ((size_t)1 << log2_bytes)
+                          + accurate_size
                           + entry_size * usable);
         if (dk == NULL) {
             PyErr_NoMemory();
@@ -785,7 +810,7 @@ new_keys_object(PyInterpreterState *interp, uint8_t log2_size, bool unicode)
 #endif
     dk->dk_refcnt = 1;
     dk->dk_log2_size = log2_size;
-    dk->dk_log2_index_bytes = log2_bytes;
+    dk->dk_log2_size_fixup = log2_size_fixup;
     dk->dk_kind = unicode ? DICT_KEYS_UNICODE : DICT_KEYS_GENERAL;
 #ifdef Py_GIL_DISABLED
     dk->dk_mutex = (PyMutex){0};
@@ -793,8 +818,8 @@ new_keys_object(PyInterpreterState *interp, uint8_t log2_size, bool unicode)
     dk->dk_nentries = 0;
     dk->dk_usable = usable;
     dk->dk_version = 0;
-    memset(&dk->dk_indices[0], 0xff, ((size_t)1 << log2_bytes));
-    memset(&dk->dk_indices[(size_t)1 << log2_bytes], 0, entry_size * usable);
+    memset(&dk->dk_indices[0], 0xff, accurate_size);
+    memset(&dk->dk_indices[accurate_size], 0, entry_size * usable);
     return dk;
 }
 
@@ -4471,7 +4496,8 @@ _PyDict_KeysSize(PyDictKeysObject *keys)
     size_t es = (keys->dk_kind == DICT_KEYS_GENERAL
                  ? sizeof(PyDictKeyEntry) : sizeof(PyDictUnicodeEntry));
     size_t size = sizeof(PyDictKeysObject);
-    size += (size_t)1 << keys->dk_log2_index_bytes;
+    size_t dk_log2_size = keys->dk_log2_size;
+    size += (dk_log2_size << dk_log2_size) / 8 + keys->dk_log2_size_fixup;
     size += USABLE_FRACTION((size_t)DK_SIZE(keys)) * es;
     return size;
 }

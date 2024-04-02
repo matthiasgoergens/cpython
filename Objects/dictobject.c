@@ -762,7 +762,7 @@ new_keys_object(PyInterpreterState *interp, uint8_t log2_size, bool unicode)
 {
     PyDictKeysObject *dk;
     Py_ssize_t usable;
-    int log2_bytes;
+    int log2_size_fixup;
     size_t entry_size = unicode ? sizeof(PyDictUnicodeEntry) : sizeof(PyDictKeyEntry);
 
     assert(log2_size >= PyDict_LOG_MINSIZE);
@@ -783,9 +783,9 @@ new_keys_object(PyInterpreterState *interp, uint8_t log2_size, bool unicode)
     }
     assert(accurate_size >= simple_size);
     assert(accurate_size <= simple_size + 255);
-    log2_bytes = accurate_size - simple_size;
+    log2_size_fixup = accurate_size - simple_size;
     {
-        assert((log2_size << log2_size) / 8 + log2_bytes == (int) accurate_size);
+        assert((log2_size << log2_size) / 8 + log2_size_fixup == (int) accurate_size);
     }
 
 #ifdef WITH_FREELISTS
@@ -810,7 +810,7 @@ new_keys_object(PyInterpreterState *interp, uint8_t log2_size, bool unicode)
 #endif
     dk->dk_refcnt = 1;
     dk->dk_log2_size = log2_size;
-    dk->dk_log2_size_fixup = log2_bytes;
+    dk->dk_log2_size_fixup = log2_size_fixup;
     dk->dk_kind = unicode ? DICT_KEYS_UNICODE : DICT_KEYS_GENERAL;
 #ifdef Py_GIL_DISABLED
     dk->dk_mutex = (PyMutex){0};

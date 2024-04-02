@@ -484,11 +484,34 @@ static inline Py_ssize_t
 dictkeys_get_index(const PyDictKeysObject *keys, Py_ssize_t i)
 {
     int log2size = DK_LOG_SIZE(keys);
-    if (log2size < 8) {
-        Py_ssize_t ix;
-        ix = LOAD_INDEX(keys, 8, i);
+    if (log2size <= 8) {
+        const Py_ssize_t idx = i;
+        uint8_t ix_raw = ((const uint8_t *)(keys->dk_indices))[idx] + DKIX_TOTAL_RESERVED_VALUES;
+        Py_ssize_t ix = ix_raw;
+        ix -= DKIX_TOTAL_RESERVED_VALUES;
         assert(ix >= DKIX_DUMMY);
         return ix;
+    } else if (log2size <= 11) {
+        const Py_ssize_t idx = i;
+        uint16_t ix_raw = ((const uint16_t *)(keys->dk_indices))[idx] + DKIX_TOTAL_RESERVED_VALUES;
+        Py_ssize_t ix = ix_raw;
+        ix -= DKIX_TOTAL_RESERVED_VALUES;
+        assert(ix >= DKIX_DUMMY);
+        return ix;
+    // } else if (log2size <= 32) {
+    //     const Py_ssize_t idx = i;
+    //     uint32_t ix_raw = ((const uint32_t *)(keys->dk_indices))[idx] + DKIX_TOTAL_RESERVED_VALUES;
+    //     Py_ssize_t ix = ix_raw;
+    //     ix -= DKIX_TOTAL_RESERVED_VALUES;
+    //     assert(ix >= DKIX_DUMMY);
+    //     return ix;
+    // } else {
+    //     const Py_ssize_t idx = i;
+    //     uint64_t ix_raw = ((const uint64_t *)(keys->dk_indices))[idx] + DKIX_TOTAL_RESERVED_VALUES;
+    //     Py_ssize_t ix = ix_raw;
+    //     ix -= DKIX_TOTAL_RESERVED_VALUES;
+    //     assert(ix >= DKIX_DUMMY);
+    //     return ix;
     }
 
     assert(log2size <= 64 - 8);
@@ -521,9 +544,13 @@ dictkeys_set_index(PyDictKeysObject *keys, Py_ssize_t i, Py_ssize_t ix)
     assert(ix >= DKIX_DUMMY);
     assert(keys->dk_version == 0);
 
-    if (log2size < 8) {
-        assert(ix <= 0x7f);
+    if (log2size <= 8) {
+        assert(ix < 0xff - DKIX_TOTAL_RESERVED_VALUES);
         STORE_INDEX(keys, 8, i, ix);
+        return;
+    } else if (log2size <= 11) {
+        assert(ix < 0xffff - DKIX_TOTAL_RESERVED_VALUES);
+        STORE_INDEX(keys, 16, i, ix);
         return;
     }
 
@@ -762,7 +789,7 @@ new_keys_object(PyInterpreterState *interp, uint8_t log2_size, bool unicode)
 {
     PyDictKeysObject *dk;
     Py_ssize_t usable;
-    int log2_bytes;
+    int log2_size_fixup;
     size_t entry_size = unicode ? sizeof(PyDictUnicodeEntry) : sizeof(PyDictKeyEntry);
 
     assert(log2_size >= PyDict_LOG_MINSIZE);
@@ -772,8 +799,10 @@ new_keys_object(PyInterpreterState *interp, uint8_t log2_size, bool unicode)
     uint simple_size = (log2_size << log2_size) / 8;
 
     size_t accurate_size;
-    if (log2_size < 8) {
+    if (log2_size <= 8) {
         accurate_size = 1ul << log2_size;
+    } else if (log2_size <= 11) {
+        accurate_size = 2ul << log2_size;
     } else {
         uint size_in_bits = log2_size << log2_size;
         // Round up to nearest 64 bytes.
@@ -783,9 +812,9 @@ new_keys_object(PyInterpreterState *interp, uint8_t log2_size, bool unicode)
     }
     assert(accurate_size >= simple_size);
     assert(accurate_size <= simple_size + 255);
-    log2_bytes = accurate_size - simple_size;
+    log2_size_fixup = accurate_size - simple_size;
     {
-        assert((log2_size << log2_size) / 8 + log2_bytes == (int) accurate_size);
+        assert((log2_size << log2_size) / 8 + log2_size_fixup == (int) accurate_size);
     }
 
 #ifdef WITH_FREELISTS
@@ -810,7 +839,7 @@ new_keys_object(PyInterpreterState *interp, uint8_t log2_size, bool unicode)
 #endif
     dk->dk_refcnt = 1;
     dk->dk_log2_size = log2_size;
-    dk->dk_log2_size_fixup = log2_bytes;
+    dk->dk_log2_size_fixup = log2_size_fixup;
     dk->dk_kind = unicode ? DICT_KEYS_UNICODE : DICT_KEYS_GENERAL;
 #ifdef Py_GIL_DISABLED
     dk->dk_mutex = (PyMutex){0};

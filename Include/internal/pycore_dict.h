@@ -195,8 +195,7 @@ struct _dictvalues {
 static inline void* _DK_ENTRIES(PyDictKeysObject *dk) {
     int8_t *indices = (int8_t*)(dk->dk_indices);
     const size_t log2_size = dk->dk_log2_size;
-    const size_t index = ((log2_size << log2_size) / 64 + ((size_t) dk->dk_log2_size_fixup) * 8) * 8;
-    // const size_t index = (log2_size << log2_size) / 8 + dk->dk_log2_size_fixup;
+    const size_t index = (log2_size << log2_size) / 8 + dk->dk_log2_size_fixup;
     return (&indices[index]);
 }
 static inline PyDictKeyEntry* DK_ENTRIES(PyDictKeysObject *dk) {

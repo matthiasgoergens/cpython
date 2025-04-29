@@ -1650,10 +1650,7 @@ AC_ARG_WITH(trace-refs,
   with_trace_refs=no)
 AC_MSG_RESULT($with_trace_refs)
 
-if test "$with_trace_refs" = "yes"
-then
-  AC_DEFINE(Py_TRACE_REFS, 1, [Define if you want to enable tracing references for debugging purpose])
-fi
+AC_DEFINE(Py_TRACE_REFS, 1, [Define if you want to enable tracing references for debugging purpose])
 
 
 # Check for --enable-pystats
@@ -1672,7 +1669,7 @@ AS_VAR_IF([enable_pystats], [yes], [
 
 # Check for --with-assertions.
 # This allows enabling assertions without Py_DEBUG.
-assertions='false'
+assertions='true'
 AC_MSG_CHECKING(for --with-assertions)
 AC_ARG_WITH(assertions,
             AS_HELP_STRING([--with-assertions],[build with C assertions enabled (default is no)]),
@@ -2997,7 +2994,12 @@ LDFLAGS="-fsanitize=address $LDFLAGS"
 # ASan works by controlling memory allocation, our own malloc interferes.
 with_pymalloc="no"
 ],
-[AC_MSG_RESULT(no)])
+[AC_MSG_RESULT($withval)
+BASECFLAGS="-fsanitize=address -fno-omit-frame-pointer $BASECFLAGS"
+LDFLAGS="-fsanitize=address $LDFLAGS"
+# ASan works by controlling memory allocation, our own malloc interferes.
+with_pymalloc="no"
+])
 
 AC_MSG_CHECKING(for --with-memory-sanitizer)
 AC_ARG_WITH(memory_sanitizer,
@@ -3012,7 +3014,14 @@ LDFLAGS="-fsanitize=memory -fsanitize-memory-track-origins=2 $LDFLAGS"
 # MSan works by controlling memory allocation, our own malloc interferes.
 with_pymalloc="no"
 ],
-[AC_MSG_RESULT(no)])
+[AC_MSG_RESULT($withval)
+AX_CHECK_COMPILE_FLAG([-fsanitize=memory],[
+BASECFLAGS="-fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer $BASECFLAGS"
+LDFLAGS="-fsanitize=memory -fsanitize-memory-track-origins=2 $LDFLAGS"
+],[AC_MSG_ERROR([The selected compiler doesn't support memory sanitizer])])
+# MSan works by controlling memory allocation, our own malloc interferes.
+with_pymalloc="no"
+])
 
 AC_MSG_CHECKING(for --with-undefined-behavior-sanitizer)
 AC_ARG_WITH(undefined_behavior_sanitizer,
@@ -3025,8 +3034,10 @@ LDFLAGS="-fsanitize=undefined $LDFLAGS"
 with_ubsan="yes"
 ],
 [
-AC_MSG_RESULT(no)
-with_ubsan="no"
+AC_MSG_RESULT($withval)
+BASECFLAGS="-fsanitize=undefined $BASECFLAGS"
+LDFLAGS="-fsanitize=undefined $LDFLAGS"
+with_ubsan="yes"
 ])
 
 # Set info about shared libraries.

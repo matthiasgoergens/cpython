@@ -5,6 +5,7 @@
 #include "pycore_moduleobject.h"  // _PyModule_GetState()
 #include "pycore_pyatomic_ft_wrappers.h"
 #include "pycore_typeobject.h"    // _PyType_GetModuleState()
+#include "cpython/qdictobject.h"
 
 #include <stddef.h>
 
@@ -2815,6 +2816,7 @@ PyDoc_STRVAR(collections_doc,
 "High performance data structures.\n\
 - deque:        ordered collection accessible from endpoints only\n\
 - defaultdict:  dict subclass with a default value factory\n\
+- QOrderedDict: experimental ordered dictionary clone\n\
 ");
 
 static struct PyMethodDef collections_methods[] = {
@@ -2843,6 +2845,9 @@ collections_exec(PyObject *module) {
     ADD_TYPE(module, &tuplegetter_spec, state->tuplegetter_type, NULL);
 
     if (PyModule_AddType(module, &PyODict_Type) < 0) {
+        return -1;
+    }
+    if (PyModule_AddType(module, &PyQDict_Type) < 0) {
         return -1;
     }
 

@@ -1569,6 +1569,18 @@ class DictTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             d.get(key2)
 
+    def test_random_key(self):
+        d = {str(i): i for i in range(10)}
+        seen = set()
+        for _ in range(50):
+            k = d.random_key()
+            self.assertIn(k, d)
+            seen.add(k)
+        self.assertGreater(len(seen), 1)
+
+        with self.assertRaises(KeyError):
+            {}.random_key()
+
 
 class CAPITest(unittest.TestCase):
 

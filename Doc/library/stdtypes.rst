@@ -4994,6 +4994,13 @@ can be used interchangeably to index the same dictionary entry.
          LIFO order is now guaranteed. In prior versions, :meth:`popitem` would
          return an arbitrary key/value pair.
 
+   .. method:: random_key()
+
+      Return a random key from the dictionary in expected :math:`O(1)` time.
+      If the dictionary is empty, :class:`KeyError` is raised.
+
+      .. versionadded:: 3.15
+
    .. describe:: reversed(d)
 
       Return a reverse iterator over the keys of the dictionary. This is a

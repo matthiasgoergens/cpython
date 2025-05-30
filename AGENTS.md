@@ -1,4 +1,4 @@
-In general, have a look at `README.rst` in this repository.  Check what dependencies are needed, and how to install them.
+In general, have a look at `README.rst` in this repository.  Check what dependencies are needed, and how to install them.  But please don't configure and make in the root directory.  Do it in the `build` directory instead as described below.
 
 Once you have the dependencies installed, you can build the interpreter.
 To build, navigate to the `build` directory and run:
@@ -7,16 +7,19 @@ To build, navigate to the `build` directory and run:
 ./my_configure
 ```
 
-Afterwards in that directory you can run the usual build and test commands:
+Afterwards in that directory you can run the usual build and test commands.
+
+You will need to wrap long lines, because otherwise some of the safeguards kick in:
 
 ```bash
-nice make -j
+make -j"$(nproc)" 2>&1 | stdbuf -oL fold -sw 1600
 ```
+
 
 Or if you want to run the tests:
 
 ```bash
-nice make -j test
+nice make -j test 2>&1 | stdbuf -oL fold -sw 1600
 ```
 
 You will find the built interpreter in `build/python`, if you want to try it out with some custom code to check.  That can often be faster than running the

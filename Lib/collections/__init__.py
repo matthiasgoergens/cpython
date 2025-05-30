@@ -18,6 +18,7 @@ __all__ = [
     'ChainMap',
     'Counter',
     'OrderedDict',
+    'QOrderedDict',
     'UserDict',
     'UserList',
     'UserString',
@@ -341,11 +342,20 @@ class OrderedDict(dict):
         new.update(self)
         return new
 
+class QOrderedDict(OrderedDict):
+    """Clone of OrderedDict for qdict experiments."""
+    pass
+
 
 try:
     from _collections import OrderedDict
 except ImportError:
     # Leave the pure Python version in place.
+    pass
+
+try:
+    from _collections import QOrderedDict
+except ImportError:
     pass
 
 

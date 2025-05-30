@@ -4610,6 +4610,85 @@ dict_popitem_impl(PyDictObject *self)
     return res;
 }
 
+/*[clinic input]
+dict.random_key
+
+Return a random key from the dictionary.
+
+If the dictionary is empty, :class:`KeyError` is raised.
+[clinic start generated code]*/
+
+static PyObject *
+dict_random_key_impl(PyDictObject *self)
+/*[clinic end generated code: output=6eecf5f38437fa25 input=132e56ef93e17f3c]*/
+{
+    if (self->ma_used == 0) {
+        PyErr_SetString(PyExc_KeyError, "dictionary is empty");
+        return NULL;
+    }
+
+    if (_PyDict_HasSplitTable(self)) {
+        PyInterpreterState *interp = _PyInterpreterState_GET();
+        if (dictresize(interp, self, DK_LOG_SIZE(self->ma_keys), 1) < 0) {
+            return NULL;
+        }
+    }
+
+    Py_ssize_t n = self->ma_keys->dk_nentries;
+
+    PyObject *random_mod = PyImport_ImportModule("random");
+    if (random_mod == NULL) {
+        return NULL;
+    }
+    PyObject *randrange = PyObject_GetAttrString(random_mod, "randrange");
+    Py_DECREF(random_mod);
+    if (randrange == NULL) {
+        return NULL;
+    }
+    PyObject *n_obj = PyLong_FromSsize_t(n);
+    if (n_obj == NULL) {
+        Py_DECREF(randrange);
+        return NULL;
+    }
+
+    Py_ssize_t i;
+    PyObject *idx_obj;
+    while (1) {
+        idx_obj = PyObject_CallOneArg(randrange, n_obj);
+        if (idx_obj == NULL) {
+            Py_DECREF(randrange);
+            Py_DECREF(n_obj);
+            return NULL;
+        }
+        i = PyLong_AsSsize_t(idx_obj);
+        Py_DECREF(idx_obj);
+        if (i == -1 && PyErr_Occurred()) {
+            Py_DECREF(randrange);
+            Py_DECREF(n_obj);
+            return NULL;
+        }
+
+        if (DK_IS_UNICODE(self->ma_keys)) {
+            PyDictUnicodeEntry *ep0 = DK_UNICODE_ENTRIES(self->ma_keys);
+            if (ep0[i].me_value != NULL) {
+                PyObject *key = Py_NewRef(ep0[i].me_key);
+                Py_DECREF(randrange);
+                Py_DECREF(n_obj);
+                return key;
+            }
+        }
+        else {
+            PyDictKeyEntry *ep0 = DK_ENTRIES(self->ma_keys);
+            if (ep0[i].me_value != NULL) {
+                PyObject *key = Py_NewRef(ep0[i].me_key);
+                Py_DECREF(randrange);
+                Py_DECREF(n_obj);
+                return key;
+            }
+        }
+    }
+}
+
 static int
 dict_traverse(PyObject *op, visitproc visit, void *arg)
 {
@@ -4750,6 +4829,7 @@ static PyMethodDef mapp_methods[] = {
     DICT_SETDEFAULT_METHODDEF
     DICT_POP_METHODDEF
     DICT_POPITEM_METHODDEF
+    DICT_RANDOM_KEY_METHODDEF
     DICT_KEYS_METHODDEF
     DICT_ITEMS_METHODDEF
     DICT_VALUES_METHODDEF

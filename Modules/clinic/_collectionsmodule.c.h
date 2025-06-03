@@ -757,6 +757,171 @@ meque___copy__(PyObject *meque, PyObject *Py_UNUSED(ignored))
     return return_value;
 }
 
+PyDoc_STRVAR(meque_clearmethod__doc__,
+"clear($self, /)\n"
+"--\n"
+"\n"
+"Remove all elements from the deque.");
+
+#define MEQUE_CLEARMETHOD_METHODDEF    \
+    {"clear", (PyCFunction)meque_clearmethod, METH_NOARGS, meque_clearmethod__doc__},
+
+static PyObject *
+meque_clearmethod_impl(mequeobject *meque);
+
+static PyObject *
+meque_clearmethod(PyObject *meque, PyObject *Py_UNUSED(ignored))
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_clearmethod_impl((mequeobject *)meque);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
+PyDoc_STRVAR(meque_rotate__doc__,
+"rotate($self, n=1, /)\n"
+"--\n"
+"\n"
+"Rotate the deque n steps to the right.  If n is negative, rotates left.");
+
+#define MEQUE_ROTATE_METHODDEF    \
+    {"rotate", _PyCFunction_CAST(meque_rotate), METH_FASTCALL, meque_rotate__doc__},
+
+static PyObject *
+meque_rotate_impl(mequeobject *meque, Py_ssize_t n);
+
+static PyObject *
+meque_rotate(PyObject *meque, PyObject *const *args, Py_ssize_t nargs)
+{
+    PyObject *return_value = NULL;
+    Py_ssize_t n = 1;
+
+    if (!_PyArg_CheckPositional("rotate", nargs, 0, 1)) {
+        goto exit;
+    }
+    if (nargs < 1) {
+        goto skip_optional;
+    }
+    {
+        Py_ssize_t ival = -1;
+        PyObject *iobj = _PyNumber_Index(args[0]);
+        if (iobj != NULL) {
+            ival = PyLong_AsSsize_t(iobj);
+            Py_DECREF(iobj);
+        }
+        if (ival == -1 && PyErr_Occurred()) {
+            goto exit;
+        }
+        n = ival;
+    }
+skip_optional:
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_rotate_impl((mequeobject *)meque, n);
+    Py_END_CRITICAL_SECTION();
+
+exit:
+    return return_value;
+}
+
+PyDoc_STRVAR(meque_reverse__doc__,
+"reverse($self, /)\n"
+"--\n"
+"\n"
+"Reverse *IN PLACE*.");
+
+#define MEQUE_REVERSE_METHODDEF    \
+    {"reverse", (PyCFunction)meque_reverse, METH_NOARGS, meque_reverse__doc__},
+
+static PyObject *
+meque_reverse_impl(mequeobject *meque);
+
+static PyObject *
+meque_reverse(PyObject *meque, PyObject *Py_UNUSED(ignored))
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_reverse_impl((mequeobject *)meque);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
+PyDoc_STRVAR(meque_count__doc__,
+"count($self, value, /)\n"
+"--\n"
+"\n"
+"Return number of occurrences of value.");
+
+#define MEQUE_COUNT_METHODDEF    \
+    {"count", (PyCFunction)meque_count, METH_O, meque_count__doc__},
+
+static PyObject *
+meque_count_impl(mequeobject *meque, PyObject *v);
+
+static PyObject *
+meque_count(PyObject *meque, PyObject *v)
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_count_impl((mequeobject *)meque, v);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
+PyDoc_STRVAR(meque_index__doc__,
+"index($self, value, [start, [stop]])\n"
+"--\n"
+"\n"
+"Return first index of value.\n"
+"\n"
+"Raises ValueError if the value is not present.");
+
+#define MEQUE_INDEX_METHODDEF    \
+    {"index", _PyCFunction_CAST(meque_index), METH_FASTCALL, meque_index__doc__},
+
+static PyObject *
+meque_index_impl(mequeobject *meque, PyObject *v, Py_ssize_t start,
+                 Py_ssize_t stop);
+
+static PyObject *
+meque_index(PyObject *meque, PyObject *const *args, Py_ssize_t nargs)
+{
+    PyObject *return_value = NULL;
+    PyObject *v;
+    Py_ssize_t start = 0;
+    Py_ssize_t stop = Py_SIZE(meque);
+
+    if (!_PyArg_CheckPositional("index", nargs, 1, 3)) {
+        goto exit;
+    }
+    v = args[0];
+    if (nargs < 2) {
+        goto skip_optional;
+    }
+    if (!_PyEval_SliceIndexNotNone(args[1], &start)) {
+        goto exit;
+    }
+    if (nargs < 3) {
+        goto skip_optional;
+    }
+    if (!_PyEval_SliceIndexNotNone(args[2], &stop)) {
+        goto exit;
+    }
+skip_optional:
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_index_impl((mequeobject *)meque, v, start, stop);
+    Py_END_CRITICAL_SECTION();
+
+exit:
+    return return_value;
+}
+
 PyDoc_STRVAR(_collections__count_elements__doc__,
 "_count_elements($module, mapping, iterable, /)\n"
 "--\n"
@@ -824,4 +989,4 @@ tuplegetter_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 exit:
     return return_value;
 }
-/*[clinic end generated code: output=0f37deaca8c5b8b5 input=a9049054013a1b77]*/
+/*[clinic end generated code: output=08f864f77baca76d input=a9049054013a1b77]*/

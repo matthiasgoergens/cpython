@@ -2335,11 +2335,17 @@ static int grow_meque(mequeobject *meque) {
         return -1;
     }
     meque->ob_item = ob_item;
-    // Fix wrap around:
-    memcpy(
-        meque->ob_item + meque->first_element + Py_SIZE(meque),
-        meque->ob_item,
-        ((meque->first_element + Py_SIZE(meque)) & (old_size - 1)) * sizeof(PyObject *));
+    
+    // Check if there's a wrap-around
+    Py_ssize_t last_element = (meque->first_element + Py_SIZE(meque)) & (old_size - 1);
+    if (last_element < meque->first_element) {
+        // There's a wrap-around, copy the wrapped elements to the new space
+        Py_ssize_t wrapped_size = last_element;
+        memcpy(
+            meque->ob_item + old_size,
+            meque->ob_item,
+            wrapped_size * sizeof(PyObject *));
+    }
     return 0;
 }
 
@@ -2355,7 +2361,7 @@ meque_append_lock_held(mequeobject *meque, PyObject *item, Py_ssize_t maxlen)
     meque->ob_item[(meque->first_element + Py_SIZE(meque)) & (meque->allocated - 1)] = item;
     Py_SET_SIZE(meque, Py_SIZE(meque) + 1);
     if (NEEDS_TRIM(meque, maxlen)) {
-        PyObject *olditem = meque_popleft_impl(meque);
+        PyObject *olditem = meque_pop_impl(meque);
         Py_DECREF(olditem);
     } else {
         meque->state++;
@@ -2684,6 +2690,421 @@ meque_clear(PyObject *self)
        it will have allocated a new array. */
     PyMem_Free(items);
     return 0;
+}
+
+/*[clinic input]
+@critical_section
+_collections.meque.clear as meque_clearmethod
+
+    meque: mequeobject
+
+Remove all elements from the deque.
+[clinic start generated code]*/
+
+static PyObject *
+meque_clearmethod_impl(mequeobject *meque)
+/*[clinic end generated code: output=7dcd0c6af389ba2d input=0614792bc7ccd074]*/
+{
+    (void)meque_clear((PyObject *)meque);
+    Py_RETURN_NONE;
+}
+
+static PyObject *
+meque_inplace_repeat_lock_held(mequeobject *meque, Py_ssize_t n)
+{
+    Py_ssize_t input_size = Py_SIZE(meque);
+    if (input_size == 0 || n == 1) {
+        return Py_NewRef(meque);
+    }
+
+    if (n < 1) {
+        meque_clear((PyObject *)meque);
+        return Py_NewRef(meque);
+    }
+
+    if (input_size > PY_SSIZE_T_MAX / n) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+    Py_ssize_t output_size = input_size * n;
+
+    // First resize the meque to accommodate the repeated elements
+    while (meque->allocated < output_size) {
+        if (grow_meque(meque) < 0) {
+            return NULL;
+        }
+    }
+
+    // Copy the elements to their new positions
+    PyObject **items = meque->ob_item;
+    Py_ssize_t first = meque->first_element;
+    Py_ssize_t allocated = meque->allocated;
+    Py_ssize_t mask = allocated - 1;  // Since allocated is a power of 2
+
+    // First increment refcounts for all elements
+    for (Py_ssize_t j = 0; j < input_size; j++) {
+        Py_ssize_t idx = (first + j) & mask;
+        _Py_RefcntAdd(items[idx], n-1);
+    }
+
+    // Check if original sequence wraps around
+    Py_ssize_t original_end = (first + input_size) & mask;
+    if (original_end < first) {
+        // Original sequence wraps around - create a clean copy first
+        Py_ssize_t first_part = allocated - first;
+        Py_ssize_t second_part = input_size - first_part;
+        
+        // Copy first part to the first copy position
+        memcpy(&items[first & mask], &items[first], first_part * sizeof(PyObject *));
+        // Copy second part
+        memcpy(&items[(first & mask) + first_part], items, second_part * sizeof(PyObject *));
+        
+        // Now we can copy from this clean copy for all remaining copies
+        for (Py_ssize_t i = 1; i < n; i++) {
+            memcpy(&items[(first + i * input_size) & mask], 
+                   &items[first & mask], 
+                   input_size * sizeof(PyObject *));
+        }
+    } else {
+        // Original sequence doesn't wrap - copy each sequence, handling wrap if it occurs
+        for (Py_ssize_t i = 1; i < n; i++) {
+            Py_ssize_t copy_start = (first + i * input_size) & mask;
+            Py_ssize_t copy_end = (copy_start + input_size) & mask;
+            
+            if (copy_end < copy_start) {
+                // This copy wraps - handle it in two parts
+                Py_ssize_t first_part = allocated - copy_start;
+                Py_ssize_t second_part = input_size - first_part;
+                memcpy(&items[copy_start], &items[first & mask], first_part * sizeof(PyObject *));
+                memcpy(items, &items[(first & mask) + first_part], second_part * sizeof(PyObject *));
+            } else {
+                // This copy doesn't wrap - do it in one go
+                memcpy(&items[copy_start], &items[first & mask], input_size * sizeof(PyObject *));
+            }
+        }
+    }
+
+    return Py_NewRef(meque);
+}
+
+static PyObject *
+meque_inplace_repeat(PyObject *self, Py_ssize_t n)
+{
+    mequeobject *meque = mequeobject_CAST(self);
+    PyObject *result;
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    result = meque_inplace_repeat_lock_held(meque, n);
+    Py_END_CRITICAL_SECTION();
+    return result;
+}
+
+static PyObject *
+meque_repeat(PyObject *self, Py_ssize_t n)
+{
+    mequeobject *meque = mequeobject_CAST(self);
+    mequeobject *new_meque;
+    PyObject *rv;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    new_meque = (mequeobject *)meque_copy_impl(meque);
+    Py_END_CRITICAL_SECTION();
+    if (new_meque == NULL)
+        return NULL;
+    // It's safe to not acquire the per-object lock for new_deque; it's
+    // invisible to other threads.
+    rv = meque_inplace_repeat_lock_held(new_meque, n);
+    Py_DECREF(new_meque);
+    return rv;
+}
+
+static int
+_meque_rotate(mequeobject *meque, Py_ssize_t n)
+{
+    Py_ssize_t len = Py_SIZE(meque);
+    if (len <= 1)
+        return 0;
+
+    // Normalize n to be in range [0, len)
+    n = n & (len - 1);  // Since len is a power of 2
+    if (n == 0)
+        return 0;
+
+    // If n is more than half the length, rotate in the opposite direction
+    if (n > (len >> 1)) {
+        n = n - len;
+    }
+
+    PyObject **items = meque->ob_item;
+    Py_ssize_t first = meque->first_element;
+    Py_ssize_t allocated = meque->allocated;
+    Py_ssize_t mask = allocated - 1;  // Since allocated is a power of 2
+
+    // For positive rotation, we move elements from end to beginning
+    if (n > 0) {
+        Py_ssize_t move_size = len - n;
+        Py_ssize_t src_start = (first + n) & mask;
+        Py_ssize_t dst_start = first;
+        
+        // Check if we need to handle wrap-around
+        if (src_start + move_size > allocated) {
+            // First part: copy from src_start to end of buffer
+            Py_ssize_t first_part = allocated - src_start;
+            memmove(&items[dst_start], &items[src_start], first_part * sizeof(PyObject *));
+            
+            // Second part: copy from start of buffer
+            memmove(&items[dst_start + first_part], items, (move_size - first_part) * sizeof(PyObject *));
+        } else {
+            // No wrap-around, single memmove
+            memmove(&items[dst_start], &items[src_start], move_size * sizeof(PyObject *));
+        }
+        
+        meque->first_element = (first + n) & mask;
+    }
+    // For negative rotation, we move elements from beginning to end
+    else {
+        Py_ssize_t move_size = len + n;  // n is negative here
+        Py_ssize_t src_start = first;
+        Py_ssize_t dst_start = (first + n) & mask;
+        
+        // Check if we need to handle wrap-around
+        if (dst_start + move_size > allocated) {
+            // First part: copy from src_start to end of buffer
+            Py_ssize_t first_part = allocated - dst_start;
+            memmove(&items[dst_start], &items[src_start], first_part * sizeof(PyObject *));
+            
+            // Second part: copy from start of buffer
+            memmove(items, &items[src_start + first_part], (move_size - first_part) * sizeof(PyObject *));
+        } else {
+            // No wrap-around, single memmove
+            memmove(&items[dst_start], &items[src_start], move_size * sizeof(PyObject *));
+        }
+        
+        meque->first_element = (first + n) & mask;
+    }
+
+    meque->state++;
+    return 0;
+}
+
+/*[clinic input]
+@critical_section
+_collections.meque.rotate as meque_rotate
+
+    meque: mequeobject
+    n: Py_ssize_t = 1
+    /
+
+Rotate the deque n steps to the right.  If n is negative, rotates left.
+[clinic start generated code]*/
+
+static PyObject *
+meque_rotate_impl(mequeobject *meque, Py_ssize_t n)
+/*[clinic end generated code: output=52a1cc399c5ebb4c input=3620ef39b86db333]*/
+{
+    if (!_meque_rotate(meque, n))
+        Py_RETURN_NONE;
+    return NULL;
+}
+
+/*[clinic input]
+@critical_section
+_collections.meque.reverse as meque_reverse
+
+    meque: mequeobject
+
+Reverse *IN PLACE*.
+[clinic start generated code]*/
+
+static PyObject *
+meque_reverse_impl(mequeobject *meque)
+/*[clinic end generated code: output=00c980c2260afe80 input=a7e7a017ad96ebe5]*/
+{
+    Py_ssize_t size = Py_SIZE(meque);
+    if (size <= 1) {
+        Py_RETURN_NONE;
+    }
+
+    Py_ssize_t first = meque->first_element;
+    Py_ssize_t allocated = meque->allocated;
+    Py_ssize_t mask = allocated - 1;
+    PyObject **items = meque->ob_item;
+
+    // Calculate the last element's position
+    Py_ssize_t last = (first + size - 1) & mask;
+
+    // Swap elements from both ends until we meet in the middle
+    Py_ssize_t count = size / 2;
+    while (count--) {
+        // Swap elements
+        PyObject *temp = items[first];
+        items[first] = items[last];
+        items[last] = temp;
+
+        // Move indices, handling wrap-around
+        first = (first + 1) & mask;
+        last = (last - 1) & mask;
+    }
+
+    meque->state++;
+    Py_RETURN_NONE;
+}
+
+/*[clinic input]
+@critical_section
+_collections.meque.count as meque_count
+
+    meque: mequeobject
+    value as v: object
+    /
+
+Return number of occurrences of value.
+[clinic start generated code]*/
+
+static PyObject *
+meque_count_impl(mequeobject *meque, PyObject *v)
+/*[clinic end generated code: output=ac507a140ec341d2 input=c30e8101d20eeded]*/
+{
+    Py_ssize_t n = Py_SIZE(meque);
+    Py_ssize_t count = 0;
+    size_t start_state = meque->state;
+    Py_ssize_t first = meque->first_element;
+    Py_ssize_t mask = meque->allocated - 1;  // Since allocated is a power of 2
+    PyObject **items = meque->ob_item;
+    PyObject *item;
+    int cmp;
+
+    while (--n >= 0) {
+        item = Py_NewRef(items[first]);
+        cmp = PyObject_RichCompareBool(item, v, Py_EQ);
+        Py_DECREF(item);
+        if (cmp < 0)
+            return NULL;
+        count += cmp;
+
+        if (start_state != meque->state) {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "meque mutated during iteration");
+            return NULL;
+        }
+
+        /* Advance to next element, handling wrap-around */
+        first = (first + 1) & mask;
+    }
+    return PyLong_FromSsize_t(count);
+}
+
+static int
+meque_contains_lock_held(mequeobject *meque, PyObject *v)
+{
+    Py_ssize_t n = Py_SIZE(meque);
+    size_t start_state = meque->state;
+    Py_ssize_t first = meque->first_element;
+    Py_ssize_t mask = meque->allocated - 1;  // Since allocated is a power of 2
+    PyObject **items = meque->ob_item;
+    PyObject *item;
+    int cmp;
+
+    while (--n >= 0) {
+        item = Py_NewRef(items[first]);
+        cmp = PyObject_RichCompareBool(item, v, Py_EQ);
+        Py_DECREF(item);
+        if (cmp) {
+            return cmp;
+        }
+        if (start_state != meque->state) {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "meque mutated during iteration");
+            return -1;
+        }
+        first = (first + 1) & mask;
+    }
+    return 0;
+}
+
+static int
+meque_contains(PyObject *self, PyObject *v)
+{
+    mequeobject *meque = mequeobject_CAST(self);
+    int result;
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    result = meque_contains_lock_held(meque, v);
+    Py_END_CRITICAL_SECTION();
+    return result;
+}
+
+static Py_ssize_t
+meque_len(PyObject *self)
+{
+    PyVarObject *deque = _PyVarObject_CAST(self);
+    return FT_ATOMIC_LOAD_SSIZE(deque->ob_size);
+}
+
+/*[clinic input]
+@critical_section
+@text_signature "($self, value, [start, [stop]])"
+_collections.meque.index as meque_index
+
+    meque: mequeobject
+    value as v: object
+    start: object(converter='_PyEval_SliceIndexNotNone', type='Py_ssize_t', c_default='0') = NULL
+    stop: object(converter='_PyEval_SliceIndexNotNone', type='Py_ssize_t', c_default='Py_SIZE(meque)') = NULL
+    /
+
+Return first index of value.
+
+Raises ValueError if the value is not present.
+[clinic start generated code]*/
+
+static PyObject *
+meque_index_impl(mequeobject *meque, PyObject *v, Py_ssize_t start,
+                 Py_ssize_t stop)
+/*[clinic end generated code: output=1a3b286ab205e455 input=df4c4403279a0cc6]*/
+{
+    Py_ssize_t n;
+    PyObject *item;
+    Py_ssize_t first = meque->first_element;
+    Py_ssize_t mask = meque->allocated - 1;  // Since allocated is a power of 2
+    PyObject **items = meque->ob_item;
+    size_t start_state = meque->state;
+    int cmp;
+
+    if (start < 0) {
+        start += Py_SIZE(meque);
+        if (start < 0)
+            start = 0;
+    }
+    if (stop < 0) {
+        stop += Py_SIZE(meque);
+        if (stop < 0)
+            stop = 0;
+    }
+    if (stop > Py_SIZE(meque))
+        stop = Py_SIZE(meque);
+    if (start > stop)
+        start = stop;
+    assert(0 <= start && start <= stop && stop <= Py_SIZE(meque));
+
+    // Calculate the current position in the ring buffer
+    Py_ssize_t current_item = (first + start) & mask;
+
+    n = stop - start;
+    while (--n >= 0) {
+        item = Py_NewRef(items[current_item]);
+        cmp = PyObject_RichCompareBool(item, v, Py_EQ);
+        Py_DECREF(item);
+        if (cmp > 0)
+            return PyLong_FromSsize_t(stop - n - 1);
+        if (cmp < 0)
+            return NULL;
+        if (start_state != meque->state) {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "meque mutated during iteration");
+            return NULL;
+        }
+        current_item = (current_item + 1) & mask;
+    }
+    PyErr_SetString(PyExc_ValueError, "meque.index(x): x not in meque");
+    return NULL;
 }
 
 /* defaultdict type *********************************************************/

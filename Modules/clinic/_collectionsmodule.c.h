@@ -965,6 +965,161 @@ exit:
     return return_value;
 }
 
+PyDoc_STRVAR(meque_remove__doc__,
+"remove($self, value, /)\n"
+"--\n"
+"\n"
+"Remove first occurrence of value.");
+
+#define MEQUE_REMOVE_METHODDEF    \
+    {"remove", (PyCFunction)meque_remove, METH_O, meque_remove__doc__},
+
+static PyObject *
+meque_remove_impl(mequeobject *meque, PyObject *value);
+
+static PyObject *
+meque_remove(PyObject *meque, PyObject *value)
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_remove_impl((mequeobject *)meque, value);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
+PyDoc_STRVAR(meque___reduce____doc__,
+"__reduce__($self, /)\n"
+"--\n"
+"\n"
+"Return state information for pickling.");
+
+#define MEQUE___REDUCE___METHODDEF    \
+    {"__reduce__", (PyCFunction)meque___reduce__, METH_NOARGS, meque___reduce____doc__},
+
+static PyObject *
+meque___reduce___impl(mequeobject *meque);
+
+static PyObject *
+meque___reduce__(PyObject *meque, PyObject *Py_UNUSED(ignored))
+{
+    return meque___reduce___impl((mequeobject *)meque);
+}
+
+PyDoc_STRVAR(meque_init__doc__,
+"meque([iterable[, maxlen]])\n"
+"--\n"
+"\n"
+"A list-like sequence optimized for data accesses near its endpoints.");
+
+static int
+meque_init_impl(mequeobject *meque, PyObject *iterable, PyObject *maxlenobj);
+
+static int
+meque_init(PyObject *meque, PyObject *args, PyObject *kwargs)
+{
+    int return_value = -1;
+    #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
+
+    #define NUM_KEYWORDS 2
+    static struct {
+        PyGC_Head _this_is_not_used;
+        PyObject_VAR_HEAD
+        Py_hash_t ob_hash;
+        PyObject *ob_item[NUM_KEYWORDS];
+    } _kwtuple = {
+        .ob_base = PyVarObject_HEAD_INIT(&PyTuple_Type, NUM_KEYWORDS)
+        .ob_hash = -1,
+        .ob_item = { &_Py_ID(iterable), &_Py_ID(maxlen), },
+    };
+    #undef NUM_KEYWORDS
+    #define KWTUPLE (&_kwtuple.ob_base.ob_base)
+
+    #else  // !Py_BUILD_CORE
+    #  define KWTUPLE NULL
+    #endif  // !Py_BUILD_CORE
+
+    static const char * const _keywords[] = {"iterable", "maxlen", NULL};
+    static _PyArg_Parser _parser = {
+        .keywords = _keywords,
+        .fname = "meque",
+        .kwtuple = KWTUPLE,
+    };
+    #undef KWTUPLE
+    PyObject *argsbuf[2];
+    PyObject * const *fastargs;
+    Py_ssize_t nargs = PyTuple_GET_SIZE(args);
+    Py_ssize_t noptargs = nargs + (kwargs ? PyDict_GET_SIZE(kwargs) : 0) - 0;
+    PyObject *iterable = NULL;
+    PyObject *maxlenobj = NULL;
+
+    fastargs = _PyArg_UnpackKeywords(_PyTuple_CAST(args)->ob_item, nargs, kwargs, NULL, &_parser,
+            /*minpos*/ 0, /*maxpos*/ 2, /*minkw*/ 0, /*varpos*/ 0, argsbuf);
+    if (!fastargs) {
+        goto exit;
+    }
+    if (!noptargs) {
+        goto skip_optional_pos;
+    }
+    if (fastargs[0]) {
+        iterable = fastargs[0];
+        if (!--noptargs) {
+            goto skip_optional_pos;
+        }
+    }
+    maxlenobj = fastargs[1];
+skip_optional_pos:
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_init_impl((mequeobject *)meque, iterable, maxlenobj);
+    Py_END_CRITICAL_SECTION();
+
+exit:
+    return return_value;
+}
+
+PyDoc_STRVAR(meque___sizeof____doc__,
+"__sizeof__($self, /)\n"
+"--\n"
+"\n"
+"Return the size of the deque in memory, in bytes.");
+
+#define MEQUE___SIZEOF___METHODDEF    \
+    {"__sizeof__", (PyCFunction)meque___sizeof__, METH_NOARGS, meque___sizeof____doc__},
+
+static PyObject *
+meque___sizeof___impl(mequeobject *meque);
+
+static PyObject *
+meque___sizeof__(PyObject *meque, PyObject *Py_UNUSED(ignored))
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque___sizeof___impl((mequeobject *)meque);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
+PyDoc_STRVAR(meque___reversed____doc__,
+"__reversed__($self, /)\n"
+"--\n"
+"\n"
+"Return a reverse iterator over the deque.");
+
+#define MEQUE___REVERSED___METHODDEF    \
+    {"__reversed__", (PyCFunction)meque___reversed__, METH_NOARGS, meque___reversed____doc__},
+
+static PyObject *
+meque___reversed___impl(mequeobject *meque);
+
+static PyObject *
+meque___reversed__(PyObject *meque, PyObject *Py_UNUSED(ignored))
+{
+    return meque___reversed___impl((mequeobject *)meque);
+}
+
 PyDoc_STRVAR(_collections__count_elements__doc__,
 "_count_elements($module, mapping, iterable, /)\n"
 "--\n"
@@ -1032,4 +1187,4 @@ tuplegetter_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 exit:
     return return_value;
 }
-/*[clinic end generated code: output=28bc46310b2d1aac input=a9049054013a1b77]*/
+/*[clinic end generated code: output=b9283fdc25ca5610 input=a9049054013a1b77]*/

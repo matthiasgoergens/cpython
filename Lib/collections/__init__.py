@@ -42,11 +42,12 @@ from reprlib import recursive_repr as _recursive_repr
 from _weakref import proxy as _proxy
 
 try:
-    from _collections import deque
+    from _collections import deque, meque
 except ImportError:
     pass
 else:
     _collections_abc.MutableSequence.register(deque)
+    _collections_abc.MutableSequence.register(meque)
 
 try:
     # Expose _deque_iterator to support pickling deque iterators

@@ -3326,7 +3326,7 @@ meque_dealloc(PyObject *self)
     PyObject_GC_UnTrack(self);      /* stop GC from revisiting us   */
     meque_clear(self);              /* drop elements (once only)    */
     PyMem_Free(mequeobject_CAST(self)->ob_item);      /* free the ring buffer         */
-    Py_TYPE(meque)->tp_free(self);
+    Py_TYPE(self)->tp_free(self);
 }
 
 static int
@@ -3722,6 +3722,10 @@ mequeiter_next_lock_held(mequeiterobject *it, mequeobject *meque)
     Py_ssize_t mask = allocated - 1;  // Since allocated is a power of 2
     PyObject *item;
 
+    if (it->meque->ob_item == NULL) {
+        return NULL;
+    }
+
     if (it->meque->state != it->state) {
         PyErr_SetString(PyExc_RuntimeError,
                         "meque mutated during iteration");
@@ -3745,9 +3749,9 @@ mequeiter_next(PyObject *op)
     result = mequeiter_next_lock_held(it, it->meque);
     Py_END_CRITICAL_SECTION2();
     // TODO(Matthias): is this needed?
-    // if (result == NULL) {
-    //     Py_DECREF(it);
-    // }
+    if (result == NULL) {
+        Py_DECREF(it);
+    }
     return result;
 }
 
@@ -3863,6 +3867,10 @@ mequereviter_next_lock_held(mequeiterobject *it, mequeobject *meque)
 {
     Py_ssize_t mask = meque->allocated - 1;  // Since allocated is a power of 2
     PyObject *item;
+    if (it->meque->ob_item == NULL) {
+        return NULL;
+    }
+
     if (it->index == Py_SIZE(it->meque))
         return NULL;
 
@@ -3887,6 +3895,9 @@ mequereviter_next(PyObject *self)
     Py_BEGIN_CRITICAL_SECTION2(it, it->meque);
     result = mequereviter_next_lock_held(it, it->meque);
     Py_END_CRITICAL_SECTION2();
+    if (result == NULL) {
+        Py_DECREF(it);
+    }
     return result;
 }
 

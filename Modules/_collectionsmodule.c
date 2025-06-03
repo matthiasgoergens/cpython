@@ -2292,12 +2292,13 @@ meque_popleft_impl(mequeobject *meque)
 {
     // TODO(Matthias): do we need to lock anything?
     PyObject *item;
+    Py_ssize_t mask = meque->allocated - 1;  // Since allocated is a power of 2
     if (Py_SIZE(meque) == 0) {
         PyErr_SetString(PyExc_IndexError, "popleft from an empty meque");
         return NULL;
     }
     item = meque->ob_item[meque->first_element];
-    meque->first_element = (meque->first_element + 1) ^ (meque->allocated -1);
+    meque->first_element = (meque->first_element + 1) & mask;
     Py_SET_SIZE(meque, Py_SIZE(meque) - 1);
     meque->state++;
     // TODO(Matthias): consider shrinking the meque, if we are below some threshold.
@@ -2324,7 +2325,7 @@ static int meque_grow_ensure(mequeobject *meque, Py_ssize_t min_size)
         return -1;
     }
     meque->ob_item = ob_item;
-    
+
     // Check if there's a wrap-around
     Py_ssize_t last_element = (meque->first_element + Py_SIZE(meque)) & old_mask;
     if (Py_SIZE(meque) > 1 && last_element <= meque->first_element) {
@@ -2695,6 +2696,7 @@ meque_clearmethod_impl(mequeobject *meque)
     Py_RETURN_NONE;
 }
 
+// TODO(Matthias): I don't think this works.
 static PyObject *
 meque_inplace_repeat_lock_held(mequeobject *meque, Py_ssize_t n)
 {
@@ -2733,20 +2735,20 @@ meque_inplace_repeat_lock_held(mequeobject *meque, Py_ssize_t n)
 
     // Check if original sequence wraps around
     Py_ssize_t original_end = (first + input_size) & mask;
-    if (original_end < first) {
+    if (original_end <= first) {
         // Original sequence wraps around - create a clean copy first
         Py_ssize_t first_part = allocated - first;
         Py_ssize_t second_part = input_size - first_part;
-        
+
         // Copy first part to the first copy position
         memcpy(&items[first & mask], &items[first], first_part * sizeof(PyObject *));
         // Copy second part
         memcpy(&items[(first & mask) + first_part], items, second_part * sizeof(PyObject *));
-        
+
         // Now we can copy from this clean copy for all remaining copies
         for (Py_ssize_t i = 1; i < n; i++) {
-            memcpy(&items[(first + i * input_size) & mask], 
-                   &items[first & mask], 
+            memcpy(&items[(first + i * input_size) & mask],
+                   &items[first & mask],
                    input_size * sizeof(PyObject *));
         }
     } else {
@@ -2754,7 +2756,7 @@ meque_inplace_repeat_lock_held(mequeobject *meque, Py_ssize_t n)
         for (Py_ssize_t i = 1; i < n; i++) {
             Py_ssize_t copy_start = (first + i * input_size) & mask;
             Py_ssize_t copy_end = (copy_start + input_size) & mask;
-            
+
             if (copy_end < copy_start) {
                 // This copy wraps - handle it in two parts
                 Py_ssize_t first_part = allocated - copy_start;
@@ -2767,7 +2769,7 @@ meque_inplace_repeat_lock_held(mequeobject *meque, Py_ssize_t n)
             }
         }
     }
-
+    Py_SET_SIZE(meque, output_size);
     return Py_NewRef(meque);
 }
 
@@ -2828,20 +2830,20 @@ _meque_rotate(mequeobject *meque, Py_ssize_t n)
         Py_ssize_t move_size = len - n;
         Py_ssize_t src_start = (first + n) & mask;
         Py_ssize_t dst_start = first;
-        
+
         // Check if we need to handle wrap-around
         if (src_start + move_size > allocated) {
             // First part: copy from src_start to end of buffer
             Py_ssize_t first_part = allocated - src_start;
             memmove(&items[dst_start], &items[src_start], first_part * sizeof(PyObject *));
-            
+
             // Second part: copy from start of buffer
             memmove(&items[dst_start + first_part], items, (move_size - first_part) * sizeof(PyObject *));
         } else {
             // No wrap-around, single memmove
             memmove(&items[dst_start], &items[src_start], move_size * sizeof(PyObject *));
         }
-        
+
         meque->first_element = (first + n) & mask;
     }
     // For negative rotation, we move elements from beginning to end
@@ -2849,20 +2851,20 @@ _meque_rotate(mequeobject *meque, Py_ssize_t n)
         Py_ssize_t move_size = len + n;  // n is negative here
         Py_ssize_t src_start = first;
         Py_ssize_t dst_start = (first + n) & mask;
-        
+
         // Check if we need to handle wrap-around
         if (dst_start + move_size > allocated) {
             // First part: copy from src_start to end of buffer
             Py_ssize_t first_part = allocated - dst_start;
             memmove(&items[dst_start], &items[src_start], first_part * sizeof(PyObject *));
-            
+
             // Second part: copy from start of buffer
             memmove(items, &items[src_start + first_part], (move_size - first_part) * sizeof(PyObject *));
         } else {
             // No wrap-around, single memmove
             memmove(&items[dst_start], &items[src_start], move_size * sizeof(PyObject *));
         }
-        
+
         meque->first_element = (first + n) & mask;
     }
 
@@ -3130,10 +3132,10 @@ meque_insert_impl(mequeobject *meque, Py_ssize_t index, PyObject *value)
 
     // Calculate the insertion point in the ring buffer
     Py_ssize_t insert_pos = (first + index) & mask;
-    
+
     // Determine direction based on which end is closer
     Py_ssize_t distance = index - (n >> 1);
-    
+
     // If distance is negative, we're closer to the left end
     if (distance < 0) {
         // Check if we need to handle wrap-around
@@ -3216,10 +3218,10 @@ meque_del_item(mequeobject *meque, Py_ssize_t i)
 
     // Calculate the actual position in the ring buffer
     Py_ssize_t pos = (first + i) & mask;
-    
+
     // Determine direction based on which end is closer
     Py_ssize_t distance = i - (n >> 1);
-    
+
     // If distance is negative, we're closer to the left end
     if (distance < 0) {
         // Check if we need to handle wrap-around
@@ -4620,13 +4622,13 @@ collections_exec(PyObject *module) {
     ADD_TYPE(module, &meque_spec, state->meque_type, NULL);
 
     ADD_TYPE(module, &defdict_spec, state->defdict_type, &PyDict_Type);
-    
+
     ADD_TYPE(module, &dequeiter_spec, state->dequeiter_type, NULL);
     ADD_TYPE(module, &mequeiter_spec, state->mequeiter_type, NULL);
-    
+
     ADD_TYPE(module, &dequereviter_spec, state->dequereviter_type, NULL);
     ADD_TYPE(module, &mequereviter_spec, state->mequereviter_type, NULL);
-    
+
     ADD_TYPE(module, &tuplegetter_spec, state->tuplegetter_type, NULL);
 
     if (PyModule_AddType(module, &PyODict_Type) < 0) {

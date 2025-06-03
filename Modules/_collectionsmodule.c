@@ -2319,7 +2319,7 @@ static int meque_grow(mequeobject *meque) {
     
     // Check if there's a wrap-around
     Py_ssize_t last_element = (meque->first_element + Py_SIZE(meque)) & old_mask;
-    if (last_element < meque->first_element) {
+    if (Py_SIZE(meque) > 1 && last_element <= meque->first_element) {
         // There's a wrap-around, copy the wrapped elements to the new space
         Py_ssize_t wrapped_size = last_element;
         memcpy(
@@ -3399,11 +3399,11 @@ meque_repr(PyObject *meque)
         return PyUnicode_FromString("[...]");
     }
 
-    // aslist = PySequence_List(meque);
-    // if (aslist == NULL) {
-    //     Py_ReprLeave(meque);
-    //     return NULL;
-    // }
+    aslist = PySequence_List(meque);
+    if (aslist == NULL) {
+        Py_ReprLeave(meque);
+        return NULL;
+    }
 
     Py_ssize_t first      = mequeobject_CAST(meque)->first_element;
     Py_ssize_t size       = Py_SIZE(meque);
@@ -3413,19 +3413,14 @@ meque_repr(PyObject *meque)
 
     Py_ssize_t maxlen = mequeobject_CAST(meque)->maxlen;
     if (maxlen >= 0)
-        result = PyUnicode_FromFormat("%s%U(..)",
-                                    _PyType_Name(Py_TYPE(meque)), prefix
-                                    );
-        // result = PyUnicode_FromFormat("%s%U(%R, maxlen=%zd)",
-        //                             _PyType_Name(Py_TYPE(meque)), prefix, aslist,
-        //                             maxlen);
+        result = PyUnicode_FromFormat("%s%U(%R, maxlen=%zd)",
+                                    _PyType_Name(Py_TYPE(meque)), prefix, aslist,
+                                    maxlen);
     else
-        // result = PyUnicode_FromFormat("%s%U(%R)",
-        //                             _PyType_Name(Py_TYPE(meque)), prefix, aslist);
-        result = PyUnicode_FromFormat("%s%U(..)",
-                            _PyType_Name(Py_TYPE(meque)), prefix);
+        result = PyUnicode_FromFormat("%s%U(%R)",
+                                    _PyType_Name(Py_TYPE(meque)), prefix, aslist);
     Py_ReprLeave(meque);
-    // Py_DECREF(aslist);
+    Py_DECREF(aslist);
     Py_DECREF(prefix);
     return result;
 }

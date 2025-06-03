@@ -3314,9 +3314,69 @@ meque_remove_impl(mequeobject *meque, PyObject *value)
 
 static int
 meque_ass_item_lock_held(mequeobject *meque, Py_ssize_t i, PyObject *v)
-{   
-    // TODO: implement meque_ass_item_lock_held
+{
+    Py_ssize_t n = Py_SIZE(meque);
+    Py_ssize_t first = meque->first_element;
+    Py_ssize_t mask = meque->allocated - 1;  // Since allocated is a power of 2
+    PyObject **items = meque->ob_item;
+
+    if (i < 0 || i >= n) {
+        PyErr_SetString(PyExc_IndexError, "meque index out of range");
+        return -1;
+    }
+    if (v == NULL) {
+        // Delete item
+        return meque_del_item(meque, i);
+    }
+    // Set item
+    Py_ssize_t pos = (first + i) & mask;
+    Py_SETREF(items[pos], Py_NewRef(v));
+    return 0;
 }
+
+static int
+meque_ass_item(PyObject *self, Py_ssize_t i, PyObject *v)
+{
+    mequeobject *meque = mequeobject_CAST(self);
+    PyObject *result;
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    result = meque_ass_item_lock_held(meque, i, v);
+    Py_END_CRITICAL_SECTION();
+    return result;
+}
+
+static void
+meque_dealloc(PyObject *self)
+{
+    // TODO(Matthias): is this enough?
+    mequeobject *meque = mequeobject_CAST(self);
+    Py_CLEAR(meque->ob_item);
+    Py_TYPE(self)->tp_free(self);
+}
+
+static int
+meque_traverse(PyObject *self, visitproc visit, void *arg)
+{
+    mequeobject *meque = mequeobject_CAST(self);
+    Py_VISIT(meque->ob_item);
+    return 0;
+}
+
+/*[clinic input]
+_collections.meque.__reduce__ as meque___reduce__
+
+    meque: mequeobject
+
+Return state information for pickling.
+[clinic start generated code]*/
+
+static PyObject *
+meque___reduce___impl(mequeobject *meque)
+/*[clinic end generated code: output=cb85d9e0b7d2c5ad input=991a933a5bc7a526]*/
+{
+    // TODO(Matthias): implement meque___reduce___impl
+}
+
 
 /* defaultdict type *********************************************************/
 

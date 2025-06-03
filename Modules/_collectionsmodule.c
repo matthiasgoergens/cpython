@@ -3718,10 +3718,7 @@ mequeiter_dealloc(PyObject *mio)
 static PyObject *
 mequeiter_next_lock_held(mequeiterobject *it, mequeobject *meque)
 {
-    Py_ssize_t allocated = meque->allocated;
-    Py_ssize_t mask = allocated - 1;  // Since allocated is a power of 2
     PyObject *item;
-
     if (it->meque->ob_item == NULL) {
         return NULL;
     }
@@ -3731,7 +3728,9 @@ mequeiter_next_lock_held(mequeiterobject *it, mequeobject *meque)
                         "meque mutated during iteration");
         return NULL;
     }
-    if (it->index >= allocated) {
+    Py_ssize_t allocated = it->meque->allocated;
+    Py_ssize_t mask = allocated - 1;  // Since allocated is a power of 2
+    if (it->index >= Py_SIZE(meque)) {
         return NULL;
     }
 

@@ -2306,10 +2306,19 @@ meque_popleft_impl(mequeobject *meque)
     return item;
 }
 
-static int meque_grow(mequeobject *meque) {
+static int meque_grow_ensure(mequeobject *meque, Py_ssize_t min_size)
+{
+    if (meque->allocated >= min_size) {
+        return 0;
+    }
+
     Py_ssize_t old_size = meque->allocated;
     Py_ssize_t old_mask = old_size - 1;
-    meque->allocated = (meque->allocated == 0) ? 1 : meque->allocated * 2;
+    // round up min_size to the next power of 2
+    while(min_size > meque->allocated) {
+        meque->allocated = (meque->allocated == 0) ? 1 : meque->allocated * 2;
+    }
+    
     PyObject **ob_item = (PyObject **)PyMem_Realloc(meque->ob_item, meque->allocated * sizeof(PyObject *));
     if(ob_item == NULL) {
         PyErr_NoMemory();
@@ -2334,7 +2343,7 @@ static inline int
 meque_append_lock_held(mequeobject *meque, PyObject *item, Py_ssize_t maxlen)
 {
     if (Py_SIZE(meque) == meque->allocated) {
-        int result = meque_grow(meque);
+        int result = meque_grow_ensure(meque, Py_SIZE(meque)+1);
         if(result != 0) {
             return result;
         }
@@ -2377,7 +2386,7 @@ meque_appendleft_lock_held(mequeobject *meque, PyObject *item,
                            Py_ssize_t maxlen)
 {
     if (Py_SIZE(meque) >= meque->allocated) {
-        int result = meque_grow(meque);
+        int result = meque_grow_ensure(meque, Py_SIZE(meque)+1);
         if(result != 0) {
             return result;
         }
@@ -2708,7 +2717,7 @@ meque_inplace_repeat_lock_held(mequeobject *meque, Py_ssize_t n)
 
     // First resize the meque to accommodate the repeated elements
     while (meque->allocated < output_size) {
-        if (meque_grow(meque) < 0) {
+        if (meque_grow_ensure(meque, Py_SIZE(meque)+1) < 0) {
             return NULL;
         }
     }
@@ -3117,7 +3126,7 @@ meque_insert_impl(mequeobject *meque, Py_ssize_t index, PyObject *value)
 
     // Check if we need to grow the meque
     if (n == meque->allocated) {
-        if (meque_grow(meque) < 0)
+        if (meque_grow_ensure(meque, Py_SIZE(meque)+1) < 0)
             return NULL;
         items = meque->ob_item;  // Update items pointer after potential realloc
     }

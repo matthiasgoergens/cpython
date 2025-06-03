@@ -3152,25 +3152,32 @@ meque_insert_impl(mequeobject *meque, Py_ssize_t index, PyObject *value)
     
     // If distance is negative, we're closer to the left end
     if (distance < 0) {
-        // Shift elements from first to insert_pos left by one
-        Py_ssize_t current = first;
-        Py_ssize_t next = (current + 1) & mask;
-        while (current != insert_pos) {
-            items[current] = items[next];
-            current = next;
-            next = (next + 1) & mask;
+        // Check if we need to handle wrap-around
+        if (first > insert_pos) {
+            // Two memmoves needed due to wrap-around
+            memmove(&items[0], &items[1], insert_pos * sizeof(PyObject *));
+            // Copy the element at the boundary
+            items[0] = items[meque->allocated - 1];
+            memmove(&items[first], &items[first + 1], (meque->allocated - first - 1) * sizeof(PyObject *));
+        } else {
+            // Single memmove possible
+            memmove(&items[first], &items[first + 1], (insert_pos - first) * sizeof(PyObject *));
         }
         meque->first_element = (first - 1) & mask;
     }
     // If distance is positive or zero, we're closer to the right end
     else {
-        // Shift elements from insert_pos to end right by one
-        Py_ssize_t current = (first + n - 1) & mask;
-        Py_ssize_t next = (current + 1) & mask;
-        while (current != insert_pos) {
-            items[next] = items[current];
-            current = (current - 1) & mask;
-            next = (next - 1) & mask;
+        // Check if we need to handle wrap-around
+        Py_ssize_t last = (first + n - 1) & mask;
+        if (insert_pos > last) {
+            // Two memmoves needed due to wrap-around
+            memmove(&items[insert_pos + 1], &items[insert_pos], (meque->allocated - insert_pos - 1) * sizeof(PyObject *));
+            // Copy the element at the boundary
+            items[meque->allocated - 1] = items[0];
+            memmove(&items[1], &items[0], last * sizeof(PyObject *));
+        } else {
+            // Single memmove possible
+            memmove(&items[insert_pos + 1], &items[insert_pos], (last - insert_pos) * sizeof(PyObject *));
         }
     }
 
@@ -3179,6 +3186,94 @@ meque_insert_impl(mequeobject *meque, Py_ssize_t index, PyObject *value)
     Py_SET_SIZE(meque, n + 1);
     meque->state++;
     Py_RETURN_NONE;
+}
+
+
+static PyObject *
+meque_item_lock_held(mequeobject *meque, Py_ssize_t i)
+{
+    // TODO(Matthias): check whether we should support negative indices the usual way?
+    Py_ssize_t n = Py_SIZE(meque);
+    Py_ssize_t first = meque->first_element;
+    Py_ssize_t mask = meque->allocated - 1;  // Since allocated is a power of 2
+    PyObject **items = meque->ob_item;
+
+    if (i < 0 || i >= n) {
+        PyErr_SetString(PyExc_IndexError, "meque index out of range");
+        return NULL;
+    }
+
+    // Calculate the actual position in the ring buffer
+    Py_ssize_t pos = (first + i) & mask;
+    return Py_NewRef(items[pos]);
+}
+
+static PyObject *
+meque_item(PyObject *self, Py_ssize_t i)
+{
+    mequeobject *meque = mequeobject_CAST(self);
+    PyObject *result;
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    result = meque_item_lock_held(meque, i);
+    Py_END_CRITICAL_SECTION();
+    return result;
+}
+
+static int
+meque_del_item(mequeobject *meque, Py_ssize_t i)
+{
+    Py_ssize_t n = Py_SIZE(meque);
+    Py_ssize_t first = meque->first_element;
+    Py_ssize_t mask = meque->allocated - 1;  // Since allocated is a power of 2
+    PyObject **items = meque->ob_item;
+
+    if (i < 0 || i >= n) {
+        PyErr_SetString(PyExc_IndexError, "meque index out of range");
+        return -1;
+    }
+
+    // Calculate the actual position in the ring buffer
+    Py_ssize_t pos = (first + i) & mask;
+    
+    // Determine direction based on which end is closer
+    Py_ssize_t distance = i - (n >> 1);
+    
+    // If distance is negative, we're closer to the left end
+    if (distance < 0) {
+        // Check if we need to handle wrap-around
+        if (first > pos) {
+            // Two memmoves needed due to wrap-around
+            memmove(&items[1], &items[0], pos * sizeof(PyObject *));
+            // Copy the element at the boundary
+            items[0] = items[meque->allocated - 1];
+            memmove(&items[first + 1], &items[first], (meque->allocated - first - 1) * sizeof(PyObject *));
+        } else {
+            // Single memmove possible
+            memmove(&items[first + 1], &items[first], (pos - first) * sizeof(PyObject *));
+        }
+        meque->first_element = (first + 1) & mask;
+    }
+    // If distance is positive or zero, we're closer to the right end
+    else {
+        // Check if we need to handle wrap-around
+        Py_ssize_t last = (first + n - 1) & mask;
+        if (pos > last) {
+            // Two memmoves needed due to wrap-around
+            memmove(&items[pos], &items[pos + 1], (meque->allocated - pos - 1) * sizeof(PyObject *));
+            // Copy the element at the boundary
+            items[meque->allocated - 1] = items[0];
+            memmove(&items[0], &items[1], last * sizeof(PyObject *));
+        } else {
+            // Single memmove possible
+            memmove(&items[pos], &items[pos + 1], (last - pos) * sizeof(PyObject *));
+        }
+    }
+
+    // Clear the last element and update size
+    items[(first + n - 1) & mask] = NULL;
+    Py_SET_SIZE(meque, n - 1);
+    meque->state++;
+    return 0;
 }
 
 /* defaultdict type *********************************************************/

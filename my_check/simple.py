@@ -12,17 +12,20 @@ print(x)
 def p(x):
     print(list(x))
 
-for i in range(1000):
-    x.appendleft(2*i)
-    # print(x)
-    x.append(2*i+1)
-    # print(x)
-    # print(list(x))
-    list(x)
-# x.append(10)
+# for i in range(100):
+#     # x.appendleft(2*i)
+#     # print(x)
+#     x.append(2*i+1)
+#     # print(x)
+#     # print(list(x))
+#     list(x)
+# # x.append(10)
 
-x = 3*x
-list(x)
+print(x)
+y = 3*x
+# print(list(x))
+print('y = 3*x')
+print(y)
 
 print("Waiting for KeyboardInterrupt")
 try:

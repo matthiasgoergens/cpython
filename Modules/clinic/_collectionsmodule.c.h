@@ -922,6 +922,49 @@ exit:
     return return_value;
 }
 
+PyDoc_STRVAR(meque_insert__doc__,
+"insert($self, index, value, /)\n"
+"--\n"
+"\n"
+"Insert value before index.");
+
+#define MEQUE_INSERT_METHODDEF    \
+    {"insert", _PyCFunction_CAST(meque_insert), METH_FASTCALL, meque_insert__doc__},
+
+static PyObject *
+meque_insert_impl(mequeobject *meque, Py_ssize_t index, PyObject *value);
+
+static PyObject *
+meque_insert(PyObject *meque, PyObject *const *args, Py_ssize_t nargs)
+{
+    PyObject *return_value = NULL;
+    Py_ssize_t index;
+    PyObject *value;
+
+    if (!_PyArg_CheckPositional("insert", nargs, 2, 2)) {
+        goto exit;
+    }
+    {
+        Py_ssize_t ival = -1;
+        PyObject *iobj = _PyNumber_Index(args[0]);
+        if (iobj != NULL) {
+            ival = PyLong_AsSsize_t(iobj);
+            Py_DECREF(iobj);
+        }
+        if (ival == -1 && PyErr_Occurred()) {
+            goto exit;
+        }
+        index = ival;
+    }
+    value = args[1];
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_insert_impl((mequeobject *)meque, index, value);
+    Py_END_CRITICAL_SECTION();
+
+exit:
+    return return_value;
+}
+
 PyDoc_STRVAR(_collections__count_elements__doc__,
 "_count_elements($module, mapping, iterable, /)\n"
 "--\n"
@@ -989,4 +1032,4 @@ tuplegetter_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 exit:
     return return_value;
 }
-/*[clinic end generated code: output=08f864f77baca76d input=a9049054013a1b77]*/
+/*[clinic end generated code: output=28bc46310b2d1aac input=a9049054013a1b77]*/

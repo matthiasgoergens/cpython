@@ -3107,6 +3107,80 @@ meque_index_impl(mequeobject *meque, PyObject *v, Py_ssize_t start,
     return NULL;
 }
 
+/*[clinic input]
+@critical_section
+_collections.meque.insert as meque_insert
+
+    meque: mequeobject
+    index: Py_ssize_t
+    value: object
+    /
+
+Insert value before index.
+[clinic start generated code]*/
+
+static PyObject *
+meque_insert_impl(mequeobject *meque, Py_ssize_t index, PyObject *value)
+/*[clinic end generated code: output=d13d06f5fb3524ba input=789a37c70b173309]*/
+{
+    Py_ssize_t n = Py_SIZE(meque);
+    Py_ssize_t first = meque->first_element;
+    Py_ssize_t mask = meque->allocated - 1;  // Since allocated is a power of 2
+    PyObject **items = meque->ob_item;
+
+    // Handle negative indices
+    if (index < 0) {
+        index += n;
+        if (index < 0)
+            index = 0;
+    }
+    if (index > n)
+        index = n;
+
+    // Check if we need to grow the meque
+    if (n == meque->allocated) {
+        if (grow_meque(meque) < 0)
+            return NULL;
+        items = meque->ob_item;  // Update items pointer after potential realloc
+    }
+
+    // Calculate the insertion point in the ring buffer
+    Py_ssize_t insert_pos = (first + index) & mask;
+    
+    // Determine direction based on which end is closer
+    Py_ssize_t distance = index - (n >> 1);
+    
+    // If distance is negative, we're closer to the left end
+    if (distance < 0) {
+        // Shift elements from first to insert_pos left by one
+        Py_ssize_t current = first;
+        Py_ssize_t next = (current + 1) & mask;
+        while (current != insert_pos) {
+            items[current] = items[next];
+            current = next;
+            next = (next + 1) & mask;
+        }
+        meque->first_element = (first - 1) & mask;
+    }
+    // If distance is positive or zero, we're closer to the right end
+    else {
+        // Shift elements from insert_pos to end right by one
+        Py_ssize_t current = (first + n - 1) & mask;
+        Py_ssize_t next = (current + 1) & mask;
+        while (current != insert_pos) {
+            items[next] = items[current];
+            current = (current - 1) & mask;
+            next = (next - 1) & mask;
+        }
+    }
+
+    // Insert the new value
+    items[insert_pos] = Py_NewRef(value);
+    Py_SET_SIZE(meque, n + 1);
+    meque->state++;
+    Py_RETURN_NONE;
+}
+
 /* defaultdict type *********************************************************/
 
 typedef struct {

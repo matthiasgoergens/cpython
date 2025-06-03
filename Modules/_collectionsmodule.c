@@ -3276,6 +3276,48 @@ meque_del_item(mequeobject *meque, Py_ssize_t i)
     return 0;
 }
 
+/*[clinic input]
+@critical_section
+_collections.meque.remove as meque_remove
+
+    meque: mequeobject
+    value: object
+    /
+
+Remove first occurrence of value.
+[clinic start generated code]*/
+static PyObject *
+meque_remove_impl(mequeobject *meque, PyObject *value)
+/*[clinic end generated code: output=54cff28b8ef78c5b input=60eb3f8aa4de532a]*/
+{
+    Py_ssize_t n = Py_SIZE(meque);
+    Py_ssize_t first = meque->first_element;
+    Py_ssize_t mask = meque->allocated - 1;  // Since allocated is a power of 2
+    PyObject **items = meque->ob_item;
+    Py_ssize_t i;
+    int cmp;
+
+    for (i = 0; i < n; i++) {
+        PyObject *item = items[(first + i) & mask];
+        cmp = PyObject_RichCompareBool(item, value, Py_EQ);
+        if (cmp > 0) {
+            if (meque_del_item(meque, i) < 0)
+                return NULL;
+            Py_RETURN_NONE;
+        }
+        if (cmp < 0)
+            return NULL;
+    }
+    PyErr_SetString(PyExc_ValueError, "meque.remove(x): x not in meque");
+    return NULL;
+}
+
+static int
+meque_ass_item_lock_held(mequeobject *meque, Py_ssize_t i, PyObject *v)
+{   
+    // TODO: implement meque_ass_item_lock_held
+}
+
 /* defaultdict type *********************************************************/
 
 typedef struct {
@@ -3704,9 +3746,9 @@ done:
     Py_XDECREF(newval);
     Py_XDECREF(bound_get);
     if (PyErr_Occurred())
-        return NULL;
-    Py_RETURN_NONE;
-}
+                return NULL;
+            Py_RETURN_NONE;
+        }
 
 /* Helper function for namedtuple() ************************************/
 
@@ -3734,7 +3776,7 @@ tuplegetter_new_impl(PyTypeObject *type, Py_ssize_t index, PyObject *doc)
     _tuplegetterobject* self;
     self = (_tuplegetterobject *)type->tp_alloc(type, 0);
     if (self == NULL) {
-        return NULL;
+            return NULL;
     }
     self->index = index;
     self->doc = Py_NewRef(doc);
@@ -3759,8 +3801,8 @@ tuplegetter_descr_get(PyObject *self, PyObject *obj, PyObject *type)
                      "doesn't apply to '%s' object",
                      index,
                      Py_TYPE(obj)->tp_name);
-        return NULL;
-    }
+    return NULL;
+}
 
     if (!valid_index(index, PyTuple_GET_SIZE(obj))) {
         PyErr_SetString(PyExc_IndexError, "tuple index out of range");

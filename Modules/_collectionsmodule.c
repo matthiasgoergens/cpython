@@ -2318,7 +2318,7 @@ static int meque_grow_ensure(mequeobject *meque, Py_ssize_t min_size)
     while(min_size > meque->allocated) {
         meque->allocated = (meque->allocated == 0) ? 1 : meque->allocated * 2;
     }
-    
+
     PyObject **ob_item = (PyObject **)PyMem_Realloc(meque->ob_item, meque->allocated * sizeof(PyObject *));
     if(ob_item == NULL) {
         PyErr_NoMemory();
@@ -2716,10 +2716,8 @@ meque_inplace_repeat_lock_held(mequeobject *meque, Py_ssize_t n)
     Py_ssize_t output_size = input_size * n;
 
     // First resize the meque to accommodate the repeated elements
-    while (meque->allocated < output_size) {
-        if (meque_grow_ensure(meque, Py_SIZE(meque)+1) < 0) {
-            return NULL;
-        }
+    if (meque_grow_ensure(meque, output_size) < 0) {
+        return NULL;
     }
 
     // Copy the elements to their new positions

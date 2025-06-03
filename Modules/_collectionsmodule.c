@@ -2306,9 +2306,10 @@ meque_popleft_impl(mequeobject *meque)
     return item;
 }
 
-static int grow_meque(mequeobject *meque) {
+static int meque_grow(mequeobject *meque) {
     Py_ssize_t old_size = meque->allocated;
-    meque->allocated = meque->allocated == 0 ? 1 : meque->allocated * 2;
+    Py_ssize_t old_mask = old_size - 1;
+    meque->allocated = (meque->allocated == 0) ? 1 : meque->allocated * 2;
     PyObject **ob_item = (PyObject **)PyMem_Realloc(meque->ob_item, meque->allocated * sizeof(PyObject *));
     if(ob_item == NULL) {
         PyErr_NoMemory();
@@ -2317,7 +2318,7 @@ static int grow_meque(mequeobject *meque) {
     meque->ob_item = ob_item;
     
     // Check if there's a wrap-around
-    Py_ssize_t last_element = (meque->first_element + Py_SIZE(meque)) & (old_size - 1);
+    Py_ssize_t last_element = (meque->first_element + Py_SIZE(meque)) & old_mask;
     if (last_element < meque->first_element) {
         // There's a wrap-around, copy the wrapped elements to the new space
         Py_ssize_t wrapped_size = last_element;
@@ -2333,7 +2334,7 @@ static inline int
 meque_append_lock_held(mequeobject *meque, PyObject *item, Py_ssize_t maxlen)
 {
     if (Py_SIZE(meque) == meque->allocated) {
-        int result = grow_meque(meque);
+        int result = meque_grow(meque);
         if(result != 0) {
             return result;
         }
@@ -2375,14 +2376,15 @@ static inline int
 meque_appendleft_lock_held(mequeobject *meque, PyObject *item,
                            Py_ssize_t maxlen)
 {
-    if (Py_SIZE(meque) == meque->allocated) {
-        int result = grow_meque(meque);
+    if (Py_SIZE(meque) >= meque->allocated) {
+        int result = meque_grow(meque);
         if(result != 0) {
             return result;
         }
     }
-    meque->first_element = (meque->first_element - 1) & (meque->allocated - 1);
-    meque->ob_item[meque->first_element & (meque->allocated - 1)] = item;
+    Py_ssize_t mask = meque->allocated - 1;  // Since allocated is a power of 2
+    meque->first_element = (meque->first_element - 1) & mask;
+    meque->ob_item[meque->first_element] = item;
     Py_SET_SIZE(meque, Py_SIZE(meque) + 1);
     if (NEEDS_TRIM(meque, maxlen)) {
         PyObject *olditem = meque_pop_impl(meque);
@@ -2706,7 +2708,7 @@ meque_inplace_repeat_lock_held(mequeobject *meque, Py_ssize_t n)
 
     // First resize the meque to accommodate the repeated elements
     while (meque->allocated < output_size) {
-        if (grow_meque(meque) < 0) {
+        if (meque_grow(meque) < 0) {
             return NULL;
         }
     }
@@ -3115,7 +3117,7 @@ meque_insert_impl(mequeobject *meque, Py_ssize_t index, PyObject *value)
 
     // Check if we need to grow the meque
     if (n == meque->allocated) {
-        if (grow_meque(meque) < 0)
+        if (meque_grow(meque) < 0)
             return NULL;
         items = meque->ob_item;  // Update items pointer after potential realloc
     }
@@ -3397,22 +3399,34 @@ meque_repr(PyObject *meque)
         return PyUnicode_FromString("[...]");
     }
 
-    aslist = PySequence_List(meque);
-    if (aslist == NULL) {
-        Py_ReprLeave(meque);
-        return NULL;
-    }
+    // aslist = PySequence_List(meque);
+    // if (aslist == NULL) {
+    //     Py_ReprLeave(meque);
+    //     return NULL;
+    // }
+
+    Py_ssize_t first      = mequeobject_CAST(meque)->first_element;
+    Py_ssize_t size       = Py_SIZE(meque);
+    Py_ssize_t allocated  = mequeobject_CAST(meque)->allocated;
+    PyObject   *prefix    = PyUnicode_FromFormat("<%zd, %zd, %zd>",
+                                                 first, size, allocated);
 
     Py_ssize_t maxlen = mequeobject_CAST(meque)->maxlen;
     if (maxlen >= 0)
-        result = PyUnicode_FromFormat("%s(%R, maxlen=%zd)",
-                                    _PyType_Name(Py_TYPE(meque)), aslist,
-                                    maxlen);
+        result = PyUnicode_FromFormat("%s%U(..)",
+                                    _PyType_Name(Py_TYPE(meque)), prefix
+                                    );
+        // result = PyUnicode_FromFormat("%s%U(%R, maxlen=%zd)",
+        //                             _PyType_Name(Py_TYPE(meque)), prefix, aslist,
+        //                             maxlen);
     else
-        result = PyUnicode_FromFormat("%s(%R)",
-                                    _PyType_Name(Py_TYPE(meque)), aslist);
+        // result = PyUnicode_FromFormat("%s%U(%R)",
+        //                             _PyType_Name(Py_TYPE(meque)), prefix, aslist);
+        result = PyUnicode_FromFormat("%s%U(..)",
+                            _PyType_Name(Py_TYPE(meque)), prefix);
     Py_ReprLeave(meque);
-    Py_DECREF(aslist);
+    // Py_DECREF(aslist);
+    Py_DECREF(prefix);
     return result;
 }
 
@@ -3509,12 +3523,13 @@ meque_init_impl(mequeobject *meque, PyObject *iterable, PyObject *maxlenobj)
     meque->maxlen = maxlen;
 
     /* Initialize the ring buffer */
-    meque->allocated = 8;  // Start with a power of 2
-    meque->ob_item = PyMem_Calloc(meque->allocated, sizeof(PyObject *));
-    if (meque->ob_item == NULL) {
-        PyErr_NoMemory();
-        return -1;
-    }
+    // TODO(Matthias): ok, here's where we set up to start with 8!!!
+    meque->allocated = 0;  // Start with a power of 2
+    meque->ob_item = NULL;
+    // if (meque->ob_item == NULL) {
+    //     PyErr_NoMemory();
+    //     return -1;
+    // }
     meque->first_element = 0;
     Py_SET_SIZE(meque, 0);
 
@@ -3748,9 +3763,9 @@ mequeiter_next(PyObject *op)
     result = mequeiter_next_lock_held(it, it->meque);
     Py_END_CRITICAL_SECTION2();
     // TODO(Matthias): is this needed?
-    if (result == NULL) {
-        Py_DECREF(it);
-    }
+    // if (result == NULL) {
+    //     Py_DECREF(it);
+    // }
     return result;
 }
 
@@ -3894,9 +3909,9 @@ mequereviter_next(PyObject *self)
     Py_BEGIN_CRITICAL_SECTION2(it, it->meque);
     result = mequereviter_next_lock_held(it, it->meque);
     Py_END_CRITICAL_SECTION2();
-    if (result == NULL) {
-        Py_DECREF(it);
-    }
+    // if (result == NULL) {
+    //     Py_DECREF(it);
+    // }
     return result;
 }
 

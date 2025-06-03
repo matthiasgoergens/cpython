@@ -2251,6 +2251,44 @@ meque_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     return (PyObject *)meque;
 }
 
+static int meque_maybe_shrink(mequeobject *meque)
+{
+
+  Py_ssize_t old_allocated = meque->allocated;
+
+  Py_ssize_t new_allocated = old_allocated;
+  // Ensure we don't shrink too much, we want to keep at least half the slots
+  // free.  This is basically the same heuristic we use for growing, but in reverse.
+  while (Py_SIZE(meque) <= new_allocated >> 2 && new_allocated > 0) {
+    new_allocated >>= 1;
+  }
+  if(new_allocated >= meque->allocated) {
+    return 0; // No need to shrink
+  }
+  // If there's wrap-around, then the bit from 0 to somewhere in the middle is already good.
+  // But we need to copy the elements from meque->first_element to the end of the array, if any.
+  if(meque->first_element + Py_SIZE(meque) > old_allocated) {
+    // wrap around:
+    memcpy(meque->ob_item, meque->ob_item + meque->first_element, (old_allocated - meque->first_element) * sizeof(PyObject *));
+    meque->first_element = (old_allocated - meque->first_element);
+    assert(meque->first_element < new_allocated);
+  } else if (meque->first_element >= new_allocated) {
+    memcpy(meque->ob_item, meque->ob_item + meque->first_element, (Py_SIZE(meque)) * sizeof(PyObject *));
+    meque->first_element = 0;
+  } else {
+    // no wrap-around, no need to copy
+  }
+  // TODO(Matthias): properly handle errors, when we can't shrink.
+  PyObject **ob_item = (PyObject **)PyMem_Realloc(meque->ob_item, new_allocated * sizeof(PyObject *));
+  if(ob_item == NULL) {
+    PyErr_NoMemory();
+    return -1;
+  }
+  meque->ob_item = ob_item;
+  meque->allocated = new_allocated;
+  return 0;
+}
+
 /*[clinic input]
 @critical_section
 _collections.meque.pop as meque_pop
@@ -2272,9 +2310,10 @@ meque_pop_impl(mequeobject *meque)
     }
     item = meque->ob_item[(meque->first_element + Py_SIZE(meque) - 1) & (meque->allocated - 1)];
     Py_SET_SIZE(meque, Py_SIZE(meque) - 1);
+    meque_maybe_shrink(meque);
     meque->state++;
-    // TODO(Matthias): consider shrinking the meque, if we are below some threshold.
-    // Or perhaps only shrink on inserts?
+    // TODO(Matthias): consider shrinking the meque, if we are below some
+    // threshold.  Perhaps half? Or perhaps only shrink on inserts?
     return item;
 }
 
@@ -2301,6 +2340,7 @@ meque_popleft_impl(mequeobject *meque)
     item = meque->ob_item[meque->first_element];
     meque->first_element = (meque->first_element + 1) & mask;
     Py_SET_SIZE(meque, Py_SIZE(meque) - 1);
+    meque_maybe_shrink(meque);
     meque->state++;
     // TODO(Matthias): consider shrinking the meque, if we are below some threshold.
     // Or perhaps only shrink on inserts?
@@ -2547,10 +2587,10 @@ _collections.meque.copy as meque_copy
 Return a shallow copy of a deque.
 [clinic start generated code]*/
 
-static PyObject *
-meque_copy_impl(mequeobject *meque)
+static PyObject *meque_copy_impl(mequeobject *meque)
 /*[clinic end generated code: output=99b41209bacdd683 input=2baf9f303bf5ef08]*/
 {
+    // TODO(Matthias): we can actually copy via memcpy, instead of using extend.
     PyObject *result;
     mequeobject *old_meque = meque;
     collections_state *state = find_module_state_by_def(Py_TYPE(meque));

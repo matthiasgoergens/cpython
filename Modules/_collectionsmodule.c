@@ -13,9 +13,9 @@ typedef struct {
     PyTypeObject *meque_type;
     PyTypeObject *defdict_type;
     PyTypeObject *dequeiter_type;
-    // PyTypeObject *mequeiter_type;
+    PyTypeObject *mequeiter_type;
     PyTypeObject *dequereviter_type;
-    // PyTypeObject *mequeiter_type;
+    PyTypeObject *mequereviter_type;
     PyTypeObject *tuplegetter_type;
 } collections_state;
 
@@ -2149,6 +2149,8 @@ dequereviter_next(PyObject *self)
 static PyObject *
 dequereviter_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
+    // TODO(Matthias): check whether index!=0 is exercised anywhere at all.
+    // Any tests or docs?  If not, axe it.
     Py_ssize_t i, index=0;
     PyObject *deque;
     dequeiterobject *it;
@@ -2217,34 +2219,12 @@ struct mequeobject {
     PyObject_VAR_HEAD
     /* Vector of pointers to list elements.  list[0] is ob_item[0], etc. */
     PyObject **ob_item;
-
-    /* ob_item contains space for 'allocated' elements.  The number
-     * currently in use is ob_size.
-     * Invariants:
-     *     0 <= ob_size <= allocated
-     *     len(list) == ob_size
-     *     ob_item == NULL implies ob_size == allocated == 0
-     * list.sort() temporarily sets allocated to -1 to detect mutations.
-     *
-     * Items must normally not be NULL, except during construction when
-     * the list is not yet visible outside the function that builds it.
-     */
     //  allocated needs to be a power of two
     Py_ssize_t allocated;
     Py_ssize_t first_element;
-    Py_ssize_t max_len;
+    Py_ssize_t maxlen;
 
     size_t state;               /* incremented whenever the indices move, to eg detect mutations during iteration */
-
-    // block *leftblock;
-    // block *rightblock;
-    // Py_ssize_t leftindex;       /* 0 <= leftindex < BLOCKLEN */
-    // Py_ssize_t rightindex;      /* 0 <= rightindex < BLOCKLEN */
-    // size_t state;               /* incremented whenever the indices move */
-    // Py_ssize_t maxlen;          /* maxlen is -1 for unbounded deques */
-    // Py_ssize_t numfreeblocks;
-    // block *freeblocks[MAXFREEBLOCKS];
-    // PyObject *weakreflist;
 };
 
 #define mequeobject_CAST(op)    ((mequeobject *)(op))
@@ -2265,7 +2245,7 @@ meque_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     meque->ob_item = NULL;
     meque->allocated = 0;
     meque->first_element = 0;
-    meque->max_len = -1;
+    meque->maxlen = -1;
     meque->state = 0;
 
     return (PyObject *)meque;
@@ -2385,7 +2365,7 @@ static PyObject *
 meque_append_impl(mequeobject *meque, PyObject *item)
 /*[clinic end generated code: output=a9bb7d97f92757c8 input=5dc707e82fab58b9]*/
 {
-    if (meque_append_lock_held(meque, Py_NewRef(item), meque->max_len) < 0)
+    if (meque_append_lock_held(meque, Py_NewRef(item), meque->maxlen) < 0)
         return NULL;
     Py_RETURN_NONE;
 }
@@ -2429,7 +2409,7 @@ static PyObject *
 meque_appendleft_impl(mequeobject *meque, PyObject *item)
 /*[clinic end generated code: output=6632ff0d636f208d input=d666903e8064ceb7]*/
 {
-    if (meque_appendleft_lock_held(meque, Py_NewRef(item), meque->max_len) < 0)
+    if (meque_appendleft_lock_held(meque, Py_NewRef(item), meque->maxlen) < 0)
         return NULL;
     Py_RETURN_NONE;
 }
@@ -2452,7 +2432,7 @@ meque_extend_impl(mequeobject *meque, PyObject *iterable)
 {
     PyObject *it, *item;
     PyObject *(*iternext)(PyObject *);
-    Py_ssize_t maxlen = meque->max_len;
+    Py_ssize_t maxlen = meque->maxlen;
 
     /* Handle case where id(meque) == id(iterable) */
     if ((PyObject *)meque == iterable) {
@@ -2500,7 +2480,7 @@ meque_extendleft_impl(mequeobject *meque, PyObject *iterable)
 {
     PyObject *it, *item;
     PyObject *(*iternext)(PyObject *);
-    Py_ssize_t maxlen = meque->max_len;
+    Py_ssize_t maxlen = meque->maxlen;
 
     /* Handle case where id(meque) == id(iterable) */
     if ((PyObject *)meque == iterable) {
@@ -2569,7 +2549,7 @@ meque_copy_impl(mequeobject *meque)
         new_meque = (mequeobject *)meque_new(state->meque_type, NULL, NULL);
         if (new_meque == NULL)
             return NULL;
-        new_meque->max_len = old_meque->max_len;
+        new_meque->maxlen = old_meque->maxlen;
         /* Fast path for the deque_repeat() common case where len(deque) == 1
          *
          * It's safe to not acquire the per-object lock for new_deque; it's
@@ -2588,12 +2568,12 @@ meque_copy_impl(mequeobject *meque)
         Py_DECREF(new_meque);
         return NULL;
     }
-    if (old_meque->max_len < 0)
+    if (old_meque->maxlen < 0)
         result = PyObject_CallOneArg((PyObject *)(Py_TYPE(meque)),
                                      (PyObject *)meque);
     else
         result = PyObject_CallFunction((PyObject *)(Py_TYPE(meque)), "Oi",
-                                       meque, old_meque->max_len, NULL);
+                                       meque, old_meque->maxlen, NULL);
     if (result != NULL && !PyObject_TypeCheck(result, state->meque_type)) {
         PyErr_Format(PyExc_TypeError,
                      "%.200s() must return a meque, not %.200s",
@@ -2665,30 +2645,26 @@ static int
 meque_clear(PyObject *self)
 {
     mequeobject *meque = mequeobject_CAST(self);
-    PyObject **items = meque->ob_item;
-    if (items == NULL) {
-        return 0;
+    if (meque->ob_item == NULL)
+        return 0;                         /* already cleared */
+
+    /* decref all elements */
+    Py_ssize_t n    = Py_SIZE(meque);
+    Py_ssize_t mask = meque->allocated - 1;
+    Py_ssize_t idx  = meque->first_element;
+
+    for (Py_ssize_t k = 0; k < n; k++, idx++) {
+        Py_CLEAR(meque->ob_item[idx & mask]);      /* safe even if element NULL */
     }
 
-    /* Because XDECREF can recursively invoke operations on
-       this meque, we make it empty first. */
-    Py_ssize_t i = Py_SIZE(meque);
-    Py_SET_SIZE(meque, 0);
-    FT_ATOMIC_STORE_PTR_RELEASE(meque->ob_item, NULL);
-    meque->allocated = 0;
+    /* reset header */
+    PyMem_Free(meque->ob_item);
+    meque->ob_item       = NULL;
+    meque->allocated     = 0;
     meque->first_element = 0;
+    Py_SET_SIZE(meque, 0);
     meque->state++;
 
-    /* Now we can safely decref all items. Note that there is no guarantee
-       that the meque is actually empty at this point, because XDECREF may
-       have populated it indirectly again! */
-    while (--i >= 0) {
-        Py_XDECREF(items[i]);
-    }
-
-    /* Free the items array. If the meque was repopulated during XDECREF,
-       it will have allocated a new array. */
-    PyMem_Free(items);
     return 0;
 }
 
@@ -3213,9 +3189,7 @@ meque_item(PyObject *self, Py_ssize_t i)
 {
     mequeobject *meque = mequeobject_CAST(self);
     PyObject *result;
-    Py_BEGIN_CRITICAL_SECTION(meque);
     result = meque_item_lock_held(meque, i);
-    Py_END_CRITICAL_SECTION();
     return result;
 }
 
@@ -3286,9 +3260,10 @@ _collections.meque.remove as meque_remove
 
 Remove first occurrence of value.
 [clinic start generated code]*/
+
 static PyObject *
 meque_remove_impl(mequeobject *meque, PyObject *value)
-/*[clinic end generated code: output=54cff28b8ef78c5b input=60eb3f8aa4de532a]*/
+/*[clinic end generated code: output=dcd984454051c535 input=3f0ab03deeda57a0]*/
 {
     Py_ssize_t n = Py_SIZE(meque);
     Py_ssize_t first = meque->first_element;
@@ -3338,7 +3313,7 @@ static int
 meque_ass_item(PyObject *self, Py_ssize_t i, PyObject *v)
 {
     mequeobject *meque = mequeobject_CAST(self);
-    PyObject *result;
+    int result;
     Py_BEGIN_CRITICAL_SECTION(meque);
     result = meque_ass_item_lock_held(meque, i, v);
     Py_END_CRITICAL_SECTION();
@@ -3348,17 +3323,26 @@ meque_ass_item(PyObject *self, Py_ssize_t i, PyObject *v)
 static void
 meque_dealloc(PyObject *self)
 {
-    // TODO(Matthias): is this enough?
-    mequeobject *meque = mequeobject_CAST(self);
-    Py_CLEAR(meque->ob_item);
-    Py_TYPE(self)->tp_free(self);
+    PyObject_GC_UnTrack(self);      /* stop GC from revisiting us   */
+    meque_clear(self);              /* drop elements (once only)    */
+    PyMem_Free(mequeobject_CAST(self)->ob_item);      /* free the ring buffer         */
+    Py_TYPE(meque)->tp_free(self);
 }
 
 static int
 meque_traverse(PyObject *self, visitproc visit, void *arg)
 {
     mequeobject *meque = mequeobject_CAST(self);
-    Py_VISIT(meque->ob_item);
+
+    Py_ssize_t n = Py_SIZE(meque);
+
+    PyObject **buf = meque->ob_item;
+    Py_ssize_t mask = meque->allocated - 1;
+    Py_ssize_t i = meque->first_element;
+    for (Py_ssize_t k = 0; k < n; k++) {
+        Py_VISIT(buf[i]);
+        i = (i + 1) & mask;
+    }
     return 0;
 }
 
@@ -3372,11 +3356,596 @@ Return state information for pickling.
 
 static PyObject *
 meque___reduce___impl(mequeobject *meque)
-/*[clinic end generated code: output=cb85d9e0b7d2c5ad input=991a933a5bc7a526]*/
+/*[clinic end generated code: output=8042f666273ce10c input=0f6b8eccd4efa664]*/
 {
-    // TODO(Matthias): implement meque___reduce___impl
+    PyObject *state, *it;
+
+    state = _PyObject_GetState((PyObject *)meque);
+    if (state == NULL) {
+        return NULL;
+    }
+
+    it = PyObject_GetIter((PyObject *)meque);
+    if (it == NULL) {
+        Py_DECREF(state);
+        return NULL;
+    }
+
+    // It's safe to access meque->maxlen here without holding the per object
+    // lock; meque->maxlen is only assigned during construction.
+    if (meque->maxlen < 0) {
+        return Py_BuildValue("O()NN", Py_TYPE(meque), state, it);
+    }
+    else {
+        return Py_BuildValue("O(()n)NN", Py_TYPE(meque), meque->maxlen, state, it);
+    }
 }
 
+PyDoc_STRVAR(meque_reduce_doc, "Return state information for pickling.");
+
+
+static PyObject *
+meque_repr(PyObject *meque)
+{
+    PyObject *aslist, *result;
+    int i;
+
+    i = Py_ReprEnter(meque);
+    if (i != 0) {
+        if (i < 0)
+            return NULL;
+        return PyUnicode_FromString("[...]");
+    }
+
+    aslist = PySequence_List(meque);
+    if (aslist == NULL) {
+        Py_ReprLeave(meque);
+        return NULL;
+    }
+
+    Py_ssize_t maxlen = mequeobject_CAST(meque)->maxlen;
+    if (maxlen >= 0)
+        result = PyUnicode_FromFormat("%s(%R, maxlen=%zd)",
+                                    _PyType_Name(Py_TYPE(meque)), aslist,
+                                    maxlen);
+    else
+        result = PyUnicode_FromFormat("%s(%R)",
+                                    _PyType_Name(Py_TYPE(meque)), aslist);
+    Py_ReprLeave(meque);
+    Py_DECREF(aslist);
+    return result;
+}
+
+static PyObject *
+meque_richcompare(PyObject *v, PyObject *w, int op)
+{
+    mequeobject *meque1 = mequeobject_CAST(v);
+    mequeobject *meque2 = mequeobject_CAST(w);
+    PyObject *result;
+    Py_ssize_t i, len1, len2;
+    PyObject *item1, *item2;
+
+    if (!PyObject_TypeCheck(w, Py_TYPE(v))) {
+        Py_RETURN_NOTIMPLEMENTED;
+    }
+
+    len1 = Py_SIZE(meque1);
+    len2 = Py_SIZE(meque2);
+
+    if (len1 != len2 && (op == Py_EQ || op == Py_NE)) {
+        /* Shortcut: if the lengths differ, the deques are different */
+        if (op == Py_EQ)
+            Py_RETURN_FALSE;
+        else
+            Py_RETURN_TRUE;
+    }
+    /* Compare elements one by one, taking wrap-around into account */
+    for (i = 0; i < len1 && i < len2; i++) {
+        /* Get items using wrap-around indices */
+        item1 = meque_item_lock_held(meque1, i);
+        if (item1 == NULL) {
+            return NULL;
+        }
+        item2 = meque_item_lock_held(meque2, i);
+        if (item2 == NULL) {
+            Py_DECREF(item1);
+            return NULL;
+        }
+
+        result = PyObject_RichCompare(item1, item2, op);
+        Py_DECREF(item1);
+        Py_DECREF(item2);
+        if (result == NULL) {
+            return NULL;
+        }
+        if (result != Py_True) {
+            return result;
+        }
+        Py_DECREF(result);
+    }
+
+    /* We reached the end of one deque */
+    switch (op) {
+    case Py_LT: return PyBool_FromLong(len1 < len2);
+    case Py_LE: return PyBool_FromLong(len1 <= len2);
+    case Py_EQ: return PyBool_FromLong(len1 == len2);
+    case Py_NE: return PyBool_FromLong(len1 != len2);
+    case Py_GT: return PyBool_FromLong(len1 > len2);
+    case Py_GE: return PyBool_FromLong(len1 >= len2);
+    default:
+        Py_UNREACHABLE();
+    }
+}
+
+/*[clinic input]
+@critical_section
+@text_signature "([iterable[, maxlen]])"
+_collections.meque.__init__ as meque_init
+
+    meque: mequeobject
+    iterable: object = NULL
+    maxlen as maxlenobj: object = NULL
+
+A list-like sequence optimized for data accesses near its endpoints.
+[clinic start generated code]*/
+
+static int
+meque_init_impl(mequeobject *meque, PyObject *iterable, PyObject *maxlenobj)
+/*[clinic end generated code: output=5f992db11a7a9efb input=5db0d29e62358ce6]*/
+{
+    Py_ssize_t maxlen = -1;
+    PyObject *it = NULL;
+    PyObject *item;
+
+    if (maxlenobj != NULL && maxlenobj != Py_None) {
+        maxlen = PyLong_AsSsize_t(maxlenobj);
+        if (maxlen == -1 && PyErr_Occurred())
+            return -1;
+        if (maxlen < 0) {
+            PyErr_SetString(PyExc_ValueError, "maxlen must be non-negative");
+            return -1;
+        }
+    }
+    meque->maxlen = maxlen;
+
+    /* Initialize the ring buffer */
+    meque->allocated = 8;  // Start with a power of 2
+    meque->ob_item = PyMem_Calloc(meque->allocated, sizeof(PyObject *));
+    if (meque->ob_item == NULL) {
+        PyErr_NoMemory();
+        return -1;
+    }
+    meque->first_element = 0;
+    Py_SET_SIZE(meque, 0);
+
+    if (iterable != NULL) {
+        it = PyObject_GetIter(iterable);
+        if (it == NULL)
+            return -1;
+
+        while ((item = PyIter_Next(it)) != NULL) {
+            if (meque_append_lock_held(meque, item, maxlen) < 0) {
+                Py_DECREF(item);
+                Py_DECREF(it);
+                return -1;
+            }
+            Py_DECREF(item);
+        }
+        Py_DECREF(it);
+        if (PyErr_Occurred())
+            return -1;
+    }
+    return 0;
+}
+
+/*[clinic input]
+@critical_section
+_collections.meque.__sizeof__ as meque___sizeof__
+
+    meque: mequeobject
+
+Return the size of the deque in memory, in bytes.
+[clinic start generated code]*/
+
+static PyObject *
+meque___sizeof___impl(mequeobject *meque)
+/*[clinic end generated code: output=7b0bb2d9fca03e84 input=62bbff6edf9fff7c]*/
+{
+    size_t res = _PyObject_SIZE(Py_TYPE(meque));
+    res += meque->allocated * sizeof(PyObject *);
+    return PyLong_FromSize_t(res);
+}
+
+static PyObject *
+meque_get_maxlen(PyObject *self, void *Py_UNUSED(closure))
+{
+    mequeobject *meque = mequeobject_CAST(self);
+    return PyLong_FromSsize_t(meque->maxlen);
+}
+
+static PyObject *meque_reviter(mequeobject *meque);
+
+/*[clinic input]
+_collections.meque.__reversed__ as meque___reversed__
+
+    meque: mequeobject
+
+Return a reverse iterator over the deque.
+[clinic start generated code]*/
+
+static PyObject *
+meque___reversed___impl(mequeobject *meque)
+/*[clinic end generated code: output=7e103da707cdfc4a input=57517d54f065671a]*/
+{
+    return meque_reviter(meque);
+}
+
+/* meque object ********************************************************/
+
+static PyGetSetDef meque_getset[] = {
+    {"maxlen", meque_get_maxlen, NULL,
+     "maximum size of a deque or None if unbounded"},
+    {0}
+};
+
+
+static PyObject *meque_iter(PyObject *deque);
+
+static PyMethodDef meque_methods[] = {
+    MEQUE_APPEND_METHODDEF
+    MEQUE_APPENDLEFT_METHODDEF
+    MEQUE_CLEARMETHOD_METHODDEF
+    MEQUE___COPY___METHODDEF
+    MEQUE_COPY_METHODDEF
+    MEQUE_COUNT_METHODDEF
+    MEQUE_EXTEND_METHODDEF
+    MEQUE_EXTENDLEFT_METHODDEF
+    MEQUE_INDEX_METHODDEF
+    MEQUE_INSERT_METHODDEF
+    MEQUE_POP_METHODDEF
+    MEQUE_POPLEFT_METHODDEF
+    MEQUE___REDUCE___METHODDEF
+    MEQUE_REMOVE_METHODDEF
+    MEQUE___REVERSED___METHODDEF
+    MEQUE_REVERSE_METHODDEF
+    MEQUE_ROTATE_METHODDEF
+    MEQUE___SIZEOF___METHODDEF
+    {"__class_getitem__",       Py_GenericAlias,
+        METH_O|METH_CLASS,       PyDoc_STR("See PEP <placeholder>")},
+    {NULL,              NULL}   /* sentinel */
+};
+
+static PyType_Slot meque_slots[] = {
+    {Py_tp_dealloc, meque_dealloc},
+    {Py_tp_repr, meque_repr},
+    {Py_tp_hash, PyObject_HashNotImplemented},
+    {Py_tp_getattro, PyObject_GenericGetAttr},
+    {Py_tp_doc, (void *)meque_init__doc__},
+    {Py_tp_traverse, meque_traverse},
+    {Py_tp_clear, meque_clear},
+    {Py_tp_richcompare, meque_richcompare},
+    {Py_tp_iter, meque_iter},
+    {Py_tp_getset, meque_getset},
+    {Py_tp_init, meque_init},
+    {Py_tp_alloc, PyType_GenericAlloc},
+    {Py_tp_new, meque_new},
+    {Py_tp_free, PyObject_GC_Del},
+    {Py_tp_methods, meque_methods},
+    // {Py_tp_members, meque_members},
+    /* No members needed */
+
+    // Sequence protocol
+    {Py_sq_length, meque_len},
+    {Py_sq_concat, meque_concat},
+    {Py_sq_repeat, meque_repeat},
+    {Py_sq_item, meque_item},
+    {Py_sq_ass_item, meque_ass_item},
+    {Py_sq_contains, meque_contains},
+    {Py_sq_inplace_concat, meque_inplace_concat},
+    {Py_sq_inplace_repeat, meque_inplace_repeat},
+    {0, NULL},
+};
+
+
+
+static PyType_Spec meque_spec = {
+    .name = "collections.meque",
+    .basicsize = sizeof(mequeobject),
+    .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE |
+              Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_SEQUENCE |
+              Py_TPFLAGS_IMMUTABLETYPE),
+    .slots = meque_slots,
+};
+
+/*********************** Meque Iterator **************************/
+
+typedef struct {
+    PyObject_HEAD
+    Py_ssize_t index;
+    mequeobject *meque;
+    size_t state;          /* state when the iterator is created */
+} mequeiterobject;
+
+#define mequeiterobject_CAST(op)    ((mequeiterobject *)(op))
+
+static PyObject *
+meque_iter(PyObject *self)
+{
+    mequeiterobject *it;
+    mequeobject *meque = mequeobject_CAST(self);
+
+    collections_state *state = find_module_state_by_def(Py_TYPE(meque));
+    it = PyObject_GC_New(mequeiterobject, state->mequeiter_type);
+    if (it == NULL)
+        return NULL;
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    it->index = 0;
+    it->meque = (mequeobject*)Py_NewRef(meque);
+    it->state = meque->state;
+    Py_END_CRITICAL_SECTION();
+    PyObject_GC_Track(it);
+    return (PyObject *)it;
+}
+
+static int
+mequeiter_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    mequeiterobject *mio = mequeiterobject_CAST(op);
+    Py_VISIT(Py_TYPE(mio));
+    Py_VISIT(mio->meque);
+    return 0;
+}
+
+static int
+mequeiter_clear(PyObject *op)
+{
+    mequeiterobject *mio = mequeiterobject_CAST(op);
+    Py_CLEAR(mio->meque);
+    return 0;
+}
+
+static void
+mequeiter_dealloc(PyObject *mio)
+{
+    /* bpo-31095: UnTrack is needed before calling any callbacks */
+    PyTypeObject *tp = Py_TYPE(mio);
+    PyObject_GC_UnTrack(mio);
+    (void)mequeiter_clear(mio);
+    PyObject_GC_Del(mio);
+    Py_DECREF(tp);
+}
+
+static PyObject *
+mequeiter_next_lock_held(mequeiterobject *it, mequeobject *meque)
+{
+    Py_ssize_t allocated = meque->allocated;
+    Py_ssize_t mask = allocated - 1;  // Since allocated is a power of 2
+    PyObject *item;
+
+    if (it->meque->state != it->state) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "meque mutated during iteration");
+        return NULL;
+    }
+    if (it->index >= allocated) {
+        return NULL;
+    }
+
+    item = meque->ob_item[(it->index + it->meque->first_element) & mask];
+    it->index++;
+    return Py_NewRef(item);
+}
+
+static PyObject *
+mequeiter_next(PyObject *op)
+{
+    PyObject *result;
+    mequeiterobject *it = mequeiterobject_CAST(op);
+    Py_BEGIN_CRITICAL_SECTION2(it, it->meque);
+    result = mequeiter_next_lock_held(it, it->meque);
+    Py_END_CRITICAL_SECTION2();
+    // TODO(Matthias): is this needed?
+    // if (result == NULL) {
+    //     Py_DECREF(it);
+    // }
+    return result;
+}
+
+static PyObject *
+mequeiter_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    Py_ssize_t i, index=0;
+    PyObject *meque;
+    mequeiterobject *it;
+    collections_state *state = get_module_state_by_cls(type);
+    if (!PyArg_ParseTuple(args, "O!|n", state->meque_type, &meque, &index))
+        return NULL;
+    assert(type == state->mequeiter_type);
+
+    it = (mequeiterobject*)meque_iter(meque);
+    if (!it)
+        return NULL;
+    /* consume items from the queue */
+    for(i=0; i<index; i++) {
+        PyObject *item = mequeiter_next((PyObject *)it);
+        if (item) {
+            Py_DECREF(item);
+        } else {
+            /*
+             * It's safe to read directly from it without acquiring the
+             * per-object lock; the iterator isn't visible to any other threads
+             * yet.
+             */
+            if (it->index < mequeobject_CAST(meque)->allocated) {
+                Py_DECREF(it);
+                return NULL;
+            } else
+                break;
+        }
+    }
+    return (PyObject*)it;
+}
+
+static PyObject *
+mequeiter_len(PyObject *op, PyObject *Py_UNUSED(dummy))
+{
+    mequeiterobject *it = mequeiterobject_CAST(op);
+    return PyLong_FromSsize_t(it->meque->allocated - it->index);
+}
+
+PyDoc_STRVAR(mequeiter_len_doc, "Private method returning an estimate of len(list(it)).");
+
+static PyObject *
+mequeiter_reduce(PyObject *op, PyObject *Py_UNUSED(dummy))
+{
+    mequeiterobject *it = mequeiterobject_CAST(op);
+    PyTypeObject *ty = Py_TYPE(it);
+    // It's safe to access it->meque without holding the per-object lock for it
+    // here; it->meque is only assigned during construction of it.
+    mequeobject *meque = it->meque;
+    Py_ssize_t allocated, index;
+    Py_BEGIN_CRITICAL_SECTION2(it, meque);
+    allocated = meque->allocated;
+    index = it->index;
+    Py_END_CRITICAL_SECTION2();
+    return Py_BuildValue("O(On)", ty, meque, allocated - index);
+}
+
+static PyMethodDef mequeiter_methods[] = {
+    {"__length_hint__", mequeiter_len, METH_NOARGS, mequeiter_len_doc},
+    {"__reduce__", mequeiter_reduce, METH_NOARGS, meque_reduce_doc},
+    {NULL,              NULL}           /* sentinel */
+};
+
+
+static PyType_Slot mequeiter_slots[] = {
+    {Py_tp_dealloc, mequeiter_dealloc},
+    {Py_tp_getattro, PyObject_GenericGetAttr},
+    {Py_tp_traverse, mequeiter_traverse},
+    {Py_tp_clear, mequeiter_clear},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_iternext, mequeiter_next},
+    {Py_tp_methods, mequeiter_methods},
+    {Py_tp_new, mequeiter_new},
+    {0, NULL},
+};
+
+static PyType_Spec mequeiter_spec = {
+    .name = "collections._meque_iterator",
+    .basicsize = sizeof(mequeiterobject),
+    .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
+              Py_TPFLAGS_IMMUTABLETYPE),
+    .slots = mequeiter_slots,
+};
+
+/*********************** Meque Reverse Iterator **************************/
+
+static PyObject *
+meque_reviter(mequeobject *meque)
+{
+    mequeiterobject *it;
+    collections_state *state = find_module_state_by_def(Py_TYPE(meque));
+
+    it = PyObject_GC_New(mequeiterobject, state->mequereviter_type);
+    if (it == NULL)
+        return NULL;
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    it->index = 0;
+    it->meque = (mequeobject*)Py_NewRef(meque);
+    it->state = meque->state;
+    Py_END_CRITICAL_SECTION();
+    PyObject_GC_Track(it);
+    return (PyObject *)it;
+}
+
+static PyObject *
+mequereviter_next_lock_held(mequeiterobject *it, mequeobject *meque)
+{
+    Py_ssize_t mask = meque->allocated - 1;  // Since allocated is a power of 2
+    PyObject *item;
+    if (it->index == Py_SIZE(it->meque))
+        return NULL;
+
+    if (it->meque->state != it->state) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "meque mutated during iteration");
+        return NULL;
+    }
+
+    it->index++;
+    item = it->meque->ob_item[(it->meque->first_element + Py_SIZE(it->meque) - it->index) & mask];
+    return Py_NewRef(item);
+
+
+}
+
+static PyObject *
+mequereviter_next(PyObject *self)
+{
+    PyObject *result;
+    mequeiterobject *it = mequeiterobject_CAST(self);
+    Py_BEGIN_CRITICAL_SECTION2(it, it->meque);
+    result = mequereviter_next_lock_held(it, it->meque);
+    Py_END_CRITICAL_SECTION2();
+    return result;
+}
+
+static PyObject *
+mequereviter_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    // TODO(Matthias): check the implementation carefully.
+    // It's just cargo-culted from the deque version, but I don't know exactly what it's trying to do.
+    Py_ssize_t i, index;
+    PyObject *meque;
+    mequeiterobject *it;
+    collections_state *state = get_module_state_by_cls(type);
+    if (!PyArg_ParseTuple(args, "O!|n", state->meque_type, &meque, &index))
+        return NULL;
+    assert(type == state->mequereviter_type);
+
+    it = (mequeiterobject *)meque_reviter((mequeobject *)meque);
+    if (!it)
+        return NULL;
+    /* consume items from the queue */
+    for (i=0; i < index; i++) {
+        PyObject *item = mequereviter_next((PyObject *)it);
+        if (item) {
+            Py_DECREF(item);
+        } else {
+            /*
+             * It's safe to read directly from it without acquiring the
+             * per-object lock; the iterator isn't visible to any other threads
+             * yet.
+             */
+            if (it->index >= Py_SIZE(meque)) {
+                Py_DECREF(it);
+                return NULL;
+            } else
+                break;
+        }
+    }
+    return (PyObject *)it;
+}
+
+static PyType_Slot mequereviter_slots[] = {
+    {Py_tp_dealloc, mequeiter_dealloc},
+    {Py_tp_getattro, PyObject_GenericGetAttr},
+    {Py_tp_traverse, mequeiter_traverse},
+    {Py_tp_clear, mequeiter_clear},
+    {Py_tp_iter, PyObject_SelfIter},
+    {Py_tp_iternext, mequereviter_next},
+    {Py_tp_methods, mequeiter_methods},
+    {Py_tp_new, mequereviter_new},
+    {0, NULL},
+};
+
+static PyType_Spec mequereviter_spec = {
+    .name = "collections._meque_reverse_iterator",
+    .basicsize = sizeof(mequeiterobject),
+    .flags = (Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
+              Py_TPFLAGS_IMMUTABLETYPE),
+    .slots = mequereviter_slots,
+};
 
 /* defaultdict type *********************************************************/
 
@@ -3968,6 +4537,7 @@ collections_traverse(PyObject *mod, visitproc visit, void *arg)
 {
     collections_state *state = get_module_state(mod);
     Py_VISIT(state->deque_type);
+    Py_VISIT(state->meque_type);
     Py_VISIT(state->defdict_type);
     Py_VISIT(state->dequeiter_type);
     Py_VISIT(state->dequereviter_type);
@@ -3980,6 +4550,7 @@ collections_clear(PyObject *mod)
 {
     collections_state *state = get_module_state(mod);
     Py_CLEAR(state->deque_type);
+    Py_CLEAR(state->meque_type);
     Py_CLEAR(state->defdict_type);
     Py_CLEAR(state->dequeiter_type);
     Py_CLEAR(state->dequereviter_type);
@@ -3996,6 +4567,7 @@ collections_free(void *module)
 PyDoc_STRVAR(collections_doc,
 "High performance data structures.\n\
 - deque:        ordered collection accessible from endpoints only\n\
+- meque:        ordered collection, with fast insert and remove from both ends, fast random access\n\
 - defaultdict:  dict subclass with a default value factory\n\
 ");
 
@@ -4019,9 +4591,16 @@ static int
 collections_exec(PyObject *module) {
     collections_state *state = get_module_state(module);
     ADD_TYPE(module, &deque_spec, state->deque_type, NULL);
+    ADD_TYPE(module, &meque_spec, state->meque_type, NULL);
+
     ADD_TYPE(module, &defdict_spec, state->defdict_type, &PyDict_Type);
+    
     ADD_TYPE(module, &dequeiter_spec, state->dequeiter_type, NULL);
+    ADD_TYPE(module, &mequeiter_spec, state->mequeiter_type, NULL);
+    
     ADD_TYPE(module, &dequereviter_spec, state->dequereviter_type, NULL);
+    ADD_TYPE(module, &mequereviter_spec, state->mequereviter_type, NULL);
+    
     ADD_TYPE(module, &tuplegetter_spec, state->tuplegetter_type, NULL);
 
     if (PyModule_AddType(module, &PyODict_Type) < 0) {

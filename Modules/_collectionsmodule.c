@@ -10,9 +10,12 @@
 
 typedef struct {
     PyTypeObject *deque_type;
+    PyTypeObject *meque_type;
     PyTypeObject *defdict_type;
     PyTypeObject *dequeiter_type;
+    // PyTypeObject *mequeiter_type;
     PyTypeObject *dequereviter_type;
+    // PyTypeObject *mequeiter_type;
     PyTypeObject *tuplegetter_type;
 } collections_state;
 
@@ -46,10 +49,12 @@ find_module_state_by_def(PyTypeObject *type)
 module _collections
 class _tuplegetter "_tuplegetterobject *" "clinic_state()->tuplegetter_type"
 class _collections.deque "dequeobject *" "clinic_state()->deque_type"
+class _collections.meque "mequeobject *" "clinic_state()->meque_type"
 [clinic start generated code]*/
-/*[clinic end generated code: output=da39a3ee5e6b4b0d input=a033cc2a8476b3f1]*/
+/*[clinic end generated code: output=da39a3ee5e6b4b0d input=d178039753446059]*/
 
 typedef struct dequeobject dequeobject;
+typedef struct mequeobject mequeobject;
 
 /* We can safely assume type to be the defining class,
  * since tuplegetter is not a base type */
@@ -2195,6 +2200,491 @@ static PyType_Spec dequereviter_spec = {
               Py_TPFLAGS_IMMUTABLETYPE),
     .slots = dequereviter_slots,
 };
+
+/* deque type as growable ring buffer, meque *********************************************************/
+
+// TODO(Matthias): implement meque type
+
+
+
+/*[python input]
+class mequeobject_converter(self_converter):
+    type = "mequeobject *"
+[python start generated code]*/
+/*[python end generated code: output=da39a3ee5e6b4b0d input=76e5c03d44497c3a]*/
+
+struct mequeobject {
+    PyObject_VAR_HEAD
+    /* Vector of pointers to list elements.  list[0] is ob_item[0], etc. */
+    PyObject **ob_item;
+
+    /* ob_item contains space for 'allocated' elements.  The number
+     * currently in use is ob_size.
+     * Invariants:
+     *     0 <= ob_size <= allocated
+     *     len(list) == ob_size
+     *     ob_item == NULL implies ob_size == allocated == 0
+     * list.sort() temporarily sets allocated to -1 to detect mutations.
+     *
+     * Items must normally not be NULL, except during construction when
+     * the list is not yet visible outside the function that builds it.
+     */
+    //  allocated needs to be a power of two
+    Py_ssize_t allocated;
+    Py_ssize_t first_element;
+    Py_ssize_t max_len;
+
+    size_t state;               /* incremented whenever the indices move, to eg detect mutations during iteration */
+
+    // block *leftblock;
+    // block *rightblock;
+    // Py_ssize_t leftindex;       /* 0 <= leftindex < BLOCKLEN */
+    // Py_ssize_t rightindex;      /* 0 <= rightindex < BLOCKLEN */
+    // size_t state;               /* incremented whenever the indices move */
+    // Py_ssize_t maxlen;          /* maxlen is -1 for unbounded deques */
+    // Py_ssize_t numfreeblocks;
+    // block *freeblocks[MAXFREEBLOCKS];
+    // PyObject *weakreflist;
+};
+
+#define mequeobject_CAST(op)    ((mequeobject *)(op))
+
+
+static PyObject *
+meque_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    mequeobject *meque;
+
+    /* create dequeobject structure */
+    meque = (mequeobject *)type->tp_alloc(type, 0);
+    if (meque == NULL)
+        return NULL;
+
+    assert(BLOCKLEN >= 2);
+    Py_SET_SIZE(meque, 0);
+    meque->ob_item = NULL;
+    meque->allocated = 0;
+    meque->first_element = 0;
+    meque->max_len = -1;
+    meque->state = 0;
+
+    return (PyObject *)meque;
+}
+
+/*[clinic input]
+@critical_section
+_collections.meque.pop as meque_pop
+
+    meque: mequeobject
+
+Remove and return the rightmost element.
+[clinic start generated code]*/
+
+static PyObject *
+meque_pop_impl(mequeobject *meque)
+/*[clinic end generated code: output=21dbf03cd7259ec9 input=4b3754030e7a5478]*/
+{
+    // TODO(Matthias): do we need to lock anything?
+    PyObject *item;
+    if (Py_SIZE(meque) == 0) {
+        PyErr_SetString(PyExc_IndexError, "pop from an empty meque");
+        return NULL;
+    }
+    item = meque->ob_item[(meque->first_element + Py_SIZE(meque) - 1) & (meque->allocated - 1)];
+    Py_SET_SIZE(meque, Py_SIZE(meque) - 1);
+    meque->state++;
+    // TODO(Matthias): consider shrinking the meque, if we are below some threshold.
+    // Or perhaps only shrink on inserts?
+    return item;
+}
+
+/*[clinic input]
+@critical_section
+_collections.meque.popleft as meque_popleft
+
+     meque: mequeobject
+
+Remove and return the leftmost element.
+[clinic start generated code]*/
+
+static PyObject *
+meque_popleft_impl(mequeobject *meque)
+/*[clinic end generated code: output=905cd2f73f5c42a6 input=398b4abbe7f594df]*/
+{
+    // TODO(Matthias): do we need to lock anything?
+    PyObject *item;
+    if (Py_SIZE(meque) == 0) {
+        PyErr_SetString(PyExc_IndexError, "popleft from an empty meque");
+        return NULL;
+    }
+    item = meque->ob_item[meque->first_element];
+    meque->first_element = (meque->first_element + 1) ^ (meque->allocated -1);
+    Py_SET_SIZE(meque, Py_SIZE(meque) - 1);
+    meque->state++;
+    // TODO(Matthias): consider shrinking the meque, if we are below some threshold.
+    // Or perhaps only shrink on inserts?
+    return item;
+}
+
+static int grow_meque(mequeobject *meque) {
+    Py_ssize_t old_size = meque->allocated;
+    meque->allocated = meque->allocated == 0 ? 1 : meque->allocated * 2;
+    PyObject **ob_item = (PyObject **)PyMem_Realloc(meque->ob_item, meque->allocated * sizeof(PyObject *));
+    if(ob_item == NULL) {
+        PyErr_NoMemory();
+        return -1;
+    }
+    meque->ob_item = ob_item;
+    // Fix wrap around:
+    memcpy(
+        meque->ob_item + meque->first_element + Py_SIZE(meque),
+        meque->ob_item,
+        ((meque->first_element + Py_SIZE(meque)) & (old_size - 1)) * sizeof(PyObject *));
+    return 0;
+}
+
+static inline int
+meque_append_lock_held(mequeobject *meque, PyObject *item, Py_ssize_t maxlen)
+{
+    if (Py_SIZE(meque) == meque->allocated) {
+        int result = grow_meque(meque);
+        if(result != 0) {
+            return result;
+        }
+    }
+    meque->ob_item[(meque->first_element + Py_SIZE(meque)) & (meque->allocated - 1)] = item;
+    Py_SET_SIZE(meque, Py_SIZE(meque) + 1);
+    if (NEEDS_TRIM(meque, maxlen)) {
+        PyObject *olditem = meque_popleft_impl(meque);
+        Py_DECREF(olditem);
+    } else {
+        meque->state++;
+    }
+    return 0;
+
+}
+
+/*[clinic input]
+@critical_section
+_collections.meque.append as meque_append
+
+    meque: mequeobject
+    item: object
+    /
+
+Add an element to the right side of the meque.
+[clinic start generated code]*/
+
+static PyObject *
+meque_append_impl(mequeobject *meque, PyObject *item)
+/*[clinic end generated code: output=a9bb7d97f92757c8 input=5dc707e82fab58b9]*/
+{
+    if (meque_append_lock_held(meque, Py_NewRef(item), meque->max_len) < 0)
+        return NULL;
+    Py_RETURN_NONE;
+}
+
+
+static inline int
+meque_appendleft_lock_held(mequeobject *meque, PyObject *item,
+                           Py_ssize_t maxlen)
+{
+    if (Py_SIZE(meque) == meque->allocated) {
+        int result = grow_meque(meque);
+        if(result != 0) {
+            return result;
+        }
+    }
+    meque->first_element = (meque->first_element - 1) & (meque->allocated - 1);
+    meque->ob_item[meque->first_element & (meque->allocated - 1)] = item;
+    Py_SET_SIZE(meque, Py_SIZE(meque) + 1);
+    if (NEEDS_TRIM(meque, maxlen)) {
+        PyObject *olditem = meque_pop_impl(meque);
+        Py_DECREF(olditem);
+    } else {
+        meque->state++;
+    }
+    return 0;
+}
+
+
+/*[clinic input]
+@critical_section
+_collections.meque.appendleft as meque_appendleft
+
+    meque: mequeobject
+    item: object
+    /
+
+Add an element to the left side of the meque.
+[clinic start generated code]*/
+
+static PyObject *
+meque_appendleft_impl(mequeobject *meque, PyObject *item)
+/*[clinic end generated code: output=6632ff0d636f208d input=d666903e8064ceb7]*/
+{
+    if (meque_appendleft_lock_held(meque, Py_NewRef(item), meque->max_len) < 0)
+        return NULL;
+    Py_RETURN_NONE;
+}
+
+
+/*[clinic input]
+@critical_section
+_collections.meque.extend as meque_extend
+
+    meque: mequeobject
+    iterable: object
+    /
+
+Extend the right side of the deque with elements from the iterable.
+[clinic start generated code]*/
+
+static PyObject *
+meque_extend_impl(mequeobject *meque, PyObject *iterable)
+/*[clinic end generated code: output=f89404334ceb151f input=14167af70bc2fbf4]*/
+{
+    PyObject *it, *item;
+    PyObject *(*iternext)(PyObject *);
+    Py_ssize_t maxlen = meque->max_len;
+
+    /* Handle case where id(meque) == id(iterable) */
+    if ((PyObject *)meque == iterable) {
+        PyObject *result;
+        PyObject *s = PySequence_List(iterable);
+        if (s == NULL)
+            return NULL;
+        result = meque_extend((PyObject*)meque, s);
+        Py_DECREF(s);
+        return result;
+    }
+
+    it = PyObject_GetIter(iterable);
+    if (it == NULL)
+        return NULL;
+
+    if (maxlen == 0)
+        return consume_iterator(it);
+
+    iternext = *Py_TYPE(it)->tp_iternext;
+    while ((item = iternext(it)) != NULL) {
+        if (meque_append_lock_held(meque, item, maxlen) == -1) {
+            Py_DECREF(item);
+            Py_DECREF(it);
+            return NULL;
+        }
+    }
+    return finalize_iterator(it);
+}
+
+/*[clinic input]
+@critical_section
+_collections.meque.extendleft as meque_extendleft
+
+    meque: mequeobject
+    iterable: object
+    /
+
+Extend the left side of the deque with elements from the iterable.
+[clinic start generated code]*/
+
+static PyObject *
+meque_extendleft_impl(mequeobject *meque, PyObject *iterable)
+/*[clinic end generated code: output=b79929ea34c76705 input=aebb2457196e597c]*/
+{
+    PyObject *it, *item;
+    PyObject *(*iternext)(PyObject *);
+    Py_ssize_t maxlen = meque->max_len;
+
+    /* Handle case where id(meque) == id(iterable) */
+    if ((PyObject *)meque == iterable) {
+        PyObject *result;
+        PyObject *s = PySequence_List(iterable);
+        if (s == NULL)
+            return NULL;
+        result = meque_extendleft_impl(meque, s);
+        Py_DECREF(s);
+        return result;
+    }
+
+    it = PyObject_GetIter(iterable);
+    if (it == NULL)
+        return NULL;
+
+    if (maxlen == 0)
+        return consume_iterator(it);
+
+    iternext = *Py_TYPE(it)->tp_iternext;
+    while ((item = iternext(it)) != NULL) {
+        if (meque_appendleft_lock_held(meque, item, maxlen) == -1) {
+            Py_DECREF(item);
+            Py_DECREF(it);
+            return NULL;
+        }
+    }
+    return finalize_iterator(it);
+}
+
+static PyObject *
+meque_inplace_concat(PyObject *self, PyObject *other)
+{
+    mequeobject *meque = mequeobject_CAST(self);
+    PyObject *result;
+
+    // deque_extend is thread-safe
+    result = meque_extend((PyObject*)meque, other);
+    if (result == NULL)
+        return result;
+    Py_INCREF(meque);
+    Py_DECREF(result);
+    return (PyObject *)meque;
+}
+
+/*[clinic input]
+@critical_section
+_collections.meque.copy as meque_copy
+
+    meque: mequeobject
+
+Return a shallow copy of a deque.
+[clinic start generated code]*/
+
+static PyObject *
+meque_copy_impl(mequeobject *meque)
+/*[clinic end generated code: output=99b41209bacdd683 input=2baf9f303bf5ef08]*/
+{
+    PyObject *result;
+    mequeobject *old_meque = meque;
+    collections_state *state = find_module_state_by_def(Py_TYPE(meque));
+    if (Py_IS_TYPE(meque, state->meque_type)) {
+        mequeobject *new_meque;
+        PyObject *rv;
+
+        new_meque = (mequeobject *)meque_new(state->meque_type, NULL, NULL);
+        if (new_meque == NULL)
+            return NULL;
+        new_meque->max_len = old_meque->max_len;
+        /* Fast path for the deque_repeat() common case where len(deque) == 1
+         *
+         * It's safe to not acquire the per-object lock for new_deque; it's
+         * invisible to other threads.
+         */
+        if (Py_SIZE(meque) == 1) {
+            PyObject *item = old_meque->ob_item[old_meque->first_element];
+            rv = meque_append_impl(new_meque, item);
+        } else {
+            rv = meque_extend_impl(new_meque, (PyObject *)meque);
+        }
+        if (rv != NULL) {
+            Py_DECREF(rv);
+            return (PyObject *)new_meque;
+        }
+        Py_DECREF(new_meque);
+        return NULL;
+    }
+    if (old_meque->max_len < 0)
+        result = PyObject_CallOneArg((PyObject *)(Py_TYPE(meque)),
+                                     (PyObject *)meque);
+    else
+        result = PyObject_CallFunction((PyObject *)(Py_TYPE(meque)), "Oi",
+                                       meque, old_meque->max_len, NULL);
+    if (result != NULL && !PyObject_TypeCheck(result, state->meque_type)) {
+        PyErr_Format(PyExc_TypeError,
+                     "%.200s() must return a meque, not %.200s",
+                     Py_TYPE(meque)->tp_name, Py_TYPE(result)->tp_name);
+        Py_DECREF(result);
+        return NULL;
+    }
+    return result;
+}
+
+/*[clinic input]
+@critical_section
+_collections.meque.__copy__ as meque___copy__ = _collections.meque.copy
+
+Return a shallow copy of a deque.
+[clinic start generated code]*/
+
+static PyObject *
+meque___copy___impl(mequeobject *meque)
+/*[clinic end generated code: output=c69b84a6d52873ea input=674df1beccbf86da]*/
+{
+    return meque_copy_impl(meque);
+}
+
+static PyObject *
+meque_concat_lock_held(mequeobject *meque, PyObject *other)
+{
+    PyObject *new_meque, *result;
+    int rv;
+
+    collections_state *state = find_module_state_by_def(Py_TYPE(meque));
+    rv = PyObject_IsInstance(other, (PyObject *)state->meque_type);
+    if (rv <= 0) {
+        if (rv == 0) {
+            PyErr_Format(PyExc_TypeError,
+                         "can only concatenate meque (not \"%.200s\") to meque",
+                         Py_TYPE(other)->tp_name);
+        }
+        return NULL;
+    }
+
+    new_meque = meque_copy_impl(meque);
+    if (new_meque == NULL)
+        return NULL;
+
+    // It's safe to not acquire the per-object lock for new_deque; it's
+    // invisible to other threads.
+    result = meque_extend_impl((mequeobject *)new_meque, other);
+    if (result == NULL) {
+        Py_DECREF(new_meque);
+        return NULL;
+    }
+    Py_DECREF(result);
+    return new_meque;
+}
+
+static PyObject *
+meque_concat(PyObject *self, PyObject *other)
+{
+    mequeobject *meque = mequeobject_CAST(self);
+    PyObject *result;
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    result = meque_concat_lock_held(meque, other);
+    Py_END_CRITICAL_SECTION();
+    return result;
+}
+
+static int
+meque_clear(PyObject *self)
+{
+    mequeobject *meque = mequeobject_CAST(self);
+    PyObject **items = meque->ob_item;
+    if (items == NULL) {
+        return 0;
+    }
+
+    /* Because XDECREF can recursively invoke operations on
+       this meque, we make it empty first. */
+    Py_ssize_t i = Py_SIZE(meque);
+    Py_SET_SIZE(meque, 0);
+    FT_ATOMIC_STORE_PTR_RELEASE(meque->ob_item, NULL);
+    meque->allocated = 0;
+    meque->first_element = 0;
+    meque->state++;
+
+    /* Now we can safely decref all items. Note that there is no guarantee
+       that the meque is actually empty at this point, because XDECREF may
+       have populated it indirectly again! */
+    while (--i >= 0) {
+        Py_XDECREF(items[i]);
+    }
+
+    /* Free the items array. If the meque was repopulated during XDECREF,
+       it will have allocated a new array. */
+    PyMem_Free(items);
+    return 0;
+}
 
 /* defaultdict type *********************************************************/
 

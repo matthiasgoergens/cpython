@@ -565,6 +565,198 @@ deque___reversed__(PyObject *deque, PyObject *Py_UNUSED(ignored))
     return deque___reversed___impl((dequeobject *)deque);
 }
 
+PyDoc_STRVAR(meque_pop__doc__,
+"pop($self, /)\n"
+"--\n"
+"\n"
+"Remove and return the rightmost element.");
+
+#define MEQUE_POP_METHODDEF    \
+    {"pop", (PyCFunction)meque_pop, METH_NOARGS, meque_pop__doc__},
+
+static PyObject *
+meque_pop_impl(mequeobject *meque);
+
+static PyObject *
+meque_pop(PyObject *meque, PyObject *Py_UNUSED(ignored))
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_pop_impl((mequeobject *)meque);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
+PyDoc_STRVAR(meque_popleft__doc__,
+"popleft($self, /)\n"
+"--\n"
+"\n"
+"Remove and return the leftmost element.");
+
+#define MEQUE_POPLEFT_METHODDEF    \
+    {"popleft", (PyCFunction)meque_popleft, METH_NOARGS, meque_popleft__doc__},
+
+static PyObject *
+meque_popleft_impl(mequeobject *meque);
+
+static PyObject *
+meque_popleft(PyObject *meque, PyObject *Py_UNUSED(ignored))
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_popleft_impl((mequeobject *)meque);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
+PyDoc_STRVAR(meque_append__doc__,
+"append($self, item, /)\n"
+"--\n"
+"\n"
+"Add an element to the right side of the meque.");
+
+#define MEQUE_APPEND_METHODDEF    \
+    {"append", (PyCFunction)meque_append, METH_O, meque_append__doc__},
+
+static PyObject *
+meque_append_impl(mequeobject *meque, PyObject *item);
+
+static PyObject *
+meque_append(PyObject *meque, PyObject *item)
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_append_impl((mequeobject *)meque, item);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
+PyDoc_STRVAR(meque_appendleft__doc__,
+"appendleft($self, item, /)\n"
+"--\n"
+"\n"
+"Add an element to the left side of the meque.");
+
+#define MEQUE_APPENDLEFT_METHODDEF    \
+    {"appendleft", (PyCFunction)meque_appendleft, METH_O, meque_appendleft__doc__},
+
+static PyObject *
+meque_appendleft_impl(mequeobject *meque, PyObject *item);
+
+static PyObject *
+meque_appendleft(PyObject *meque, PyObject *item)
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_appendleft_impl((mequeobject *)meque, item);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
+PyDoc_STRVAR(meque_extend__doc__,
+"extend($self, iterable, /)\n"
+"--\n"
+"\n"
+"Extend the right side of the deque with elements from the iterable.");
+
+#define MEQUE_EXTEND_METHODDEF    \
+    {"extend", (PyCFunction)meque_extend, METH_O, meque_extend__doc__},
+
+static PyObject *
+meque_extend_impl(mequeobject *meque, PyObject *iterable);
+
+static PyObject *
+meque_extend(PyObject *meque, PyObject *iterable)
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_extend_impl((mequeobject *)meque, iterable);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
+PyDoc_STRVAR(meque_extendleft__doc__,
+"extendleft($self, iterable, /)\n"
+"--\n"
+"\n"
+"Extend the left side of the deque with elements from the iterable.");
+
+#define MEQUE_EXTENDLEFT_METHODDEF    \
+    {"extendleft", (PyCFunction)meque_extendleft, METH_O, meque_extendleft__doc__},
+
+static PyObject *
+meque_extendleft_impl(mequeobject *meque, PyObject *iterable);
+
+static PyObject *
+meque_extendleft(PyObject *meque, PyObject *iterable)
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_extendleft_impl((mequeobject *)meque, iterable);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
+PyDoc_STRVAR(meque_copy__doc__,
+"copy($self, /)\n"
+"--\n"
+"\n"
+"Return a shallow copy of a deque.");
+
+#define MEQUE_COPY_METHODDEF    \
+    {"copy", (PyCFunction)meque_copy, METH_NOARGS, meque_copy__doc__},
+
+static PyObject *
+meque_copy_impl(mequeobject *meque);
+
+static PyObject *
+meque_copy(PyObject *meque, PyObject *Py_UNUSED(ignored))
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque_copy_impl((mequeobject *)meque);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
+PyDoc_STRVAR(meque___copy____doc__,
+"__copy__($self, /)\n"
+"--\n"
+"\n"
+"Return a shallow copy of a deque.");
+
+#define MEQUE___COPY___METHODDEF    \
+    {"__copy__", (PyCFunction)meque___copy__, METH_NOARGS, meque___copy____doc__},
+
+static PyObject *
+meque___copy___impl(mequeobject *meque);
+
+static PyObject *
+meque___copy__(PyObject *meque, PyObject *Py_UNUSED(ignored))
+{
+    PyObject *return_value = NULL;
+
+    Py_BEGIN_CRITICAL_SECTION(meque);
+    return_value = meque___copy___impl((mequeobject *)meque);
+    Py_END_CRITICAL_SECTION();
+
+    return return_value;
+}
+
 PyDoc_STRVAR(_collections__count_elements__doc__,
 "_count_elements($module, mapping, iterable, /)\n"
 "--\n"
@@ -632,4 +824,4 @@ tuplegetter_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 exit:
     return return_value;
 }
-/*[clinic end generated code: output=b9d4d647c221cb9f input=a9049054013a1b77]*/
+/*[clinic end generated code: output=0f37deaca8c5b8b5 input=a9049054013a1b77]*/

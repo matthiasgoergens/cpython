@@ -2,8 +2,14 @@
 #  error "this header file must not be included directly"
 #endif
 
+// NOTE(Matthias):  This is what's in PyObject_VAR_HEAD
+// typedef struct {
+//     PyObject ob_base;
+//     Py_ssize_t ob_size; /* Number of items in variable part */
+// } PyVarObject;
 typedef struct {
     PyObject_VAR_HEAD
+    // TODO(Matthias): Why is the variable length part not at the end, like for dicts?
     /* Vector of pointers to list elements.  list[0] is ob_item[0], etc. */
     PyObject **ob_item;
 

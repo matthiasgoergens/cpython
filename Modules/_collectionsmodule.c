@@ -2844,6 +2844,7 @@ meque_repeat(PyObject *self, Py_ssize_t n)
     return rv;
 }
 
+// TODO(Matthias): this one is probably broken.
 static int
 _meque_rotate(mequeobject *meque, Py_ssize_t n)
 {

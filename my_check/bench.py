@@ -29,7 +29,9 @@ def mixed_append_and_rotate(n, imp):
             # d.extend([2*i, 2*i+1])
             d.append(2*i)
             d.append(2*i+1)
-            d.rotate(-1)
+            d.rotate(len(d)//6)
+            d.rotate(-len(d)//3)
+            del d[len(d)//2]
         end = time.perf_counter()
         return end - start
     except KeyboardInterrupt:
@@ -77,7 +79,7 @@ def append_left_and_get(n, imp):
 
 def run(benchmark, implementations):
     while True:
-        n = random.randrange(1_000_000)
+        n = random.randrange(100_000)
         impps = list(implementations)
         random.shuffle(impps)
         for imp in impps:
@@ -98,4 +100,4 @@ def run(benchmark, implementations):
 
 if __name__ == "__main__":
     # run(benchmark=mixed_append_and_rotate, implementations=[c.meque, c.deque, list])
-    run(benchmark=append_left_and_get, implementations=[c.meque, c.deque])
+    run(benchmark=mixed_append_and_rotate, implementations=[c.meque, c.deque])

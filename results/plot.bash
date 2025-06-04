@@ -2,7 +2,7 @@
 set -xeuo pipefail
 #  IFS=$'\n\t'
 
-bench="append_left_and_get"
+bench="mixed_append_and_rotate"
 
 for impl in meque deque; do
     cat "${bench}.data" | grep "${impl}" > "${bench}.${impl}.data"

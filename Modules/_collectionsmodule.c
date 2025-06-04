@@ -2251,42 +2251,96 @@ meque_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     return (PyObject *)meque;
 }
 
+static size_t min(size_t a, size_t b) {
+    return a < b ? a : b;
+}
+
+// We want zero to behave like +infinity, hence the -1 and unsigned overflow.
+static Py_ssize_t min3_special(Py_ssize_t a, Py_ssize_t b, Py_ssize_t c) {
+    return min(a -1, min(b -1, c-1)) + 1;
+}
+
+// TODO(Matthias): use this for delete as well.  And for middle insert?
+static void circular_mem_move(PyObject **items, Py_ssize_t allocated, Py_ssize_t dst_start, Py_ssize_t src_start, Py_ssize_t m) {
+    assert(m <= allocated);
+    Py_ssize_t mask = allocated - 1;
+
+    // move backwards:
+    if (((src_start - dst_start) & mask) < m) {
+        Py_ssize_t remaining = m;
+        while (remaining > 0) {
+            Py_ssize_t src_until_wrap = (- src_start) & mask;
+            Py_ssize_t dst_until_wrap = (- dst_start) & mask;
+            Py_ssize_t step = min3_special(src_until_wrap, dst_until_wrap, remaining);
+            memmove(&items[dst_start], &items[src_start], step * sizeof(PyObject *));
+            remaining -= step;
+            assert(remaining >= 0);
+            assert(step > 0);
+            src_start = (src_start + step) & mask;
+            dst_start = (dst_start + step) & mask;
+        }
+    }
+    // move forwards:
+    else {
+        Py_ssize_t remaining = m;
+        Py_ssize_t src_end = (src_start + remaining) & mask;
+        Py_ssize_t dst_end = (dst_start + remaining) & mask;
+        while (remaining > 0) {
+            Py_ssize_t step = min3_special(src_end, dst_end, remaining);
+            memmove(&items[(dst_end-step) & mask], &items[(src_end-step) & mask], step * sizeof(PyObject *));
+            remaining -= step;
+            assert(remaining >= 0);
+            assert(step > 0);
+            src_end = (src_end - step) & mask;
+            dst_end = (dst_end - step) & mask;
+        }
+    }
+}
+
 static int meque_maybe_shrink(mequeobject *meque)
 {
+    Py_ssize_t old_allocated = meque->allocated;
 
-  Py_ssize_t old_allocated = meque->allocated;
+    Py_ssize_t new_allocated = old_allocated;
+    // Ensure we don't shrink too much, we want to keep at least half the slots
+    // free.  This is basically the same heuristic we use for growing, but in reverse.
+    while (Py_SIZE(meque) <= new_allocated >> 2 && new_allocated > 0) {
+        new_allocated >>= 1;
+    }
+    if(new_allocated >= meque->allocated) {
+        return 0; // No need to shrink
+    }
 
-  Py_ssize_t new_allocated = old_allocated;
-  // Ensure we don't shrink too much, we want to keep at least half the slots
-  // free.  This is basically the same heuristic we use for growing, but in reverse.
-  while (Py_SIZE(meque) <= new_allocated >> 2 && new_allocated > 0) {
-    new_allocated >>= 1;
-  }
-  if(new_allocated >= meque->allocated) {
-    return 0; // No need to shrink
-  }
-  // If there's wrap-around, then the bit from 0 to somewhere in the middle is already good.
-  // But we need to copy the elements from meque->first_element to the end of the array, if any.
-  if(meque->first_element + Py_SIZE(meque) > old_allocated) {
-    // wrap around:
-    memcpy(meque->ob_item, meque->ob_item + meque->first_element, (old_allocated - meque->first_element) * sizeof(PyObject *));
-    meque->first_element = (old_allocated - meque->first_element);
+    if(meque->first_element + Py_SIZE(meque) > old_allocated) {
+        // If there's wrap-around, then the bit from 0 to somewhere in the middle is already good.
+        // But we need to copy the elements from meque->first_element to the end of the array, if any.
+        Py_ssize_t dst_start = new_allocated - meque->first_element;
+        circular_mem_move(
+            meque->ob_item,
+            old_allocated,
+            dst_start,
+            meque->first_element,
+            old_allocated - meque->first_element);
+        assert(meque->first_element < new_allocated);
+        meque->first_element = dst_start;
+    } else if (meque->first_element >= new_allocated) {
+        // In this case, there's no wrap around, but we are past the end of the new array.
+        circular_mem_move(meque->ob_item, new_allocated, 0, meque->first_element, Py_SIZE(meque));
+        meque->first_element = 0;
+    } else {
+        // Here the items already fit completely in the smaller array.
+    }
     assert(meque->first_element < new_allocated);
-  } else if (meque->first_element >= new_allocated) {
-    memcpy(meque->ob_item, meque->ob_item + meque->first_element, (Py_SIZE(meque)) * sizeof(PyObject *));
-    meque->first_element = 0;
-  } else {
-    // no wrap-around, no need to copy
-  }
-  // TODO(Matthias): properly handle errors, when we can't shrink.
-  PyObject **ob_item = (PyObject **)PyMem_Realloc(meque->ob_item, new_allocated * sizeof(PyObject *));
-  if(ob_item == NULL) {
-    PyErr_NoMemory();
-    return -1;
-  }
-  meque->ob_item = ob_item;
-  meque->allocated = new_allocated;
-  return 0;
+    assert(meque->first_element + Py_SIZE(meque) <= new_allocated);
+    // TODO(Matthias): properly handle errors, when we can't shrink.
+    PyObject **ob_item = (PyObject **)PyMem_Realloc(meque->ob_item, new_allocated * sizeof(PyObject *));
+    if(ob_item == NULL) {
+        PyErr_NoMemory();
+        return -1;
+    }
+    meque->ob_item = ob_item;
+    meque->allocated = new_allocated;
+    return 0;
 }
 
 /*[clinic input]
@@ -2370,12 +2424,19 @@ static int meque_grow_ensure(mequeobject *meque, Py_ssize_t min_size)
     // Check if there's a wrap-around
     Py_ssize_t last_element = (meque->first_element + Py_SIZE(meque)) & old_mask;
     if (Py_SIZE(meque) > 1 && last_element <= meque->first_element) {
-        // There's a wrap-around, copy the wrapped elements to the new space
-        Py_ssize_t wrapped_size = last_element;
-        memcpy(
-            meque->ob_item + old_size,
-            meque->ob_item,
-            wrapped_size * sizeof(PyObject *));
+        // There's a wrap-around, need to move either the first or last part
+        Py_ssize_t wrapped_part_size = last_element;
+        Py_ssize_t start_part_size = Py_SIZE(meque) - wrapped_part_size;
+
+        if (wrapped_part_size <= start_part_size) {
+            // Move the first part to the new space
+            circular_mem_move(meque->ob_item, meque->allocated, old_size, 0, wrapped_part_size);
+        } else {
+            // Move the last part to the new space
+            Py_ssize_t dst_start = meque->allocated - start_part_size;
+            circular_mem_move(meque->ob_item, meque->allocated, dst_start, meque->first_element, start_part_size);
+            meque->first_element = dst_start;
+        }
     }
     return 0;
 }
@@ -2844,52 +2905,6 @@ meque_repeat(PyObject *self, Py_ssize_t n)
     return rv;
 }
 
-static size_t min(size_t a, size_t b) {
-    return a < b ? a : b;
-}
-
-// We want zero to behave like +infinity, hence the -1 and unsigned overflow.
-static Py_ssize_t min3_special(Py_ssize_t a, Py_ssize_t b, Py_ssize_t c) {
-    return min(a -1, min(b -1, c-1)) + 1;
-}
-
-// TODO(Matthias): use this for delete as well.  And for middle insert?
-static void circular_mem_move(PyObject **items, Py_ssize_t allocated, Py_ssize_t dst_start, Py_ssize_t src_start, Py_ssize_t m) {
-    assert(m <= allocated);
-    Py_ssize_t mask = allocated - 1;
-
-    // move backwards:
-    if (((src_start - dst_start) & mask) < m) {
-        Py_ssize_t remaining = m;
-        while (remaining > 0) {
-            Py_ssize_t src_until_wrap = (- src_start) & mask;
-            Py_ssize_t dst_until_wrap = (- dst_start) & mask;
-            Py_ssize_t step = min3_special(src_until_wrap, dst_until_wrap, remaining);
-            memmove(&items[dst_start], &items[src_start], step * sizeof(PyObject *));
-            remaining -= step;
-            assert(remaining >= 0);
-            assert(step > 0);
-            src_start = (src_start + step) & mask;
-            dst_start = (dst_start + step) & mask;
-        }
-    }
-    // move forwards:
-    else {
-        Py_ssize_t remaining = m;
-        Py_ssize_t src_end = (src_start + remaining) & mask;
-        Py_ssize_t dst_end = (dst_start + remaining) & mask;
-        while (remaining > 0) {
-            Py_ssize_t step = min3_special(src_end, dst_end, remaining);
-            memmove(&items[(dst_end-step) & mask], &items[(src_end-step) & mask], step * sizeof(PyObject *));
-            remaining -= step;
-            assert(remaining >= 0);
-            assert(step > 0);
-            src_end = (src_end - step) & mask;
-            dst_end = (dst_end - step) & mask;
-        }
-    }
-}
-
 // TODO(Matthias): Special case for length = allocated: we only need to move the first element, no memcpy.
 static int
 _meque_rotate(mequeobject *meque, Py_ssize_t n)
@@ -3292,6 +3307,8 @@ meque_del_item(mequeobject *meque, Py_ssize_t i)
     Py_ssize_t pos = (first + i) & mask;
     PyObject *item = items[pos];
     assert (item != NULL);
+    // Something is wrong with probably the rotation, so that we delete stuff twice?
+    // Or something is wrong with the growth?
     Py_DECREF(item);
 
     // Determine direction based on which end is closer
@@ -3306,7 +3323,6 @@ meque_del_item(mequeobject *meque, Py_ssize_t i)
     // If distance is positive or zero, we're closer to the right end
     else {
         // Move elements from pos+1 to last one position to the left
-        Py_ssize_t last = (first + n - 1) & mask;
         circular_mem_move(items, meque->allocated, pos, (pos + 1) & mask, distance);
     }
 

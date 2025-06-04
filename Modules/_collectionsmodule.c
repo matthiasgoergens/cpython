@@ -2890,7 +2890,7 @@ static void circular_mem_move(PyObject **items, Py_ssize_t allocated, Py_ssize_t
     }
 }
 
-// TODO(Matthias): this one is probably broken.
+// TODO(Matthias): Special case for length = allocated: we only need to move the first element, no memcpy.
 static int
 _meque_rotate(mequeobject *meque, Py_ssize_t n)
 {
@@ -2907,25 +2907,34 @@ _meque_rotate(mequeobject *meque, Py_ssize_t n)
     }
     assert(len > 1);
     assert(-halflen <= n && n <= halflen);
+    if (n == 0) {
+        return 0;
+    }
 
     PyObject **items = meque->ob_item;
     Py_ssize_t first = meque->first_element;
     Py_ssize_t allocated = meque->allocated;
     Py_ssize_t mask = allocated - 1;  // Since allocated is a power of 2
 
+    if (len == allocated) {
+        // Special case: we only need to move the first element index.
+        meque->first_element = (first - n) & mask;
+        return 0;
+    }
+
     // For positive rotation, we move elements from end to beginning
     if (n > 0) {
         Py_ssize_t src_start = (first + len - n) & mask;
         Py_ssize_t dst_start = (first - n) & mask;
         circular_mem_move(items, allocated, dst_start, src_start, n);
-        meque->first_element = (first + n) & mask;
+        meque->first_element = (first - n) & mask;
     }
     // For negative rotation, we move elements from beginning to end
     else {
         Py_ssize_t src_start = first;
         Py_ssize_t dst_start = (first + len) & mask;
         circular_mem_move(items, allocated, dst_start, src_start, -n);
-        meque->first_element = (first + n) & mask;
+        meque->first_element = (first - n) & mask;
     }
 
     meque->state++;

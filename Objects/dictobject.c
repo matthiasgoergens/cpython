@@ -2358,6 +2358,62 @@ _PyDict_GetItemRef_KnownHash_LockHeld(PyDictObject *op, PyObject *key,
     return 1;  // key is present
 }
 
+static int ensure_at_least_one_extra_element_in_entries(PyDictObject *op)
+{
+    assert(PyDict_CheckExact((PyObject*)op));
+    if (_PyDict_HasSplitTable(op)
+        || DK_IS_UNICODE(op->ma_keys)
+        || (op->ma_keys->dk_nentries + 1 >= USABLE_FRACTION(DK_SIZE(op->ma_keys)))) {
+
+        return insertion_resize(_PyInterpreterState_GET(), op, 0);
+    }
+    return 0;  // no resize needed
+}
+
+int
+_PyDict_GetItemRef_KnownHash_LockHeld_move_to_back(PyDictObject *op, PyObject *key,
+                                                   Py_hash_t hash, PyObject **result)
+{
+    // For simplicity, we do this first, even if we don't know whether the key is present.
+    ensure_at_least_one_extra_element_in_entries(op);
+    assert(!_PyDict_HasSplitTable(op));
+    assert(!DK_IS_UNICODE(op->ma_keys));
+    assert((op->ma_keys->dk_nentries < USABLE_FRACTION(DK_SIZE(op->ma_keys))));
+
+    PyObject *value;
+    Py_ssize_t ix = _Py_dict_lookup(op, key, hash, &value);
+
+    assert(ix >= 0 || value == NULL);
+    if (ix == DKIX_ERROR) {
+        *result = NULL;
+        return -1;
+    }
+    if (value == NULL) {
+        *result = NULL;
+        return 0;  // missing key
+    }
+    *result = Py_NewRef(value);
+    Py_ssize_t hashpos = lookdict_index(op->ma_keys, hash, ix);
+    assert(hashpos >= 0);
+
+    PyDictKeyEntry *old_ep = &DK_ENTRIES(op->ma_keys)[ix];
+    PyDictKeyEntry *new_ep = &DK_ENTRIES(op->ma_keys)[op->ma_keys->dk_nentries];
+
+    STORE_KEY(new_ep, old_ep->me_key);
+    STORE_VALUE(new_ep, old_ep->me_value);
+    STORE_HASH(new_ep, old_ep->me_hash);
+
+    STORE_KEY(old_ep, NULL);
+    STORE_VALUE(old_ep, NULL);
+    STORE_HASH(old_ep, 0);
+
+    dictkeys_set_index(op->ma_keys, hashpos, op->ma_keys->dk_nentries);
+
+    STORE_KEYS_NENTRIES(op->ma_keys, op->ma_keys->dk_nentries + 1);
+
+    return 1;  // key is present
+}
+
 /* Gets an item and provides a new reference if the value is present.
  * Returns 1 if the key is present, 0 if the key is missing, and -1 if an
  * exception occurred.

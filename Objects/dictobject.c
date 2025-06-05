@@ -116,6 +116,7 @@ As a consequence of this, split keys have a maximum size of 16.
 #define PyDict_MINSIZE 8
 
 #include "Python.h"
+#include<stdio.h>
 #include "pycore_bitutils.h"      // _Py_bit_length
 #include "pycore_call.h"          // _PyObject_CallNoArgs()
 #include "pycore_ceval.h"         // _PyEval_GetBuiltin()
@@ -2009,6 +2010,9 @@ dictresize(PyInterpreterState *interp, PyDictObject *mp,
     if (!DK_IS_UNICODE(oldkeys)) {
         unicode = 0;
     }
+    if (!DK_IS_UNICODE(oldkeys)) {
+        fprintf(stderr, "dictresize\n");
+    }
 
     ensure_shared_on_resize(mp);
     /* NOTE: Current odict checks mp->ma_keys to detect resize happen.
@@ -2378,6 +2382,7 @@ _PyDict_GetItemRef_KnownHash_LockHeld_move_to_back(PyDictObject *op, PyObject *k
     ensure_at_least_one_extra_element_in_entries(op);
     assert(!_PyDict_HasSplitTable(op));
     assert(!DK_IS_UNICODE(op->ma_keys));
+    // Perhaps we are accidentally resizing twice, and getting the same back?
     assert((op->ma_keys->dk_nentries < USABLE_FRACTION(DK_SIZE(op->ma_keys))));
 
     PyObject *value;

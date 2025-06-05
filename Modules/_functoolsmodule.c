@@ -1,4 +1,5 @@
 #include "Python.h"
+#include "pycore_pyerrors.h"
 #include "pycore_call.h"          // _PyObject_CallNoArgs()
 #include "pycore_dict.h"          // _PyDict_Pop_KnownHash()
 #include "pycore_long.h"          // _PyLong_GetZero()
@@ -1266,30 +1267,31 @@ bounded_lru_cache_update_lock_held(lru_cache_object *self,
 {
     _Py_CRITICAL_SECTION_ASSERT_OBJECT_LOCKED(self);
     PyObject *testresult;
-    int res;
 
     if (!result) {
         Py_DECREF(key);
         return NULL;
     }
-    res = _PyDict_GetItemRef_KnownHash_LockHeld_move_to_back((PyDictObject *)self->cache, key, hash,
-                                                &testresult);
-    if (res > 0) {
-        /* Getting here means that this same key was added to the cache
-           during the PyObject_Call().  Since the link update is already
-           done, we need only return the computed result. */
-        Py_DECREF(testresult);
-        Py_DECREF(key);
-        return result;
-    }
-    if (res < 0) {
-        /* This is an unusual case since this same lookup
-           did not previously trigger an error during lookup.
-           Treat it the same as an error in user function
-           and return with the error set. */
-        Py_DECREF(key);
-        Py_DECREF(result);
-        return NULL;
+    {
+        int res = _PyDict_GetItemRef_KnownHash_LockHeld_move_to_back((PyDictObject *)self->cache, key, hash,
+                                                    &testresult);
+        if (res > 0) {
+            /* Getting here means that this same key was added to the cache
+            during the PyObject_Call().  Since the link update is already
+            done, we need only return the computed result. */
+            Py_DECREF(testresult);
+            Py_DECREF(key);
+            return result;
+        }
+        if (res < 0) {
+            /* This is an unusual case since this same lookup
+            did not previously trigger an error during lookup.
+            Treat it the same as an error in user function
+            and return with the error set. */
+            Py_DECREF(key);
+            Py_DECREF(result);
+            return NULL;
+        }
     }
     /* This is the normal case.  The new key wasn't found before
        user function call and it is still not there.  So we
@@ -1314,35 +1316,70 @@ bounded_lru_cache_update_lock_held(lru_cache_object *self,
 
     }
     /* Cache is full, evict the oldest item, then insert new one. */
+    assert(!_PyDict_HasSplitTable((PyDictObject *)self->cache));
 
-    if (self->resize_sentinel != ((PyDictObject *)self->cache)->ma_keys) {
-        /* The cache dict has been resized since the last time we
-           checked the size.  We need to recompute the first entry
-           in the linked list. */
+    // TODO(Matthias): since we are the only ones 'popping' from this dict, we can actually just check whether the first entry is (still) empty.
+    if (DK_ENTRIES(((PyDictObject *)self->cache)->ma_keys)[0].me_value != NULL) {
         self->first_entry = 0;
-        self->resize_sentinel = ((PyDictObject *)self->cache)->ma_keys;
     }
+    // if ((self->resize_sentinel != ((PyDictObject *)self->cache)->ma_keys) || (_PyDict_HasSplitTable((PyDictObject *)self->cache))) {
+    //     /* The cache dict has been resized since the last time we
+    //        checked the size.  We need to recompute the first entry
+    //        in the linked list. */
+    //     self->first_entry = 0;
+    //     self->resize_sentinel = ((PyDictObject *)self->cache)->ma_keys;
+    // }
 
     Py_hash_t first_hash;
     PyObject *first_key;
     PyObject *first_value;
-    if (1 == _PyDict_Next(self->cache, &self->first_entry, &first_key, &first_value, &first_hash)) {
-        if (res < _PyDict_DelItem_KnownHash(self->cache, first_key, first_hash)) {
+    PySys_WriteStderr("[dict-debug] first_entry before=%zd maxsize=%zd\n", self->first_entry, self->maxsize);
+    int res_next = _PyDict_Next(self->cache, &self->first_entry, &first_key, &first_value, &first_hash);
+    {
+        Py_ssize_t first_entry = 0;
+        Py_hash_t first_hash;
+        PyObject *first_key;
+        PyObject *first_value;
+        int res_next_from_start = _PyDict_Next(self->cache, &first_entry, &first_key, &first_value, &first_hash);
+        PySys_WriteStderr("[dict-debug] first_entry from cache=%zd first_entry from_start=%zd res_next=%d res_next_from_start=%d\n", self->first_entry, first_entry, res_next, res_next_from_start);
+        assert(first_entry == self->first_entry);
+    }
+    if (1 == res_next) {
+        PySys_WriteStderr("[dict-debug] deleting first entry ----------------- new first_entry=%zd\n", self->first_entry);
+        if (_PyDict_DelItem_KnownHash(self->cache, first_key, first_hash) < 0) {
             /* An error arose while trying to remove the oldest key
             (the one being evicted) from the cache.
             Let the error propagate upward.
             */
             // TODO(Matthias): consider logging an error, at least for debug builds?
             // Do we need to do any reference arithmetic here?
+            _PyErr_SetKeyError(first_key);
             return NULL;
         }
-    }
-    else {
+    } else {
+        if (self->first_entry != 0) {
+            Py_ssize_t first_entry = 0;
+            _PyDict_Next(self->cache, &first_entry, &first_key, &first_value, &first_hash);
+            _Py_FatalErrorFormat(__func__,
+            "first_entry=%zd, size=%zd, dk_nentries=%zd maxsize=%zd res_next=%d first_entry_from_start=%d\n",
+            self->first_entry,
+            PyDict_GET_SIZE(self->cache),
+            ((PyDictObject *)self->cache)->ma_keys->dk_nentries,
+            self->maxsize,
+            res_next,
+            first_entry
+            );
+        }
+
+        assert(self->first_entry == 0);
+        assert(PyDict_GET_SIZE(self->cache) == 0);
         /* The cache dict is empty, which is unexpected since we
             already checked the size above.  This can happen if the
             cache dict was cleared or resized while we were waiting
             for the GIL.  In that case, we just return the result
             without updating the cache. */
+            // _PyErr_SetKeyError(key);
+            return result;
     }
     // Now add the new key and result to the cache.
     if (_PyDict_SetItem_KnownHash_LockHeld((PyDictObject *)self->cache, key,
@@ -1448,7 +1485,7 @@ lru_cache_new(PyTypeObject *type, PyObject *args, PyObject *kw)
     obj->wrapper = wrapper;
     obj->typed = typed;
     obj->cache = cachedict;
-    obj->resize_sentinel = NULL;
+    obj->resize_sentinel = ((PyDictObject *)cachedict)->ma_keys;
     obj->first_entry = 0;
     obj->func = Py_NewRef(func);
     obj->misses = obj->hits = 0;

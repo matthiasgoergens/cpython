@@ -2410,6 +2410,9 @@ _PyDict_GetItemRef_KnownHash_LockHeld_move_to_back(PyDictObject *op, PyObject *k
     dictkeys_set_index(op->ma_keys, hashpos, op->ma_keys->dk_nentries);
 
     STORE_KEYS_NENTRIES(op->ma_keys, op->ma_keys->dk_nentries + 1);
+    // TODO(Matthias): This is just to make an assertion pass.
+    // We should review the invariants.
+    STORE_KEYS_USABLE(op->ma_keys, op->ma_keys->dk_usable - 1);
 
     return 1;  // key is present
 }

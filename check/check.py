@@ -16,6 +16,11 @@ def fibonacci(n):
 def main():
     print(fibonacci(100))
     print(fibonacci.cache_info())
+    try:
+        fibonacci(-1)
+    except ValueError:
+        pass
+    print(fibonacci.cache_info())
 
 
 if __name__ == "__main__":

@@ -2677,6 +2677,7 @@ _PyDict_SetItem_KnownHash_LockHeld(PyDictObject *mp, PyObject *key, PyObject *va
     return insertdict(interp, mp, Py_NewRef(key), hash, Py_NewRef(value));
 }
 
+// TODO(Matthias): consider adding _PyDict_SetItem_KnownHash_KnownIdx?
 int
 _PyDict_SetItem_KnownHash(PyObject *op, PyObject *key, PyObject *value,
                           Py_hash_t hash)

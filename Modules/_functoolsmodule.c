@@ -1193,6 +1193,7 @@ uncached_lru_cache_wrapper(lru_cache_object *self, PyObject *args, PyObject *kwd
     return result;
 }
 
+// TODO(Matthias): since we are holding a good enough lock, we can just directly write to the index, instead of recalculating?
 static PyObject *
 infinite_lru_cache_wrapper(lru_cache_object *self, PyObject *args, PyObject *kwds)
 {

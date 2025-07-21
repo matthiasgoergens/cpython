@@ -234,6 +234,26 @@ dict_popitem(PyObject *self, PyObject *Py_UNUSED(ignored))
     return return_value;
 }
 
+PyDoc_STRVAR(dict_random_key__doc__,
+"random_key($self, /)\n"
+"--\n"
+"\n"
+"Return a random key from the dictionary.\n"
+"\n"
+"If the dictionary is empty, :class:`KeyError` is raised.");
+
+#define DICT_RANDOM_KEY_METHODDEF    \
+    {"random_key", (PyCFunction)dict_random_key, METH_NOARGS, dict_random_key__doc__},
+
+static PyObject *
+dict_random_key_impl(PyDictObject *self);
+
+static PyObject *
+dict_random_key(PyObject *self, PyObject *Py_UNUSED(ignored))
+{
+    return dict_random_key_impl((PyDictObject *)self);
+}
+
 PyDoc_STRVAR(dict___sizeof____doc__,
 "__sizeof__($self, /)\n"
 "--\n"
@@ -323,4 +343,4 @@ dict_values(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
     return dict_values_impl((PyDictObject *)self);
 }
-/*[clinic end generated code: output=9007b74432217017 input=a9049054013a1b77]*/
+/*[clinic end generated code: output=b3c699edfbd665a3 input=a9049054013a1b77]*/

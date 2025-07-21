@@ -16,7 +16,7 @@ x = c.meque()
 # print(x)
 for i in range(20):
     d = i
-    what = randrange(4)
+    # what = randrange(4)
     what = 0
     match what % 4:
         case 0:

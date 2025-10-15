@@ -16,7 +16,7 @@ PyDoc_STRVAR(deque_pop__doc__,
 "\n"
 "Remove and return the rightmost element.");
 
-#define deque_POP_METHODDEF    \
+#define DEQUE_POP_METHODDEF    \
     {"pop", (PyCFunction)deque_pop, METH_NOARGS, deque_pop__doc__},
 
 static PyObject *
@@ -40,7 +40,7 @@ PyDoc_STRVAR(deque_popleft__doc__,
 "\n"
 "Remove and return the leftmost element.");
 
-#define deque_POPLEFT_METHODDEF    \
+#define DEQUE_POPLEFT_METHODDEF    \
     {"popleft", (PyCFunction)deque_popleft, METH_NOARGS, deque_popleft__doc__},
 
 static PyObject *
@@ -64,7 +64,7 @@ PyDoc_STRVAR(deque_append__doc__,
 "\n"
 "Add an element to the right side of the deque.");
 
-#define deque_APPEND_METHODDEF    \
+#define DEQUE_APPEND_METHODDEF    \
     {"append", (PyCFunction)deque_append, METH_O, deque_append__doc__},
 
 static PyObject *
@@ -88,7 +88,7 @@ PyDoc_STRVAR(deque_appendleft__doc__,
 "\n"
 "Add an element to the left side of the deque.");
 
-#define deque_APPENDLEFT_METHODDEF    \
+#define DEQUE_APPENDLEFT_METHODDEF    \
     {"appendleft", (PyCFunction)deque_appendleft, METH_O, deque_appendleft__doc__},
 
 static PyObject *
@@ -112,7 +112,7 @@ PyDoc_STRVAR(deque_extend__doc__,
 "\n"
 "Extend the right side of the deque with elements from the iterable.");
 
-#define deque_EXTEND_METHODDEF    \
+#define DEQUE_EXTEND_METHODDEF    \
     {"extend", (PyCFunction)deque_extend, METH_O, deque_extend__doc__},
 
 static PyObject *
@@ -136,7 +136,7 @@ PyDoc_STRVAR(deque_extendleft__doc__,
 "\n"
 "Extend the left side of the deque with elements from the iterable.");
 
-#define deque_EXTENDLEFT_METHODDEF    \
+#define DEQUE_EXTENDLEFT_METHODDEF    \
     {"extendleft", (PyCFunction)deque_extendleft, METH_O, deque_extendleft__doc__},
 
 static PyObject *
@@ -160,7 +160,7 @@ PyDoc_STRVAR(deque_copy__doc__,
 "\n"
 "Return a shallow copy of a deque.");
 
-#define deque_COPY_METHODDEF    \
+#define DEQUE_COPY_METHODDEF    \
     {"copy", (PyCFunction)deque_copy, METH_NOARGS, deque_copy__doc__},
 
 static PyObject *
@@ -184,7 +184,7 @@ PyDoc_STRVAR(deque___copy____doc__,
 "\n"
 "Return a shallow copy of a deque.");
 
-#define deque___COPY___METHODDEF    \
+#define DEQUE___COPY___METHODDEF    \
     {"__copy__", (PyCFunction)deque___copy__, METH_NOARGS, deque___copy____doc__},
 
 static PyObject *
@@ -208,7 +208,7 @@ PyDoc_STRVAR(deque_clearmethod__doc__,
 "\n"
 "Remove all elements from the deque.");
 
-#define deque_CLEARMETHOD_METHODDEF    \
+#define DEQUE_CLEARMETHOD_METHODDEF    \
     {"clear", (PyCFunction)deque_clearmethod, METH_NOARGS, deque_clearmethod__doc__},
 
 static PyObject *
@@ -232,7 +232,7 @@ PyDoc_STRVAR(deque_rotate__doc__,
 "\n"
 "Rotate the deque n steps to the right.  If n is negative, rotates left.");
 
-#define deque_ROTATE_METHODDEF    \
+#define DEQUE_ROTATE_METHODDEF    \
     {"rotate", _PyCFunction_CAST(deque_rotate), METH_FASTCALL, deque_rotate__doc__},
 
 static PyObject *
@@ -277,7 +277,7 @@ PyDoc_STRVAR(deque_reverse__doc__,
 "\n"
 "Reverse *IN PLACE*.");
 
-#define deque_REVERSE_METHODDEF    \
+#define DEQUE_REVERSE_METHODDEF    \
     {"reverse", (PyCFunction)deque_reverse, METH_NOARGS, deque_reverse__doc__},
 
 static PyObject *
@@ -301,7 +301,7 @@ PyDoc_STRVAR(deque_count__doc__,
 "\n"
 "Return number of occurrences of value.");
 
-#define deque_COUNT_METHODDEF    \
+#define DEQUE_COUNT_METHODDEF    \
     {"count", (PyCFunction)deque_count, METH_O, deque_count__doc__},
 
 static PyObject *
@@ -327,7 +327,7 @@ PyDoc_STRVAR(deque_index__doc__,
 "\n"
 "Raises ValueError if the value is not present.");
 
-#define deque_INDEX_METHODDEF    \
+#define DEQUE_INDEX_METHODDEF    \
     {"index", _PyCFunction_CAST(deque_index), METH_FASTCALL, deque_index__doc__},
 
 static PyObject *
@@ -373,7 +373,7 @@ PyDoc_STRVAR(deque_insert__doc__,
 "\n"
 "Insert value before index.");
 
-#define deque_INSERT_METHODDEF    \
+#define DEQUE_INSERT_METHODDEF    \
     {"insert", _PyCFunction_CAST(deque_insert), METH_FASTCALL, deque_insert__doc__},
 
 static PyObject *
@@ -416,7 +416,7 @@ PyDoc_STRVAR(deque_remove__doc__,
 "\n"
 "Remove first occurrence of value.");
 
-#define deque_REMOVE_METHODDEF    \
+#define DEQUE_REMOVE_METHODDEF    \
     {"remove", (PyCFunction)deque_remove, METH_O, deque_remove__doc__},
 
 static PyObject *
@@ -440,7 +440,7 @@ PyDoc_STRVAR(deque___reduce____doc__,
 "\n"
 "Return state information for pickling.");
 
-#define deque___REDUCE___METHODDEF    \
+#define DEQUE___REDUCE___METHODDEF    \
     {"__reduce__", (PyCFunction)deque___reduce__, METH_NOARGS, deque___reduce____doc__},
 
 static PyObject *
@@ -529,7 +529,7 @@ PyDoc_STRVAR(deque___sizeof____doc__,
 "\n"
 "Return the size of the deque in memory, in bytes.");
 
-#define deque___SIZEOF___METHODDEF    \
+#define DEQUE___SIZEOF___METHODDEF    \
     {"__sizeof__", (PyCFunction)deque___sizeof__, METH_NOARGS, deque___sizeof____doc__},
 
 static PyObject *
@@ -553,7 +553,7 @@ PyDoc_STRVAR(deque___reversed____doc__,
 "\n"
 "Return a reverse iterator over the deque.");
 
-#define deque___REVERSED___METHODDEF    \
+#define DEQUE___REVERSED___METHODDEF    \
     {"__reversed__", (PyCFunction)deque___reversed__, METH_NOARGS, deque___reversed____doc__},
 
 static PyObject *

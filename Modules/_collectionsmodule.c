@@ -1313,7 +1313,6 @@ deque_dealloc(PyObject *self)
 {
     PyObject_GC_UnTrack(self);      /* stop GC from revisiting us   */
     deque_clear(self);              /* drop elements (once only)    */
-    PyMem_Free(dequeobject_CAST(self)->ob_item);      /* free the ring buffer         */
     Py_TYPE(self)->tp_free(self);
 }
 
@@ -1481,7 +1480,7 @@ _collections.deque.__init__ as deque_init
     iterable: object = NULL
     maxlen as maxlenobj: object = NULL
 
-A list-like sequence optimized for data accesses near its endpoints.
+A list-like sequence optimized for data insertion and deletion near its endpoints.
 [clinic start generated code]*/
 
 static int
@@ -2553,7 +2552,6 @@ collections_traverse(PyObject *mod, visitproc visit, void *arg)
 {
     collections_state *state = get_module_state(mod);
     Py_VISIT(state->deque_type);
-    Py_VISIT(state->deque_type);
     Py_VISIT(state->defdict_type);
     Py_VISIT(state->dequeiter_type);
     Py_VISIT(state->dequereviter_type);
@@ -2565,7 +2563,6 @@ static int
 collections_clear(PyObject *mod)
 {
     collections_state *state = get_module_state(mod);
-    Py_CLEAR(state->deque_type);
     Py_CLEAR(state->deque_type);
     Py_CLEAR(state->defdict_type);
     Py_CLEAR(state->dequeiter_type);
@@ -2607,14 +2604,11 @@ static int
 collections_exec(PyObject *module) {
     collections_state *state = get_module_state(module);
     ADD_TYPE(module, &deque_spec, state->deque_type, NULL);
-    ADD_TYPE(module, &deque_spec, state->deque_type, NULL);
 
     ADD_TYPE(module, &defdict_spec, state->defdict_type, &PyDict_Type);
 
     ADD_TYPE(module, &dequeiter_spec, state->dequeiter_type, NULL);
-    ADD_TYPE(module, &dequeiter_spec, state->dequeiter_type, NULL);
 
-    ADD_TYPE(module, &dequereviter_spec, state->dequereviter_type, NULL);
     ADD_TYPE(module, &dequereviter_spec, state->dequereviter_type, NULL);
 
     ADD_TYPE(module, &tuplegetter_spec, state->tuplegetter_type, NULL);

@@ -166,16 +166,16 @@ static int deque_maybe_shrink(dequeobject *deque)
     }
 
     if(deque->first_element + Py_SIZE(deque) > old_allocated) {
-        // If there's wrap-around, then the bit from 0 to somewhere in the middle is already good.
-        // But we need to copy the elements from deque->first_element to the end of the array, if any.
-        Py_ssize_t dst_start = new_allocated - deque->first_element;
+        // If there's wrap-around, we need to move the tail part that wraps around
+        // The elements from deque->first_element to old_allocated-1 need to be moved
+        Py_ssize_t tail_size = old_allocated - deque->first_element;
+        Py_ssize_t dst_start = new_allocated - tail_size;
         circular_mem_move(
             deque->ob_item,
             old_allocated,
             dst_start,
             deque->first_element,
-            old_allocated - deque->first_element);
-        assert(deque->first_element < new_allocated);
+            tail_size);
         deque->first_element = dst_start;
     } else if (deque->first_element >= new_allocated) {
         // In this case, there's no wrap around, but we are past the end of the new array.
@@ -184,7 +184,9 @@ static int deque_maybe_shrink(dequeobject *deque)
     } else {
         // Here the items already fit completely in the smaller array.
     }
-    assert(deque->first_element < new_allocated);
+
+    // Allow zero-sized allocations for empty deques (like lists do)
+    assert(Py_SIZE(deque) == 0 || deque->first_element < new_allocated);
     assert(deque->first_element + Py_SIZE(deque) <= new_allocated);
     // TODO(Matthias): properly handle errors, when we can't shrink.
     PyObject **ob_item = (PyObject **)PyMem_Realloc(deque->ob_item, new_allocated * sizeof(PyObject *));
@@ -321,7 +323,7 @@ deque_append_lock_held(dequeobject *deque, PyObject *item, Py_ssize_t maxlen)
     deque->ob_item[(deque->first_element + Py_SIZE(deque)) & (deque->allocated - 1)] = item;
     Py_SET_SIZE(deque, Py_SIZE(deque) + 1);
     if (NEEDS_TRIM(deque, maxlen)) {
-        PyObject *olditem = deque_pop_impl(deque);
+        PyObject *olditem = deque_popleft_impl(deque);
         Py_DECREF(olditem);
     } else {
         deque->state++;

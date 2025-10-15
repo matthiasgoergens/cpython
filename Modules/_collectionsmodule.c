@@ -59,12 +59,8 @@ typedef struct dequeobject dequeobject;
 #undef clinic_state
 
 /* collections module implementation of a deque() datatype
-   Written and maintained by Raymond D. Hettinger <python@rcn.com>
+   Written and maintained by Raymond D. Hettinger <python@rcn.com> et al
 */
-
-#define BLOCKLEN 64
-#define CENTER ((BLOCKLEN - 1) / 2)
-#define MAXFREEBLOCKS 16
 
 /* deque type as growable ring buffer *********************************************************/
 
@@ -99,7 +95,6 @@ deque_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     if (deque == NULL)
         return NULL;
 
-    assert(BLOCKLEN >= 2);
     Py_SET_SIZE(deque, 0);
     deque->ob_item = NULL;
     deque->allocated = 0;

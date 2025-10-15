@@ -247,7 +247,7 @@ deque_popleft_impl(dequeobject *deque)
     PyObject *item;
     Py_ssize_t mask = deque->allocated - 1;  // Since allocated is a power of 2
     if (Py_SIZE(deque) == 0) {
-        PyErr_SetString(PyExc_IndexError, "popleft from an empty deque");
+        PyErr_SetString(PyExc_IndexError, "pop from an empty deque");
         return NULL;
     }
     item = deque->ob_item[deque->first_element];

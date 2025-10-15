@@ -1110,6 +1110,8 @@ deque_insert_impl(dequeobject *deque, Py_ssize_t index, PyObject *value)
     if (index > n)
         index = n;
 
+    // TODO(Matthias): perhaps also shrink the deque if it's too empty?
+    // Just like we resize dicts.
     // Check if we need to grow the deque
     if (n == deque->allocated) {
         if (deque_grow_ensure(deque, Py_SIZE(deque)+1) < 0)

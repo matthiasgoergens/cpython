@@ -16,7 +16,7 @@ PyDoc_STRVAR(deque_pop__doc__,
 "\n"
 "Remove and return the rightmost element.");
 
-#define DEQUE_POP_METHODDEF    \
+#define deque_POP_METHODDEF    \
     {"pop", (PyCFunction)deque_pop, METH_NOARGS, deque_pop__doc__},
 
 static PyObject *
@@ -40,7 +40,7 @@ PyDoc_STRVAR(deque_popleft__doc__,
 "\n"
 "Remove and return the leftmost element.");
 
-#define DEQUE_POPLEFT_METHODDEF    \
+#define deque_POPLEFT_METHODDEF    \
     {"popleft", (PyCFunction)deque_popleft, METH_NOARGS, deque_popleft__doc__},
 
 static PyObject *
@@ -64,7 +64,7 @@ PyDoc_STRVAR(deque_append__doc__,
 "\n"
 "Add an element to the right side of the deque.");
 
-#define DEQUE_APPEND_METHODDEF    \
+#define deque_APPEND_METHODDEF    \
     {"append", (PyCFunction)deque_append, METH_O, deque_append__doc__},
 
 static PyObject *
@@ -88,7 +88,7 @@ PyDoc_STRVAR(deque_appendleft__doc__,
 "\n"
 "Add an element to the left side of the deque.");
 
-#define DEQUE_APPENDLEFT_METHODDEF    \
+#define deque_APPENDLEFT_METHODDEF    \
     {"appendleft", (PyCFunction)deque_appendleft, METH_O, deque_appendleft__doc__},
 
 static PyObject *
@@ -112,7 +112,7 @@ PyDoc_STRVAR(deque_extend__doc__,
 "\n"
 "Extend the right side of the deque with elements from the iterable.");
 
-#define DEQUE_EXTEND_METHODDEF    \
+#define deque_EXTEND_METHODDEF    \
     {"extend", (PyCFunction)deque_extend, METH_O, deque_extend__doc__},
 
 static PyObject *
@@ -136,7 +136,7 @@ PyDoc_STRVAR(deque_extendleft__doc__,
 "\n"
 "Extend the left side of the deque with elements from the iterable.");
 
-#define DEQUE_EXTENDLEFT_METHODDEF    \
+#define deque_EXTENDLEFT_METHODDEF    \
     {"extendleft", (PyCFunction)deque_extendleft, METH_O, deque_extendleft__doc__},
 
 static PyObject *
@@ -160,7 +160,7 @@ PyDoc_STRVAR(deque_copy__doc__,
 "\n"
 "Return a shallow copy of a deque.");
 
-#define DEQUE_COPY_METHODDEF    \
+#define deque_COPY_METHODDEF    \
     {"copy", (PyCFunction)deque_copy, METH_NOARGS, deque_copy__doc__},
 
 static PyObject *
@@ -184,7 +184,7 @@ PyDoc_STRVAR(deque___copy____doc__,
 "\n"
 "Return a shallow copy of a deque.");
 
-#define DEQUE___COPY___METHODDEF    \
+#define deque___COPY___METHODDEF    \
     {"__copy__", (PyCFunction)deque___copy__, METH_NOARGS, deque___copy____doc__},
 
 static PyObject *
@@ -208,7 +208,7 @@ PyDoc_STRVAR(deque_clearmethod__doc__,
 "\n"
 "Remove all elements from the deque.");
 
-#define DEQUE_CLEARMETHOD_METHODDEF    \
+#define deque_CLEARMETHOD_METHODDEF    \
     {"clear", (PyCFunction)deque_clearmethod, METH_NOARGS, deque_clearmethod__doc__},
 
 static PyObject *
@@ -232,7 +232,7 @@ PyDoc_STRVAR(deque_rotate__doc__,
 "\n"
 "Rotate the deque n steps to the right.  If n is negative, rotates left.");
 
-#define DEQUE_ROTATE_METHODDEF    \
+#define deque_ROTATE_METHODDEF    \
     {"rotate", _PyCFunction_CAST(deque_rotate), METH_FASTCALL, deque_rotate__doc__},
 
 static PyObject *
@@ -277,7 +277,7 @@ PyDoc_STRVAR(deque_reverse__doc__,
 "\n"
 "Reverse *IN PLACE*.");
 
-#define DEQUE_REVERSE_METHODDEF    \
+#define deque_REVERSE_METHODDEF    \
     {"reverse", (PyCFunction)deque_reverse, METH_NOARGS, deque_reverse__doc__},
 
 static PyObject *
@@ -301,7 +301,7 @@ PyDoc_STRVAR(deque_count__doc__,
 "\n"
 "Return number of occurrences of value.");
 
-#define DEQUE_COUNT_METHODDEF    \
+#define deque_COUNT_METHODDEF    \
     {"count", (PyCFunction)deque_count, METH_O, deque_count__doc__},
 
 static PyObject *
@@ -327,7 +327,7 @@ PyDoc_STRVAR(deque_index__doc__,
 "\n"
 "Raises ValueError if the value is not present.");
 
-#define DEQUE_INDEX_METHODDEF    \
+#define deque_INDEX_METHODDEF    \
     {"index", _PyCFunction_CAST(deque_index), METH_FASTCALL, deque_index__doc__},
 
 static PyObject *
@@ -373,7 +373,7 @@ PyDoc_STRVAR(deque_insert__doc__,
 "\n"
 "Insert value before index.");
 
-#define DEQUE_INSERT_METHODDEF    \
+#define deque_INSERT_METHODDEF    \
     {"insert", _PyCFunction_CAST(deque_insert), METH_FASTCALL, deque_insert__doc__},
 
 static PyObject *
@@ -416,7 +416,7 @@ PyDoc_STRVAR(deque_remove__doc__,
 "\n"
 "Remove first occurrence of value.");
 
-#define DEQUE_REMOVE_METHODDEF    \
+#define deque_REMOVE_METHODDEF    \
     {"remove", (PyCFunction)deque_remove, METH_O, deque_remove__doc__},
 
 static PyObject *
@@ -440,7 +440,7 @@ PyDoc_STRVAR(deque___reduce____doc__,
 "\n"
 "Return state information for pickling.");
 
-#define DEQUE___REDUCE___METHODDEF    \
+#define deque___REDUCE___METHODDEF    \
     {"__reduce__", (PyCFunction)deque___reduce__, METH_NOARGS, deque___reduce____doc__},
 
 static PyObject *
@@ -529,7 +529,7 @@ PyDoc_STRVAR(deque___sizeof____doc__,
 "\n"
 "Return the size of the deque in memory, in bytes.");
 
-#define DEQUE___SIZEOF___METHODDEF    \
+#define deque___SIZEOF___METHODDEF    \
     {"__sizeof__", (PyCFunction)deque___sizeof__, METH_NOARGS, deque___sizeof____doc__},
 
 static PyObject *
@@ -553,7 +553,7 @@ PyDoc_STRVAR(deque___reversed____doc__,
 "\n"
 "Return a reverse iterator over the deque.");
 
-#define DEQUE___REVERSED___METHODDEF    \
+#define deque___REVERSED___METHODDEF    \
     {"__reversed__", (PyCFunction)deque___reversed__, METH_NOARGS, deque___reversed____doc__},
 
 static PyObject *
@@ -563,561 +563,6 @@ static PyObject *
 deque___reversed__(PyObject *deque, PyObject *Py_UNUSED(ignored))
 {
     return deque___reversed___impl((dequeobject *)deque);
-}
-
-PyDoc_STRVAR(meque_pop__doc__,
-"pop($self, /)\n"
-"--\n"
-"\n"
-"Remove and return the rightmost element.");
-
-#define MEQUE_POP_METHODDEF    \
-    {"pop", (PyCFunction)meque_pop, METH_NOARGS, meque_pop__doc__},
-
-static PyObject *
-meque_pop_impl(mequeobject *meque);
-
-static PyObject *
-meque_pop(PyObject *meque, PyObject *Py_UNUSED(ignored))
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_pop_impl((mequeobject *)meque);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_popleft__doc__,
-"popleft($self, /)\n"
-"--\n"
-"\n"
-"Remove and return the leftmost element.");
-
-#define MEQUE_POPLEFT_METHODDEF    \
-    {"popleft", (PyCFunction)meque_popleft, METH_NOARGS, meque_popleft__doc__},
-
-static PyObject *
-meque_popleft_impl(mequeobject *meque);
-
-static PyObject *
-meque_popleft(PyObject *meque, PyObject *Py_UNUSED(ignored))
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_popleft_impl((mequeobject *)meque);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_append__doc__,
-"append($self, item, /)\n"
-"--\n"
-"\n"
-"Add an element to the right side of the meque.");
-
-#define MEQUE_APPEND_METHODDEF    \
-    {"append", (PyCFunction)meque_append, METH_O, meque_append__doc__},
-
-static PyObject *
-meque_append_impl(mequeobject *meque, PyObject *item);
-
-static PyObject *
-meque_append(PyObject *meque, PyObject *item)
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_append_impl((mequeobject *)meque, item);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_appendleft__doc__,
-"appendleft($self, item, /)\n"
-"--\n"
-"\n"
-"Add an element to the left side of the meque.");
-
-#define MEQUE_APPENDLEFT_METHODDEF    \
-    {"appendleft", (PyCFunction)meque_appendleft, METH_O, meque_appendleft__doc__},
-
-static PyObject *
-meque_appendleft_impl(mequeobject *meque, PyObject *item);
-
-static PyObject *
-meque_appendleft(PyObject *meque, PyObject *item)
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_appendleft_impl((mequeobject *)meque, item);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_extend__doc__,
-"extend($self, iterable, /)\n"
-"--\n"
-"\n"
-"Extend the right side of the deque with elements from the iterable.");
-
-#define MEQUE_EXTEND_METHODDEF    \
-    {"extend", (PyCFunction)meque_extend, METH_O, meque_extend__doc__},
-
-static PyObject *
-meque_extend_impl(mequeobject *meque, PyObject *iterable);
-
-static PyObject *
-meque_extend(PyObject *meque, PyObject *iterable)
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_extend_impl((mequeobject *)meque, iterable);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_extendleft__doc__,
-"extendleft($self, iterable, /)\n"
-"--\n"
-"\n"
-"Extend the left side of the deque with elements from the iterable.");
-
-#define MEQUE_EXTENDLEFT_METHODDEF    \
-    {"extendleft", (PyCFunction)meque_extendleft, METH_O, meque_extendleft__doc__},
-
-static PyObject *
-meque_extendleft_impl(mequeobject *meque, PyObject *iterable);
-
-static PyObject *
-meque_extendleft(PyObject *meque, PyObject *iterable)
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_extendleft_impl((mequeobject *)meque, iterable);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_copy__doc__,
-"copy($self, /)\n"
-"--\n"
-"\n"
-"Return a shallow copy of a deque.");
-
-#define MEQUE_COPY_METHODDEF    \
-    {"copy", (PyCFunction)meque_copy, METH_NOARGS, meque_copy__doc__},
-
-static PyObject *
-meque_copy_impl(mequeobject *meque);
-
-static PyObject *
-meque_copy(PyObject *meque, PyObject *Py_UNUSED(ignored))
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_copy_impl((mequeobject *)meque);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque___copy____doc__,
-"__copy__($self, /)\n"
-"--\n"
-"\n"
-"Return a shallow copy of a deque.");
-
-#define MEQUE___COPY___METHODDEF    \
-    {"__copy__", (PyCFunction)meque___copy__, METH_NOARGS, meque___copy____doc__},
-
-static PyObject *
-meque___copy___impl(mequeobject *meque);
-
-static PyObject *
-meque___copy__(PyObject *meque, PyObject *Py_UNUSED(ignored))
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque___copy___impl((mequeobject *)meque);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_clearmethod__doc__,
-"clear($self, /)\n"
-"--\n"
-"\n"
-"Remove all elements from the deque.");
-
-#define MEQUE_CLEARMETHOD_METHODDEF    \
-    {"clear", (PyCFunction)meque_clearmethod, METH_NOARGS, meque_clearmethod__doc__},
-
-static PyObject *
-meque_clearmethod_impl(mequeobject *meque);
-
-static PyObject *
-meque_clearmethod(PyObject *meque, PyObject *Py_UNUSED(ignored))
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_clearmethod_impl((mequeobject *)meque);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_rotate__doc__,
-"rotate($self, n=1, /)\n"
-"--\n"
-"\n"
-"Rotate the deque n steps to the right.  If n is negative, rotates left.");
-
-#define MEQUE_ROTATE_METHODDEF    \
-    {"rotate", _PyCFunction_CAST(meque_rotate), METH_FASTCALL, meque_rotate__doc__},
-
-static PyObject *
-meque_rotate_impl(mequeobject *meque, Py_ssize_t n);
-
-static PyObject *
-meque_rotate(PyObject *meque, PyObject *const *args, Py_ssize_t nargs)
-{
-    PyObject *return_value = NULL;
-    Py_ssize_t n = 1;
-
-    if (!_PyArg_CheckPositional("rotate", nargs, 0, 1)) {
-        goto exit;
-    }
-    if (nargs < 1) {
-        goto skip_optional;
-    }
-    {
-        Py_ssize_t ival = -1;
-        PyObject *iobj = _PyNumber_Index(args[0]);
-        if (iobj != NULL) {
-            ival = PyLong_AsSsize_t(iobj);
-            Py_DECREF(iobj);
-        }
-        if (ival == -1 && PyErr_Occurred()) {
-            goto exit;
-        }
-        n = ival;
-    }
-skip_optional:
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_rotate_impl((mequeobject *)meque, n);
-    Py_END_CRITICAL_SECTION();
-
-exit:
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_reverse__doc__,
-"reverse($self, /)\n"
-"--\n"
-"\n"
-"Reverse *IN PLACE*.");
-
-#define MEQUE_REVERSE_METHODDEF    \
-    {"reverse", (PyCFunction)meque_reverse, METH_NOARGS, meque_reverse__doc__},
-
-static PyObject *
-meque_reverse_impl(mequeobject *meque);
-
-static PyObject *
-meque_reverse(PyObject *meque, PyObject *Py_UNUSED(ignored))
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_reverse_impl((mequeobject *)meque);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_count__doc__,
-"count($self, value, /)\n"
-"--\n"
-"\n"
-"Return number of occurrences of value.");
-
-#define MEQUE_COUNT_METHODDEF    \
-    {"count", (PyCFunction)meque_count, METH_O, meque_count__doc__},
-
-static PyObject *
-meque_count_impl(mequeobject *meque, PyObject *v);
-
-static PyObject *
-meque_count(PyObject *meque, PyObject *v)
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_count_impl((mequeobject *)meque, v);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_index__doc__,
-"index($self, value, [start, [stop]])\n"
-"--\n"
-"\n"
-"Return first index of value.\n"
-"\n"
-"Raises ValueError if the value is not present.");
-
-#define MEQUE_INDEX_METHODDEF    \
-    {"index", _PyCFunction_CAST(meque_index), METH_FASTCALL, meque_index__doc__},
-
-static PyObject *
-meque_index_impl(mequeobject *meque, PyObject *v, Py_ssize_t start,
-                 Py_ssize_t stop);
-
-static PyObject *
-meque_index(PyObject *meque, PyObject *const *args, Py_ssize_t nargs)
-{
-    PyObject *return_value = NULL;
-    PyObject *v;
-    Py_ssize_t start = 0;
-    Py_ssize_t stop = Py_SIZE(meque);
-
-    if (!_PyArg_CheckPositional("index", nargs, 1, 3)) {
-        goto exit;
-    }
-    v = args[0];
-    if (nargs < 2) {
-        goto skip_optional;
-    }
-    if (!_PyEval_SliceIndexNotNone(args[1], &start)) {
-        goto exit;
-    }
-    if (nargs < 3) {
-        goto skip_optional;
-    }
-    if (!_PyEval_SliceIndexNotNone(args[2], &stop)) {
-        goto exit;
-    }
-skip_optional:
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_index_impl((mequeobject *)meque, v, start, stop);
-    Py_END_CRITICAL_SECTION();
-
-exit:
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_insert__doc__,
-"insert($self, index, value, /)\n"
-"--\n"
-"\n"
-"Insert value before index.");
-
-#define MEQUE_INSERT_METHODDEF    \
-    {"insert", _PyCFunction_CAST(meque_insert), METH_FASTCALL, meque_insert__doc__},
-
-static PyObject *
-meque_insert_impl(mequeobject *meque, Py_ssize_t index, PyObject *value);
-
-static PyObject *
-meque_insert(PyObject *meque, PyObject *const *args, Py_ssize_t nargs)
-{
-    PyObject *return_value = NULL;
-    Py_ssize_t index;
-    PyObject *value;
-
-    if (!_PyArg_CheckPositional("insert", nargs, 2, 2)) {
-        goto exit;
-    }
-    {
-        Py_ssize_t ival = -1;
-        PyObject *iobj = _PyNumber_Index(args[0]);
-        if (iobj != NULL) {
-            ival = PyLong_AsSsize_t(iobj);
-            Py_DECREF(iobj);
-        }
-        if (ival == -1 && PyErr_Occurred()) {
-            goto exit;
-        }
-        index = ival;
-    }
-    value = args[1];
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_insert_impl((mequeobject *)meque, index, value);
-    Py_END_CRITICAL_SECTION();
-
-exit:
-    return return_value;
-}
-
-PyDoc_STRVAR(meque_remove__doc__,
-"remove($self, value, /)\n"
-"--\n"
-"\n"
-"Remove first occurrence of value.");
-
-#define MEQUE_REMOVE_METHODDEF    \
-    {"remove", (PyCFunction)meque_remove, METH_O, meque_remove__doc__},
-
-static PyObject *
-meque_remove_impl(mequeobject *meque, PyObject *value);
-
-static PyObject *
-meque_remove(PyObject *meque, PyObject *value)
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_remove_impl((mequeobject *)meque, value);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque___reduce____doc__,
-"__reduce__($self, /)\n"
-"--\n"
-"\n"
-"Return state information for pickling.");
-
-#define MEQUE___REDUCE___METHODDEF    \
-    {"__reduce__", (PyCFunction)meque___reduce__, METH_NOARGS, meque___reduce____doc__},
-
-static PyObject *
-meque___reduce___impl(mequeobject *meque);
-
-static PyObject *
-meque___reduce__(PyObject *meque, PyObject *Py_UNUSED(ignored))
-{
-    return meque___reduce___impl((mequeobject *)meque);
-}
-
-PyDoc_STRVAR(meque_init__doc__,
-"meque([iterable[, maxlen]])\n"
-"--\n"
-"\n"
-"A list-like sequence optimized for data accesses near its endpoints.");
-
-static int
-meque_init_impl(mequeobject *meque, PyObject *iterable, PyObject *maxlenobj);
-
-static int
-meque_init(PyObject *meque, PyObject *args, PyObject *kwargs)
-{
-    int return_value = -1;
-    #if defined(Py_BUILD_CORE) && !defined(Py_BUILD_CORE_MODULE)
-
-    #define NUM_KEYWORDS 2
-    static struct {
-        PyGC_Head _this_is_not_used;
-        PyObject_VAR_HEAD
-        Py_hash_t ob_hash;
-        PyObject *ob_item[NUM_KEYWORDS];
-    } _kwtuple = {
-        .ob_base = PyVarObject_HEAD_INIT(&PyTuple_Type, NUM_KEYWORDS)
-        .ob_hash = -1,
-        .ob_item = { &_Py_ID(iterable), &_Py_ID(maxlen), },
-    };
-    #undef NUM_KEYWORDS
-    #define KWTUPLE (&_kwtuple.ob_base.ob_base)
-
-    #else  // !Py_BUILD_CORE
-    #  define KWTUPLE NULL
-    #endif  // !Py_BUILD_CORE
-
-    static const char * const _keywords[] = {"iterable", "maxlen", NULL};
-    static _PyArg_Parser _parser = {
-        .keywords = _keywords,
-        .fname = "meque",
-        .kwtuple = KWTUPLE,
-    };
-    #undef KWTUPLE
-    PyObject *argsbuf[2];
-    PyObject * const *fastargs;
-    Py_ssize_t nargs = PyTuple_GET_SIZE(args);
-    Py_ssize_t noptargs = nargs + (kwargs ? PyDict_GET_SIZE(kwargs) : 0) - 0;
-    PyObject *iterable = NULL;
-    PyObject *maxlenobj = NULL;
-
-    fastargs = _PyArg_UnpackKeywords(_PyTuple_CAST(args)->ob_item, nargs, kwargs, NULL, &_parser,
-            /*minpos*/ 0, /*maxpos*/ 2, /*minkw*/ 0, /*varpos*/ 0, argsbuf);
-    if (!fastargs) {
-        goto exit;
-    }
-    if (!noptargs) {
-        goto skip_optional_pos;
-    }
-    if (fastargs[0]) {
-        iterable = fastargs[0];
-        if (!--noptargs) {
-            goto skip_optional_pos;
-        }
-    }
-    maxlenobj = fastargs[1];
-skip_optional_pos:
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque_init_impl((mequeobject *)meque, iterable, maxlenobj);
-    Py_END_CRITICAL_SECTION();
-
-exit:
-    return return_value;
-}
-
-PyDoc_STRVAR(meque___sizeof____doc__,
-"__sizeof__($self, /)\n"
-"--\n"
-"\n"
-"Return the size of the deque in memory, in bytes.");
-
-#define MEQUE___SIZEOF___METHODDEF    \
-    {"__sizeof__", (PyCFunction)meque___sizeof__, METH_NOARGS, meque___sizeof____doc__},
-
-static PyObject *
-meque___sizeof___impl(mequeobject *meque);
-
-static PyObject *
-meque___sizeof__(PyObject *meque, PyObject *Py_UNUSED(ignored))
-{
-    PyObject *return_value = NULL;
-
-    Py_BEGIN_CRITICAL_SECTION(meque);
-    return_value = meque___sizeof___impl((mequeobject *)meque);
-    Py_END_CRITICAL_SECTION();
-
-    return return_value;
-}
-
-PyDoc_STRVAR(meque___reversed____doc__,
-"__reversed__($self, /)\n"
-"--\n"
-"\n"
-"Return a reverse iterator over the deque.");
-
-#define MEQUE___REVERSED___METHODDEF    \
-    {"__reversed__", (PyCFunction)meque___reversed__, METH_NOARGS, meque___reversed____doc__},
-
-static PyObject *
-meque___reversed___impl(mequeobject *meque);
-
-static PyObject *
-meque___reversed__(PyObject *meque, PyObject *Py_UNUSED(ignored))
-{
-    return meque___reversed___impl((mequeobject *)meque);
 }
 
 PyDoc_STRVAR(_collections__count_elements__doc__,

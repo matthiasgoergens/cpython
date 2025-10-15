@@ -2647,7 +2647,8 @@ _collections.meque.copy as meque_copy
 Return a shallow copy of a deque.
 [clinic start generated code]*/
 
-static PyObject *meque_copy_impl(mequeobject *meque)
+static PyObject *
+meque_copy_impl(mequeobject *meque)
 /*[clinic end generated code: output=99b41209bacdd683 input=2baf9f303bf5ef08]*/
 {
     // TODO(Matthias): we can actually copy via memcpy, instead of using extend.

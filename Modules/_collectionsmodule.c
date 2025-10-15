@@ -59,7 +59,7 @@ typedef struct dequeobject dequeobject;
 #undef clinic_state
 
 /* collections module implementation of a deque() datatype
-   Written and maintained by Raymond D. Hettinger <python@rcn.com> et al
+   Written and maintained by Raymond D. Hettinger <python@rcn.com>
 */
 
 /* deque type as growable ring buffer *********************************************************/

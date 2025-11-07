@@ -96,6 +96,73 @@ class TestBasic(unittest.TestCase):
             d = deque('abc')
             d.maxlen = 10
 
+    def test_maxlen_append_behavior(self):
+        """Test that maxlen deques properly remove from opposite ends."""
+        # Test append() removes from left (popleft behavior)
+        d = deque([], maxlen=5)
+        for i in range(10):
+            d.append(i)
+        self.assertEqual(list(d), [5, 6, 7, 8, 9])
+
+        # Test appendleft() removes from right (pop behavior)
+        d = deque([], maxlen=5)
+        for i in range(10):
+            d.appendleft(i)
+        self.assertEqual(list(d), [9, 8, 7, 6, 5])
+
+        # Test mixed operations
+        d = deque([0, 1, 2, 3, 4], maxlen=5)
+        d.append(5)  # Should remove 0 from left
+        self.assertEqual(list(d), [1, 2, 3, 4, 5])
+        d.appendleft(-1)  # Should remove 5 from right
+        self.assertEqual(list(d), [-1, 1, 2, 3, 4])
+
+        # Test edge cases
+        d = deque([], maxlen=1)
+        d.append(1)
+        self.assertEqual(list(d), [1])
+        d.append(2)
+        self.assertEqual(list(d), [2])
+        d.appendleft(3)
+        self.assertEqual(list(d), [3])
+
+    def test_shrinking_with_help(self):
+        """Test that help() and similar introspection don't cause assertion failures."""
+        # This test specifically addresses the issue where help(deque)
+        # would trigger shrinking operations that caused assertion failures
+        # with zero-sized allocations
+        d = deque()
+
+        # These operations should not crash, even though they may trigger
+        # internal shrinking operations on empty deques
+        help(deque)  # This was causing assertion failures before the fix
+        str(d)
+        repr(d)
+        len(d)
+
+        # Test that empty deque operations work after help()
+        d.append(1)
+        self.assertEqual(list(d), [1])
+        d.popleft()
+        self.assertEqual(list(d), [])
+
+        # Test shrinking with actual operations that trigger it
+        d = deque(range(100))
+        # Remove most elements to trigger shrinking
+        for _ in range(95):
+            d.popleft()
+        self.assertEqual(len(d), 5)
+        self.assertEqual(list(d), [95, 96, 97, 98, 99])
+
+        # Clear the deque completely (should allow zero-size allocation)
+        d.clear()
+        self.assertEqual(len(d), 0)
+        self.assertEqual(list(d), [])
+
+        # Verify it still works after being cleared
+        d.append(42)
+        self.assertEqual(list(d), [42])
+
     def test_count(self):
         for s in ('', 'abracadabra', 'simsalabim'*500+'abc'):
             s = list(s)

@@ -1,0 +1,172 @@
+name: TLS shutdown probe
+
+# Answers one question: when a TLS peer closes a corrupted connection, does
+# the other side see a clean close_notify or a connection reset — and does the
+# answer depend on the platform?
+#
+# Context: cpython#155028 makes test_asyncio's socket harness able to fail a
+# test from a worker thread.  Turning that on exposed
+# test_shutdown_corrupted_ssl_sends_close_notify failing on Windows with
+# ConnectionResetError [WinError 10054].  Whether that is a Windows platform
+# behaviour (in which case the test needs to accept it) or a genuine asyncio
+# bug (in which case the test is correctly red) is what this probe measures.
+#
+# Nothing here touches python/cpython.  It runs on a fork, on free runners.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cpython_ref:
+        description: >-
+          CPython ref to build.  Defaults to the head of PR 155028, because on
+          plain main the harness swallows the failure and the stdlib test
+          reports SUCCESS either way.
+        default: "refs/pull/155028/head"
+      iterations:
+        description: "Probe iterations per cell"
+        default: "30"
+      stdlib_repeats:
+        description: "Times to repeat the real stdlib test, to get a rate"
+        default: "20"
+  push:
+    branches: [win-tls-probe]
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------
+  # Part 1 - platform behaviour only.  The clean/rst/unread scenarios do
+  # not depend on the gh-98078 asyncio fix, so they run on a stock Python
+  # and give a broad platform picture for the price of a few seconds.
+  # ---------------------------------------------------------------------
+  platform:
+    name: platform (${{ matrix.os }}, stock py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        python: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run platform scenarios
+        # These three need no asyncio fix, so a stock interpreter is fine.
+        # corrupt_asyncio is deliberately excluded here: on a Python without
+        # the gh-98078 fix it measures the absence of the fix, not the
+        # platform, and reporting that as a platform result would be wrong.
+        run: >-
+          python probe/tls_shutdown_probe.py
+          --scenario clean --scenario rst --scenario unread
+          --scenario corrupt_sync
+          --iterations ${{ github.event.inputs.iterations || 30 }}
+          --jsonl probe-${{ matrix.os }}-py${{ matrix.python }}.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: platform-${{ matrix.os }}-py${{ matrix.python }}
+          path: "*.jsonl"
+
+  # ---------------------------------------------------------------------
+  # Part 2 - the real question.  Needs a CPython built from source, because
+  # the gh-98078 fix and the test that exercises it are newer than every
+  # released Python (verified: the test does not exist in 3.14.6).
+  # ---------------------------------------------------------------------
+  built:
+    name: built (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The CI job that actually goes red on cpython#155028 is Win32,
+          # so build that platform specifically as well as x64.
+          - {os: windows-latest, label: "windows Win32", arch: Win32}
+          - {os: windows-latest, label: "windows x64", arch: x64}
+          - {os: ubuntu-latest, label: "linux x64", arch: x64}
+          - {os: macos-latest, label: "macos arm64", arch: arm64}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: probe-repo
+
+      - name: Clone CPython at the ref under test
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none https://github.com/python/cpython.git cpython
+          cd cpython
+          REF='${{ github.event.inputs.cpython_ref || 'refs/pull/155028/head' }}'
+          git fetch origin "$REF:under-test"
+          git checkout under-test
+          git log --max-count=1 --format='%H %s'
+
+      - name: Build CPython (Windows)
+        if: runner.os == 'Windows'
+        working-directory: cpython
+        run: .\PCbuild\build.bat -e -p ${{ matrix.arch }}
+
+      - name: Build CPython (Unix)
+        if: runner.os != 'Windows'
+        working-directory: cpython
+        run: |
+          set -euxo pipefail
+          ./configure --with-pydebug
+          make --jobs 4
+
+      - name: Locate the built interpreter
+        id: py
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            case "${{ matrix.arch }}" in
+              Win32) exe="$PWD/cpython/PCbuild/win32/python_d.exe" ;;
+              x64)   exe="$PWD/cpython/PCbuild/amd64/python_d.exe" ;;
+            esac
+          else
+            exe="$PWD/cpython/python"
+          fi
+          test -x "$exe" || { echo "no interpreter at $exe"; ls -R cpython/PCbuild || true; exit 1; }
+          "$exe" -VV
+          echo "exe=$exe" >> "$GITHUB_OUTPUT"
+
+      # The stdlib test is the ground truth: it is the thing that is red on
+      # CI.  Repeating it is the only way to tell a deterministic failure
+      # from a flaky one, and that distinction changes the diagnosis.
+      - name: Run the real stdlib test repeatedly
+        shell: bash
+        continue-on-error: true
+        working-directory: cpython
+        run: |
+          set -uxo pipefail
+          pass=0; fail=0
+          for i in $(seq 1 ${{ github.event.inputs.stdlib_repeats || 20 }}); do
+            if "${{ steps.py.outputs.exe }}" -m test test_asyncio \
+                 -m '*shutdown_corrupted_ssl*' -v > "stdlib-run-$i.log" 2>&1; then
+              pass=$((pass+1))
+            else
+              fail=$((fail+1))
+            fi
+          done
+          echo "stdlib test: $pass passed, $fail failed" | tee ../stdlib-summary.txt
+
+      - name: Run the probe against the built interpreter
+        shell: bash
+        working-directory: probe-repo
+        run: >-
+          "${{ steps.py.outputs.exe }}" probe/tls_shutdown_probe.py
+          --iterations ${{ github.event.inputs.iterations || 30 }}
+          --jsonl "$GITHUB_WORKSPACE/probe-built.jsonl"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: built-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            probe-built.jsonl
+            stdlib-summary.txt
+            cpython/stdlib-run-*.log

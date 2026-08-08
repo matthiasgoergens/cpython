@@ -120,17 +120,34 @@ jobs:
       - name: Locate the built interpreter
         id: py
         shell: bash
+        # Do not assume a path.  build.bat defaults to a Release build, so the
+        # binary is python.exe rather than python_d.exe; and on macOS the
+        # binary is also called python.exe, because the filesystem is
+        # case-insensitive and plain "python" would collide with the Python/
+        # directory.  Try the candidates and check each actually runs, rather
+        # than trusting that the file exists.
         run: |
-          set -euxo pipefail
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            case "${{ matrix.arch }}" in
-              Win32) exe="$PWD/cpython/PCbuild/win32/python_d.exe" ;;
-              x64)   exe="$PWD/cpython/PCbuild/amd64/python_d.exe" ;;
-            esac
-          else
-            exe="$PWD/cpython/python"
+          set -uo pipefail
+          candidates="
+            $PWD/cpython/PCbuild/win32/python.exe
+            $PWD/cpython/PCbuild/win32/python_d.exe
+            $PWD/cpython/PCbuild/amd64/python.exe
+            $PWD/cpython/PCbuild/amd64/python_d.exe
+            $PWD/cpython/python.exe
+            $PWD/cpython/python
+          "
+          exe=""
+          for c in $candidates; do
+            if [ -x "$c" ] && "$c" -c 'import sys; print(sys.version)' >/dev/null 2>&1; then
+              exe="$c"; break
+            fi
+          done
+          if [ -z "$exe" ]; then
+            echo "no working interpreter found; candidates were:"
+            echo "$candidates"
+            ls -l cpython/PCbuild/win32 cpython/PCbuild/amd64 cpython 2>/dev/null || true
+            exit 1
           fi
-          test -x "$exe" || { echo "no interpreter at $exe"; ls -R cpython/PCbuild || true; exit 1; }
           "$exe" -VV
           echo "exe=$exe" >> "$GITHUB_OUTPUT"
 

@@ -425,6 +425,12 @@ def client_rst(addr) -> dict:
     try:
         assert tls.recv(2) == b"A\n"
         tls.sendall(b"B")
+        # Give the server time to consume the 'B' and reach its unwrap()
+        # before the reset lands.  Without this the RST can arrive while the
+        # server is still reading, which destroys the in-flight byte and the
+        # server reports a plain EOF instead of a reset -- making the control
+        # look broken when it is only mistimed.  Observed on Windows CI.
+        time.sleep(0.5)
         tls.setsockopt(
             socket.SOL_SOCKET,
             socket.SO_LINGER,
@@ -575,6 +581,16 @@ def run_once(scenario: str, server_variant: str) -> dict:
     return record
 
 
+# A peer that vanishes with an RST does not surface identically everywhere.
+# The receiving side usually sees ECONNRESET (WinError 10054 on Windows), but
+# a *send* into a connection that has already been reset gives EPIPE instead,
+# which is what macOS reports for this sequence.  These are the same event and
+# must be classified together, or the reset control fails on macOS and takes
+# every other row on that platform down with it.  The exception type is kept
+# in the record either way, so the distinction is never lost.
+RESET_ERRNOS = {"ECONNRESET", "EPIPE", "ECONNABORTED"}
+
+
 def classify(record: dict) -> str:
     """Reduce a run to one of a small number of named outcomes."""
     srv = record["server"]
@@ -582,7 +598,10 @@ def classify(record: dict) -> str:
         info = srv.get(key)
         if not info:
             continue
-        if info.get("winerror") == 10054 or info.get("errno_name") == "ECONNRESET":
+        if (
+            info.get("winerror") in (10053, 10054)
+            or info.get("errno_name") in RESET_ERRNOS
+        ):
             return "server_connection_reset"
         if info["is_ssl_error"]:
             return "server_ssl_error"

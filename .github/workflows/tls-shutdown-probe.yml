@@ -16,6 +16,11 @@ name: TLS shutdown probe
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: "Run the broad probe or the faithful Win32 CI workload"
+        type: choice
+        options: [probe, stress]
+        default: probe
       cpython_ref:
         description: >-
           CPython ref to build.  Defaults to the head of PR 155028, because on
@@ -41,6 +46,7 @@ jobs:
   # and give a broad platform picture for the price of a few seconds.
   # ---------------------------------------------------------------------
   platform:
+    if: github.event_name != 'workflow_dispatch' || inputs.mode == 'probe'
     name: platform (${{ matrix.os }}, stock py${{ matrix.python }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -76,6 +82,7 @@ jobs:
   # released Python (verified: the test does not exist in 3.14.6).
   # ---------------------------------------------------------------------
   built:
+    if: github.event_name != 'workflow_dispatch' || inputs.mode == 'probe'
     name: built (${{ matrix.label }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -187,3 +194,37 @@ jobs:
             probe-built.jsonl
             stdlib-summary.txt
             cpython/stdlib-run-*.log
+
+  # The two observed failures both occurred in the Win32 Debug switch-case
+  # job while the parallel --fast-ci suite was running.  An isolated Release
+  # build did not reproduce the stdlib failure, so preserve the upstream job's
+  # build and workload when trying to measure the flake itself.
+  stress:
+    name: Win32 Debug full-suite stress
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'stress'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: probe-repo
+
+      - name: Clone CPython at the ref under test
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none https://github.com/python/cpython.git cpython
+          cd cpython
+          REF='${{ inputs.cpython_ref }}'
+          git fetch origin "$REF:under-test"
+          git checkout under-test
+          git log --max-count=1 --format='%H %s'
+
+      - name: Build Win32 Debug switch-case CPython
+        working-directory: cpython
+        shell: bash
+        run: .\\PCbuild\\build.bat -e -v -d -p Win32
+
+      - name: Run the canonical Win32 CI suite
+        working-directory: cpython
+        shell: bash
+        run: .\\PCbuild\\rt.bat -p Win32 -q --fast-ci -d

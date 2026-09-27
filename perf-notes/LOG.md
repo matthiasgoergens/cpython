@@ -259,3 +259,13 @@ vecfast vs base: +0.08% [−0.19, +0.36]. exp1's −0.37% (6 builds) was build-t
 -O2: **+5.44% slower** [+4.98, +5.96]; -O2 without FP +3.56%; -O3 without FP −1.32% [−1.75, −0.81] (replicates exp2's −1.15%).
 So for CPython -O3 is clearly better than -O2 (unlike many programs). Next step toward flag tuning: ablate -O3-only passes.
 Note: exp1–exp4 ran with PYTHONHASHSEED pinned to 0; exp5/exp6 sample the seed per round.
+
+## Upstream-ready patches in progress (18:00 SGT)
+- **clang-19 dispatch fix** (branch perf/clang19-taildup, patches/clang19-taildup.patch): configure.ac compile-time
+  check (clang major 19, non-Apple) adds `-mllvm -tail-dup-pred-size=1000` to CFLAGS_CEVAL, plus LDFLAGS_NODIST
+  under LTO. configure regenerated with autoconf 2.72 (clean diff). Verified: clang-19 ceval.o 1 → 269 dispatch
+  jmps, clang-21 unaffected. NEWS entry added. exp9 validates the configure path end to end (PGO+LTO,
+  default linker) on 6 jobs. Open question: Apple clang releases based on LLVM 19 (Apple numbering differs) are
+  not detected.
+- **typecache inline** (branch perf/typecache-inline): inline heap-type cache probe on the GIL build; type tests pass;
+  exp8 (20 jobs) measures it against main.

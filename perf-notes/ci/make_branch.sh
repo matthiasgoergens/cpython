@@ -39,7 +39,7 @@ for s in "${shas[@]}"; do parents+=(-p "$s"); done
 
 export GIT_INDEX_FILE=$tmp/index
 git read-tree "$first"
-git ls-files .github | xargs -r git rm -q --cached
+git ls-files .github | xargs -r git update-index --force-remove
 add() { git update-index --add --cacheinfo 100644,"$(git hash-object -w "$1")","$2"; }
 add perf-notes/ci/perf-block.yml .github/workflows/perf-block.yml
 for f in perf-notes/tools/*.py perf-notes/ci/*.py; do add "$f" "$f"; done

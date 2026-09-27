@@ -141,3 +141,13 @@ Lower priority (user): test where tail-call gains come from (dispatch vs regallo
   lld), c21 (clang-21 CG), c21tc (clang-21 tail-call). Each build logs its dispatch-site count.
 - exp4 (perf-ci/exp4-optlevel): 2×2 factorial of -O2/-O3 × frame pointers on/off (+ same-binary control).
   It also replicates exp2's nofp arm on independent runners.
+
+## Proxy fix (13:45 SGT): cachegrind runs must disable ASLR
+The first full PGO baseline Ir run showed zero or negative deltas for small benchmarks (unpack_sequence,
+pickle_list, telco). The cause is run-to-run startup noise: id()-based hashing and set/dict orders change
+with ASLR. With `setarch -R` repeated runs agree to within 0.01% (richards: 11 Ir out of 989M; telco delta
+291M, which is now sensible). Also dropped the warmup value (the 2K−K difference cancels warmup), which
+halves the cost. `compare` skips benchmarks whose baseline delta is below 1e9 Ir. Two benchmarks dominate
+the cost: bpe_tokeniser (86e9 Ir per loop) and pprint (48e9), 34% of the total.
+All earlier local Ir numbers are discarded. The deterministic queue (tc-before, tc-after, pgo-base,
+pgo-dealloc, pgo-vecfast) runs one build at a time with all 4 cores.

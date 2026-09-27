@@ -195,3 +195,13 @@ after vs before: **+0.75% geomean instructions** (66 benchmarks); richards +6.0%
 regex_v8 +2.3%, typing_runtime_protocols +2.2%, xml_etree +2.2%, argparse +2.0%, async_tree +0.3…2%.
 Consistent with the PR's own "1% slower" measurement. Being re-run with warm .pyc caches (a K/2K
 compile race was found) and with a PGO A/A for the Ir noise floor. Timing confirmation is still to do (exp5).
+
+## Correction (user): pinning layout contradicts the Stabilizer lesson
+`setarch -R` and `PYTHONHASHSEED=0` removed variance by conditioning on ONE layout sample, which can bias
+comparisons (a patch that shifts allocations changes address- and hash-dependent work). Changed:
+- irbench: ASLR on; R replicates (default 3) with random hash seeds, identical across builds
+  (common random numbers). `compare` reports a paired geomean with a bootstrap-over-replicates CI and the
+  noisiest benchmarks. nbody's Ir varies by ~1.3% (sd) across replicates, which was hidden before.
+- blockbench (CI timing): a random hash seed per round, shared by all arms in the round (recorded per row).
+  exp1–exp5 ran with seed 0 pinned: their results are conditional on one hash layout.
+- The deterministic Ir result for #150160 (+0.75%) must be re-checked with the randomized replicates.

@@ -45,7 +45,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from irbench import discover, env_for, worker_cmd  # noqa: E402
 
 
-def run_cell_json(python, script, extra, loops, values, tmpdir):
+def run_cell_json(python, script, extra, loops, values, tmpdir, hashseed=0):
     out = os.path.join(tmpdir, 'cell.json')
     if os.path.exists(out):
         os.unlink(out)
@@ -53,7 +53,7 @@ def run_cell_json(python, script, extra, loops, values, tmpdir):
     i = cmd.index('--values')
     cmd[i + 1] = str(values)
     cmd += ['--output', out]
-    p = subprocess.run(cmd, env=env_for(), capture_output=True, text=True,
+    p = subprocess.run(cmd, env=env_for(hashseed), capture_output=True, text=True,
                        cwd=os.path.dirname(script), timeout=900)
     if p.returncode:
         raise RuntimeError(p.stderr[-1500:])
@@ -98,9 +98,12 @@ def cmd_run(args):
                 for rnd in range(args.rounds):
                     ab = arm_builds[:]
                     rng.shuffle(ab)
+                    # Hash seed: sampled per round (not pinned), shared by all arms of
+                    # the round (common random numbers keep the pairing tight).
+                    hashseed = rng.randrange(1, 2**32)
                     for arm, build in ab:
                         try:
-                            vals = run_cell_json(build, script, extra, loops_n, args.values, tmpdir)
+                            vals = run_cell_json(build, script, extra, loops_n, args.values, tmpdir, hashseed)
                         except Exception as e:
                             print(f'block {block} {name} {arm}: FAILED {str(e)[-300:]}', file=sys.stderr)
                             continue
@@ -108,6 +111,7 @@ def cmd_run(args):
                             out.write(json.dumps({
                                 'tag': args.tag, 'block': f'{args.tag}:{block}', 'bench': sub or name,
                                 'arm': arm, 'build': build, 'round': rnd, 'pos': pos, 'loops': loops_n,
+                                'hashseed': hashseed,
                                 'values': v, 't': time.time()}) + '\n')
                         pos += 1
                 out.flush()

@@ -17,6 +17,8 @@ import glob
 import json
 import math
 import os
+import random
+import statistics
 import re
 import subprocess
 import sys
@@ -62,10 +64,12 @@ def discover():
     return out
 
 
-def env_for():
+def env_for(hashseed=0):
+    # The hash seed is a layout-like nuisance factor: callers should sample it
+    # (sharing one seed across the arms being compared), not pin it.
     env = dict(os.environ)
     env['PYTHONPATH'] = PYPERF_LIB
-    env['PYTHONHASHSEED'] = '0'
+    env['PYTHONHASHSEED'] = str(hashseed)
     env.pop('PYTHONHOME', None)
     return env
 
@@ -85,11 +89,13 @@ def run_native(python, script, extra, loops):
     return dt
 
 
-def run_cg(python, script, extra, loops, sim):
+def run_cg(python, script, extra, loops, sim, hashseed=0, no_aslr=False):
     with tempfile.TemporaryDirectory() as td:
         out = os.path.join(td, 'cg.out')
-        # setarch -R: no ASLR, so id()-based hashing and set/dict orders are reproducible.
-        cmd = ['setarch', os.uname().machine, '-R',
+        # ASLR stays on by default: address-dependent behaviour (id() hashing,
+        # set/dict order, GC timing) is a layout factor to sample, not to pin
+        # (the Stabilizer lesson).  --no-aslr exists for debugging only.
+        cmd = (['setarch', os.uname().machine, '-R'] if no_aslr else []) + [
                'valgrind', '--tool=cachegrind', f'--cachegrind-out-file={out}']
         if sim:
             cmd += ['--cache-sim=yes', '--branch-sim=yes']
@@ -97,7 +103,7 @@ def run_cg(python, script, extra, loops, sim):
             cmd += ['--cache-sim=no']
         # No warmup value: the 2K-minus-K difference already cancels startup and warmup.
         cmd += worker_cmd(python, script, extra, loops, warmups=0)
-        p = subprocess.run(cmd, env=env_for(), capture_output=True, text=True,
+        p = subprocess.run(cmd, env=env_for(hashseed), capture_output=True, text=True,
                            cwd=os.path.dirname(script), timeout=3600)
         if p.returncode:
             raise RuntimeError(p.stderr[-3000:])
@@ -147,30 +153,39 @@ def run(args):
             run_native(args.python, script, extra, 1)
         except Exception as e:
             print(f'{name}: warm-up failed: {e}', file=sys.stderr)
+    # Replicates r = 0..R-1 use hash seeds derived from --seed, identical for
+    # every build, so comparisons between builds are paired (common random numbers).
+    seeds = [random.Random(args.seed * 1000 + r).randrange(1, 2**32) for r in range(args.replicates)]
     jobs = []
     for name, script, extra in benches:
         k = loops[name]
-        for mult in (1, 2):
-            jobs.append((name, mult, script, extra, k * mult))
+        for r, seed in enumerate(seeds):
+            for mult in (1, 2):
+                jobs.append((name, r, mult, script, extra, k * mult, seed))
     res = {}
     t0 = time.time()
     with cf.ThreadPoolExecutor(args.j) as ex:
-        futs = {ex.submit(run_cg, args.python, s, e, l, args.sim): (n, m) for n, m, s, e, l in jobs}
+        futs = {ex.submit(run_cg, args.python, s_, e, l, args.sim, seed, args.no_aslr): (n, r, m)
+                for n, r, m, s_, e, l, seed in jobs}
         for fut in cf.as_completed(futs):
-            n, m = futs[fut]
+            n, r, m = futs[fut]
             try:
-                res.setdefault(n, {})[m] = fut.result()
+                ev = fut.result()
+                res.setdefault(n, {}).setdefault(r, {})[m] = ev
                 with open(args.out + '.partial', 'a') as pf:  # observable progress
-                    pf.write(json.dumps({'bench': n, 'mult': m, 'ev': res[n][m]}) + '\n')
+                    pf.write(json.dumps({'bench': n, 'rep': r, 'mult': m, 'ev': ev}) + '\n')
             except Exception as e:
-                print(f'{n} x{m} FAILED: {e}', file=sys.stderr)
-    out = {}
-    for n, d in sorted(res.items()):
-        if 1 in d and 2 in d:
-            out[n] = {ev: d[2][ev] - d[1][ev] for ev in d[1]}
-    print(f'{len(out)} benchmarks in {time.time() - t0:.0f}s', file=sys.stderr)
+                print(f'{n} rep{r} x{m} FAILED: {e}', file=sys.stderr)
+    out, reps = {}, {}
+    for n, byrep in sorted(res.items()):
+        deltas = [{ev: d[2][ev] - d[1][ev] for ev in d[1]} for r, d in sorted(byrep.items()) if 1 in d and 2 in d]
+        if deltas:
+            reps[n] = deltas
+            out[n] = {ev: sum(d[ev] for d in deltas) / len(deltas) for ev in deltas[0]}
+    print(f'{len(out)} benchmarks x {len(seeds)} replicates in {time.time() - t0:.0f}s', file=sys.stderr)
     with open(args.out, 'w') as f:
-        json.dump({'python': args.python, 'sim': args.sim, 'results': out}, f, indent=1)
+        json.dump({'python': args.python, 'sim': args.sim, 'seeds': seeds, 'results': out,
+                   'replicates': reps}, f, indent=1)
 
 
 def cost(ev):
@@ -208,6 +223,27 @@ def compare(args):
             print(row)
     print(f'{"GEOMEAN (" + str(len(names)) + ")":32s}' + ''.join(
         f'{(math.exp(sum(l) / len(l)) - 1) * 100:+15.2f}%' for l in logs))
+    # Paired analysis over replicates (replicate r used the same hash seed in every file).
+    reps = []
+    for p in args.files:
+        with open(p) as f:
+            reps.append(json.load(f).get('replicates'))
+    if all(reps) and len(args.files) == 2:
+        a, b = reps
+        R = min(min(len(a[n]), len(b[n])) for n in names)
+        if R >= 2:
+            per = {n: [math.log(metric(b[n][r]) / metric(a[n][r])) for r in range(R)] for n in names}
+            print(f'paired over {R} replicates (random hash seeds, ASLR on):')
+            noisy = sorted(names, key=lambda n: -statistics.pstdev(per[n]))[:5]
+            print('  noisiest benchmarks (sd of log-ratio across replicates): ' +
+                  ', '.join(f'{n} {100 * statistics.pstdev(per[n]):.2f}%' for n in noisy))
+            rng = random.Random(3)
+            def geo(idx):
+                return statistics.fmean(statistics.fmean(per[n][r] for r in idx) for n in names)
+            bs = sorted(geo([rng.randrange(R) for _ in range(R)]) for _ in range(2000))
+            g = geo(range(R))
+            print(f'  GEOMEAN {100 * (math.exp(g) - 1):+.2f}%  bootstrap-over-replicates CI '
+                  f'[{100 * (math.exp(bs[50]) - 1):+.2f}, {100 * (math.exp(bs[1949]) - 1):+.2f}]')
 
 
 def main():
@@ -224,6 +260,9 @@ def main():
     r.add_argument('-j', type=int, default=4)
     r.add_argument('--sim', action='store_true')
     r.add_argument('--only')
+    r.add_argument('--replicates', type=int, default=3)
+    r.add_argument('--seed', type=int, default=12345, help='same seed => same hash seeds for every build')
+    r.add_argument('--no-aslr', action='store_true', help='debug only: pins one layout sample')
     m = sp.add_parser('compare')
     m.add_argument('files', nargs='+')
     m.add_argument('--metric', default='Ir')

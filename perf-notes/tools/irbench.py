@@ -140,6 +140,13 @@ def run(args):
     if args.only:
         pat = re.compile(args.only)
         benches = [b for b in benches if pat.search(b[0])]
+    # Warm the bytecode caches first.  Otherwise the K and 2K runs race to
+    # compile and write .pyc files and whichever loses pays for compilation.
+    for name, script, extra in benches:
+        try:
+            run_native(args.python, script, extra, 1)
+        except Exception as e:
+            print(f'{name}: warm-up failed: {e}', file=sys.stderr)
     jobs = []
     for name, script, extra in benches:
         k = loops[name]
@@ -221,7 +228,7 @@ def main():
     m.add_argument('files', nargs='+')
     m.add_argument('--metric', default='Ir')
     m.add_argument('-q', '--quiet', action='store_true')
-    m.add_argument('--min-ir', type=float, default=1e9)
+    m.add_argument('--min-ir', type=float, default=1e7)
     args = ap.parse_args()
     {'calibrate': calibrate, 'run': run, 'compare': compare}[args.cmd](args)
 

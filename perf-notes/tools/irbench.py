@@ -88,7 +88,9 @@ def run_native(python, script, extra, loops):
 def run_cg(python, script, extra, loops, sim):
     with tempfile.TemporaryDirectory() as td:
         out = os.path.join(td, 'cg.out')
-        cmd = ['valgrind', '--tool=cachegrind', f'--cachegrind-out-file={out}']
+        # setarch -R: no ASLR, so id()-based hashing and set/dict orders are reproducible.
+        cmd = ['setarch', os.uname().machine, '-R',
+               'valgrind', '--tool=cachegrind', f'--cachegrind-out-file={out}']
         if sim:
             cmd += ['--cache-sim=yes', '--branch-sim=yes']
         else:
@@ -179,6 +181,10 @@ def compare(args):
             runs.append(json.load(f)['results'])
     base = runs[0]
     names = sorted(set(base).intersection(*runs[1:]))
+    small = [n for n in names if base[n]['Ir'] < args.min_ir]
+    if small:
+        print(f'skipping {len(small)} benchmarks with baseline delta < {args.min_ir:.0e} Ir: {", ".join(small)}')
+    names = [n for n in names if n not in small]
     metric = cost if args.metric == 'cost' else (lambda ev: ev[args.metric])
     hdr = f'{"benchmark":32s}' + ''.join(f'{os.path.basename(p)[:14]:>16s}' for p in args.files[1:])
     print(hdr)
@@ -214,6 +220,7 @@ def main():
     m.add_argument('files', nargs='+')
     m.add_argument('--metric', default='Ir')
     m.add_argument('-q', '--quiet', action='store_true')
+    m.add_argument('--min-ir', type=float, default=1e9)
     args = ap.parse_args()
     {'calibrate': calibrate, 'run': run, 'compare': compare}[args.cmd](args)
 

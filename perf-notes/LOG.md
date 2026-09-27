@@ -151,3 +151,11 @@ halves the cost. `compare` skips benchmarks whose baseline delta is below 1e9 Ir
 the cost: bpe_tokeniser (86e9 Ir per loop) and pprint (48e9), 34% of the total.
 All earlier local Ir numbers are discarded. The deterministic queue (tc-before, tc-after, pgo-base,
 pgo-dealloc, pgo-vecfast) runs one build at a time with all 4 cores.
+
+## CI sizing fix (14:20 SGT)
+exp1/exp2 blocks are far slower than planned: `scale 4` multiplied every benchmark's loops, including
+those where one loop already takes seconds (bpe_tokeniser ~14 s/loop by Ir estimate, pprint ~8 s, mdp ~4 s,
+barnes_hut ~3 s). The jobs may run into the 350-minute job limit; the report step still prints the
+partial results. From now on `perf-notes/ci/loops.json` is time-targeted (about 0.3 s per process,
+estimated from per-loop Ir at ~3e9 Ir/s) and configs use scale 1. The four >3 s/loop benchmarks are
+excluded from CI timing (they stay in the deterministic Ir proxy). Estimated ~30 min per block with 6 arms × 3 rounds.

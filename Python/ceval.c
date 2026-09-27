@@ -694,6 +694,17 @@ PyEval_EvalFrame(PyFrameObject *f)
     return _PyEval_EvalFrame(tstate, f->f_frame, 0);
 }
 
+/* Measurement control only: an unused function that shifts code layout. */
+__attribute__((used, noinline)) int
+_Py_layout_padding(int x)
+{
+    volatile int acc = x;
+    for (int i = 0; i < 37; i++) {
+        acc = acc * 31 + i;
+    }
+    return acc;
+}
+
 PyObject *
 PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
 {

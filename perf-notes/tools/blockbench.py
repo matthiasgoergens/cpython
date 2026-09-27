@@ -83,24 +83,33 @@ def cmd_run(args):
     rng = random.Random(args.seed)
     tmpdir = os.path.join(os.path.dirname(os.path.abspath(args.out)), '.blockbench_tmp')
     os.makedirs(tmpdir, exist_ok=True)
-    cells = [(b, arm, build) for b in benches for arm, builds in arms.items() for build in builds]
+    arm_builds = [(arm, build) for arm, builds in arms.items() for build in builds]
     with open(args.out, 'a') as out:
         for block in range(args.blocks):
-            order = cells[:]
+            # Outer block: one pass over all benchmarks in random order.  Within a
+            # benchmark (the mini-block, the pairing unit), all arms run back to back,
+            # in a fresh random order each round, so paired cells are seconds apart.
+            order = benches[:]
             rng.shuffle(order)
             t_block = time.time()
-            for pos, ((name, script, extra), arm, build) in enumerate(order):
+            pos = 0
+            for name, script, extra in order:
                 loops_n = max(1, int(round(loops[name] * args.scale)))
-                try:
-                    vals = run_cell_json(build, script, extra, loops_n, args.values, tmpdir)
-                except Exception as e:
-                    print(f'block {block} {name} {arm}: FAILED {str(e)[-300:]}', file=sys.stderr)
-                    continue
-                for sub, v in vals.items():
-                    out.write(json.dumps({
-                        'tag': args.tag, 'block': f'{args.tag}:{block}', 'bench': sub or name,
-                        'arm': arm, 'build': build, 'pos': pos, 'loops': loops_n,
-                        'values': v, 't': time.time()}) + '\n')
+                for rnd in range(args.rounds):
+                    ab = arm_builds[:]
+                    rng.shuffle(ab)
+                    for arm, build in ab:
+                        try:
+                            vals = run_cell_json(build, script, extra, loops_n, args.values, tmpdir)
+                        except Exception as e:
+                            print(f'block {block} {name} {arm}: FAILED {str(e)[-300:]}', file=sys.stderr)
+                            continue
+                        for sub, v in vals.items():
+                            out.write(json.dumps({
+                                'tag': args.tag, 'block': f'{args.tag}:{block}', 'bench': sub or name,
+                                'arm': arm, 'build': build, 'round': rnd, 'pos': pos, 'loops': loops_n,
+                                'values': v, 't': time.time()}) + '\n')
+                        pos += 1
                 out.flush()
             print(f'block {block} done in {time.time() - t_block:.0f}s', file=sys.stderr, flush=True)
 
@@ -181,7 +190,8 @@ def main():
     r.add_argument('--loops', required=True)
     r.add_argument('--bench')
     r.add_argument('--blocks', type=int, default=5)
-    r.add_argument('--values', type=int, default=3)
+    r.add_argument('--values', type=int, default=1, help='timed values per process')
+    r.add_argument('--rounds', type=int, default=3, help='interleaved rounds of all arms per benchmark')
     r.add_argument('--scale', type=float, default=1.0, help='multiply calibrated loop counts')
     r.add_argument('--seed', type=int, default=None)
     r.add_argument('--tag', default=os.uname().nodename)

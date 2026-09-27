@@ -65,7 +65,7 @@ jobs:
           c = json.load(open("$cfg"))
           home = os.environ["HOME"]
           a = [f"--arm {k}={home}/b-{k}/python" for k in c["arms"]]
-          a += ["--blocks", str(c.get("blocks_per_job", 1)), "--values", str(c.get("values", 3)),
+          a += ["--blocks", str(c.get("blocks_per_job", 1)), "--values", str(c.get("values", 1)), "--rounds", str(c.get("rounds", 3)),
                 "--scale", str(c.get("scale", 1.0))]
           if c.get("bench"):
               a += ["--bench", "'" + c["bench"] + "'"]

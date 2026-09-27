@@ -226,3 +226,36 @@ Non-PGO builds of 8e4bbcab in two families: plain clang-21 -O3 {base, pad, vecfa
 change. Prediction: plain pad-vs-base shows a *consistent* nonzero "effect" across jobs (deterministic
 builds, so layout bias); under Stabilizer pad-vs-base ≈ 0; vecfast keeps its effect in both if it is real.
 10 jobs × 1 block × 3 rounds.
+
+## RESULTS (17:30 SGT): exp3–exp6 (GitHub runners, PGO+LTO unless noted; cluster-bootstrap CIs over jobs; negative = faster)
+Controls (same binary): exp3 +0.18% [−0.05,+0.41], exp4 +0.11%, exp5 −0.04% [−0.14,+0.07], exp6 −0.04% [−0.12,+0.04].
+
+### exp5 — per-type method cache (#150160, dispute M1), 10 build pairs: **CONFIRMED REGRESSION**
+typecache vs parent: **+0.50% [+0.25, +0.75]**, 9/10 builds slower. Worst: scimark_lu +5.6%, xml_etree_process +3.4%,
+xml_etree_generate +3.3%, async_generators +3.0%, async_tree_eager +2.6%, deepcopy_reduce +2.3% (richards +2.8%, n.s.).
+Consistent with the Ir proxy (+0.75% instructions, richards +6%) and with the PR's own "~1% slower" that was
+waved off as noise. Next: inline GIL-build fast path for `_PyTypeCache_Lookup` (keeps the per-type cache that
+free-threading needs), then measure.
+
+### exp6 — `_PyEval_Vector` exact-args fast path, 20 build pairs: **NO EFFECT**
+vecfast vs base: +0.08% [−0.19, +0.36]. exp1's −0.37% (6 builds) was build-to-build noise. Dropped.
+(Lesson recorded: 6 PGO builds are not enough; ~0.5% per-build noise.)
+
+### exp3 — dispatch & compilers (6 jobs; clang arms use lld/ThinLTO, so compiler comparisons are whole-toolchain)
+| arm | vs gcc13 base | dispatch jmps |
+|---|---|---|
+| gcc --without-computed-gotos | **+3.54%** [+3.13, +3.93] | 1 |
+| clang-19 (merged dispatch) | **+7.66%** [+6.41, +8.69] | 1–9 |
+| clang-19 + `-mllvm -tail-dup-pred-size=1000` | −1.56% [−1.82, −1.29] | ~357 |
+| clang-21 computed goto | −1.96% [−2.33, −1.52] | ~360 |
+| clang-21 tail-call interp | −1.60% [−1.96, −1.25] | (per-handler) |
+- **The clang-19 fix is worth 8.6% [7.4, 9.6]** (c19fix vs c19, all 6 builds 6–10%): anyone building CPython with
+  clang 19 (computed goto) loses ~9%. Candidate upstream fix: configure adds the flag for clang 19.
+- **Replicated dispatch still matters on these CPUs**: fully merged (switch) costs 3.5% with GCC 13.
+- **Tail-call vs computed goto, clang 21, x86-64 Linux: +0.36% [−0.38, +1.01]** — no measurable gain.
+- clang-21 PGO+ThinLTO beats gcc-13 PGO+LTO by ~2%.
+
+### exp4 — optimisation level × frame pointers (6 jobs)
+-O2: **+5.44% slower** [+4.98, +5.96]; -O2 without FP +3.56%; -O3 without FP −1.32% [−1.75, −0.81] (replicates exp2's −1.15%).
+So for CPython -O3 is clearly better than -O2 (unlike many programs). Next step toward flag tuning: ablate -O3-only passes.
+Note: exp1–exp4 ran with PYTHONHASHSEED pinned to 0; exp5/exp6 sample the seed per round.

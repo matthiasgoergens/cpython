@@ -279,3 +279,12 @@ inline-min-speedup 30→15, max-inline-insns-auto 15→30, max-inline-insns-sing
 Arms: -O3 with one flag disabled (or -O2's inlining params), vs -O3 base; 6 jobs each, PGO+LTO.
 Hypothesis (user): the -O3 package is a mixed bag, so some passes may hurt; the 5.4% -O2 gap may be mostly inlining.
 Also in flight: research on who ships clang-19 computed-goto builds (CLANG19_EXPOSURE.md).
+
+## Clang-19 exposure (19:00 SGT, CLANG19_EXPOSURE.md): the fix would help real shippers
+Affected (binary-verified): FreeBSD 14/15 packages python311–python314 (clang 19.1.7, computed goto, no PGO);
+OpenBSD 7.8/7.9; OpenMandriva 6.0; MacPorts macOS 15 (Xcode 16.4); Homebrew Sequoia bottles (Xcode 26.3,
+LLVM "partial fix" state, effect unmeasured). Formerly affected: python-build-standalone/uv (Jan–Feb 2025 releases),
+conda-forge macOS 3.11–3.13 builds, python.org 3.14.4 macOS (partial). Correction: fully fixed only in LLVM 20.1.1
+(20.1.0 = partial, #116072), Apple clang: 1700.0.13.x (Xcode 16.3/16.4) fully affected, 1700.3–1700.6
+(Xcode 26.0–26.3) partial, clang 21 fixed. No public bug report found. The macOS probe (running) measures Apple clang directly.
+TODO: extend the configure check to affected Apple clang build ranges (and 20.1.0 if the probe shows merging).

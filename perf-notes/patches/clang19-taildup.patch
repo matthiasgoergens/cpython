@@ -1,4 +1,4 @@
-From 68ca9af4b8101544adce240c89255f5cf338c46b Mon Sep 17 00:00:00 2001
+From 0b4cdb92ec7c94b20a7c17fa9f02b30ec3f1a589 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Sun, 27 Sep 2026 09:40:36 +0000
 Subject: [PATCH] gh-129987: Force dispatch tail duplication when building with
@@ -22,16 +22,16 @@ Claude-Session: https://claude.ai/code/session_016goMvuYFRBF79g8A7LkRrG
 
 diff --git a/Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst b/Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst
 new file mode 100644
-index 00000000000..9316b204d3d
+index 00000000000..a3902b056f7
 --- /dev/null
 +++ b/Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst
 @@ -0,0 +1,4 @@
 +When building with Clang 19, force tail duplication of the interpreter's
 +computed-goto dispatch jumps (``-mllvm -tail-dup-pred-size=1000``). LLVM 19
 +merges them into a single indirect jump, which made the interpreter about 9%
-+slower on pyperformance. LLVM 20 and newer are not affected.
++slower on pyperformance. LLVM 20.1.1 and newer are not affected.
 diff --git a/configure b/configure
-index e5d3f009105..82b4ca3ff18 100755
+index e5d3f009105..4e3c1f3da05 100755
 --- a/configure
 +++ b/configure
 @@ -34445,6 +34445,41 @@ if test "$block_huge_inlining_in_ceval" = yes && test "$ac_cv_computed_gotos" =
@@ -47,7 +47,7 @@ index e5d3f009105..82b4ca3ff18 100755
 +// indirect branch (llvm/llvm-project#78582), so the computed-goto
 +// interpreter is compiled with a single shared dispatch jump instead of one
 +// per instruction, which defeats per-opcode branch prediction (~9% slower
-+// on pyperformance).  Fixed in LLVM 20 (llvm/llvm-project#114990).
++// on pyperformance).  Fully fixed in LLVM 20.1.1 (llvm/llvm-project#114990).
 +#if defined(__clang__) && !defined(__apple_build_version__) && (__clang_major__ == 19)
 +#else
 +#error not affected
@@ -77,7 +77,7 @@ index e5d3f009105..82b4ca3ff18 100755
  
  if test "$ac_cv_gcc_asm_for_x87" = yes; then
 diff --git a/configure.ac b/configure.ac
-index 82a623fedb8..9c173e0a841 100644
+index 82a623fedb8..ea660bb9746 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -7813,6 +7813,30 @@ if test "$block_huge_inlining_in_ceval" = yes && test "$ac_cv_computed_gotos" =
@@ -90,7 +90,7 @@ index 82a623fedb8..9c173e0a841 100644
 +// indirect branch (llvm/llvm-project#78582), so the computed-goto
 +// interpreter is compiled with a single shared dispatch jump instead of one
 +// per instruction, which defeats per-opcode branch prediction (~9% slower
-+// on pyperformance).  Fixed in LLVM 20 (llvm/llvm-project#114990).
++// on pyperformance).  Fully fixed in LLVM 20.1.1 (llvm/llvm-project#114990).
 +#if defined(__clang__) && !defined(__apple_build_version__) && (__clang_major__ == 19)
 +#else
 +#error not affected

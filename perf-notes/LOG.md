@@ -205,3 +205,8 @@ comparisons (a patch that shifts allocations changes address- and hash-dependent
 - blockbench (CI timing): a random hash seed per round, shared by all arms in the round (recorded per row).
   exp1–exp5 ran with seed 0 pinned: their results are conditional on one hash layout.
 - The deterministic Ir result for #150160 (+0.75%) must be re-checked with the randomized replicates.
+
+## exp6 (queued ~15:50 SGT): power run for the `_PyEval_Vector` fast path
+User guidance: 1% was an arbitrary bar; a simple change with a smaller but robust win is worth having.
+exp1 gave −0.37% [−0.78, +0.04] from 6 builds. Build-to-build noise is ~0.5% per job, so exp6 uses
+20 independent jobs × 1 block (base, same-binary control, vecfast) with random per-round hash seeds.

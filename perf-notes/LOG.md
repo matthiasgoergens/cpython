@@ -91,3 +91,16 @@ the dunder micro spends ~100 Ir per slot lookup (`_PyTypeCache_Lookup` 43 + `_Py
   on its own runner and runs complete blocks, so runner-to-runner variation is a block effect.
   Results come back base64-gzipped in the job log and as an artifact.
 - exp1 (run 36291034777): arms base / aa (A/A) / dealloc / vecfast, 6 jobs × 4 blocks, all 66 benchmarks.
+
+## PGO+LTO check of the diagnoses (GCC 13, --enable-optimizations --with-lto)
+- `_Py_Dealloc`: still pushes rbp/r12/rbx and adjusts rsp before testing the GC flag (no shrink-wrapping).
+- `_PyTypeCache_Lookup`: still out of line (71 instructions). `initialize_locals` is still a separate
+  function behind `_PyEval_Vector`.
+- Dispatch-site merging (gh-129987, where GCC kept 47/306 sites): **not reproduced** here. There are 234
+  indirect `jmp`s in `_PyEval_EvalFrameDefault` for 232 targets. It probably depends on the GCC version
+  or configuration.
+
+## exp2 on CI (perf-ci/exp2-disputes): four disputes in one randomized-block experiment
+Arms: base=6af40a6 (anchor), same (same binary: run-to-run control), m2_inline (gh-132336 noinline
+reverted), nofp (--without-frame-pointers, PEP 831), gc2x / gc4x (gen-0 threshold ×2 / ×4 via sitecustomize,
+Pitrou's untested question on PEP 848). 8 jobs × 3 blocks.

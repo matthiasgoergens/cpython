@@ -43,7 +43,11 @@ jobs:
           fetch-depth: 1
           path: ci
       - name: Install build dependencies
-        run: sudo bash ci/.github/workflows/posix-deps-apt.sh
+        run: |
+          # libmpdec-dev is not in plain Ubuntu 24.04; without it _decimal is missing and the
+          # decimal benchmarks silently fall back to the (very slow) pure-Python module.
+          sudo add-apt-repository -y ppa:deadsnakes/ppa
+          sudo bash ci/.github/workflows/posix-deps-apt.sh
       - name: Machine info
         run: |
           nproc; lscpu | grep -E 'Model name|MHz|L3'; free -g

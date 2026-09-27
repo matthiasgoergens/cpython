@@ -52,6 +52,8 @@ for name, spec in arms.items():
         sh(f'tail -60 {bdir}/configure.log {bdir}/make.log || true')
         raise
     built[key] = bdir
+    # Fail early if an optional-but-benchmarked extension module did not build.
+    sh(f'{bdir}/python -c "import _decimal, _pickle, _json, _elementtree, _sqlite3"')
 
 for name, spec in arms.items():
     if isinstance(spec, dict) and 'same_as' in spec:

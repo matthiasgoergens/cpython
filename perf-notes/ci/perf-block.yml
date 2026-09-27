@@ -46,8 +46,11 @@ jobs:
         run: |
           # libmpdec-dev is not in plain Ubuntu 24.04; without it _decimal is missing and the
           # decimal benchmarks silently fall back to the (very slow) pure-Python module.
+          # Minimal set: only what the benchmarked modules need (no gdb/lcov/strace/xvfb/tk/cmake).
           sudo add-apt-repository -y ppa:deadsnakes/ppa
-          sudo bash ci/.github/workflows/posix-deps-apt.sh
+          sudo apt-get install -yq --no-install-recommends build-essential pkg-config \
+            libmpdec-dev zlib1g-dev libbz2-dev liblzma-dev libffi-dev libssl-dev \
+            libzstd-dev libb2-dev uuid-dev libsqlite3-dev libexpat1-dev
       - name: Machine info
         run: |
           nproc; lscpu | grep -E 'Model name|MHz|L3'; free -g

@@ -24,8 +24,16 @@ import tempfile
 import time
 import tomllib
 
-BENCHDIR = glob.glob('/home/user/drv/lib/python3.*/site-packages/pyperformance/data-files/benchmarks')[0]
-PYPERF_LIB = '/home/user/pyperf-lib'
+def _find_benchdir():
+    if os.environ.get('PERF_BENCHDIR'):
+        return os.environ['PERF_BENCHDIR']
+    import pyperformance
+    return os.path.join(os.path.dirname(pyperformance.__file__), 'data-files', 'benchmarks')
+
+
+BENCHDIR = _find_benchdir()
+# pyperf installed with `pip install --target` so that the interpreters under test can import it.
+PYPERF_LIB = os.environ.get('PERF_PYPERF_LIB', '/home/user/pyperf-lib')
 
 # Benchmarks we skip: need network/threads/subprocess heavy, or measure startup.
 SKIP = {

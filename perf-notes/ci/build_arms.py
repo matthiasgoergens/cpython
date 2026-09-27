@@ -33,6 +33,18 @@ def sha(path):
 
 arms = cfg['arms']
 built = {}
+
+# Per-arm compilers: "cc": "clang-19" installs that LLVM from apt.llvm.org and
+# builds with its clang/llvm-ar/llvm-profdata first on PATH.
+llvm_versions = sorted({int(v['cc'].split('-')[1]) for v in arms.values()
+                        if isinstance(v, dict) and v.get('cc', '').startswith('clang-')})
+if llvm_versions:
+    sh('curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc >/dev/null')
+    for n in llvm_versions:
+        sh(f'echo "deb https://apt.llvm.org/noble/ llvm-toolchain-noble-{n} main" | sudo tee /etc/apt/sources.list.d/llvm{n}.list')
+    sh('sudo apt-get update -q')
+    sh('sudo apt-get install -yq ' + ' '.join(f'clang-{n} lld-{n} llvm-{n}' for n in llvm_versions))
+
 for name, spec in arms.items():
     if isinstance(spec, str):
         spec = {'ref': spec}
@@ -45,9 +57,17 @@ for name, spec in arms.items():
         sh(f'git -C {repo} fetch -q --depth=1 origin {spec["ref"]}')
         sh(f'git -C {repo} worktree add -q --detach {src} FETCH_HEAD')
     os.makedirs(bdir, exist_ok=True)
+    env = dict(os.environ)
+    if spec.get('cc', '').startswith('clang-'):
+        n = spec['cc'].split('-')[1]
+        env['PATH'] = f'/usr/lib/llvm-{n}/bin:' + env['PATH']
+        env['CC'] = 'clang'
+    elif spec.get('cc'):
+        env['CC'] = spec['cc']
     try:
-        sh(f'{src}/configure {base_configure} {spec.get("configure_extra", "")} > configure.log 2>&1', cwd=bdir)
-        sh(f'make -j{os.cpu_count()} > make.log 2>&1', cwd=bdir)
+        sh(f'{src}/configure {base_configure} {spec.get("configure_extra", "")} > configure.log 2>&1', cwd=bdir, env=env)
+        sh(f'make -j{os.cpu_count()} > make.log 2>&1', cwd=bdir, env=env)
+        sh(f'grep -m1 "^CC=" Makefile; {bdir}/python -c "import sys; print(sys.version)"', cwd=bdir)
     except subprocess.CalledProcessError:
         sh(f'tail -60 {bdir}/configure.log {bdir}/make.log || true')
         raise

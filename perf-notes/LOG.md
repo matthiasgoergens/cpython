@@ -377,3 +377,6 @@ Dispatch jmps (final binary): x164 1, x164p 356–357, x263 110–121, x263p 356
 - The remaining cost is intrinsic to the per-type lookup sequence. Idea: move the `MCACHE_CACHEABLE_NAME` check to the miss/insert
   path, since non-cacheable names are never inserted and so can never hit (~9% of the lookup's instructions). Bigger lever:
   keep a small global (type-version, name) front cache in front of the per-type table.
+- TODO (user OK'd, 06:45 SGT): try both #150160 ideas. (a) Move the MCACHE_CACHEABLE_NAME check to the miss/insert path.
+  (b) Add a front cache keyed by (tp_version_tag, name): shared per interpreter under the GIL, but per-thread
+  (or off) in the free-threaded build, to avoid reintroducing the seqlock and cache-line sharing that #150160 removed.

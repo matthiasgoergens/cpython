@@ -1,0 +1,87 @@
+From d856504b6e0539543372b3fd44faca607471bb2b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 27 Sep 2026 09:22:19 +0000
+Subject: [PATCH] Inline the per-type method cache lookup on the default build
+
+gh-145685 (per-type method cache) moved the type attribute cache lookup
+into an out-of-line function returning a struct, on the hot path of
+_PyType_LookupStackRefAndVersion.  With the GIL no lock-free reader
+protocol is needed, so probe heap types' caches inline.  Static builtin
+types and the free-threaded build keep using _PyTypeCache_Lookup().
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_016goMvuYFRBF79g8A7LkRrG
+---
+ Include/internal/pycore_typecache.h | 33 +++++++++++++++++++++++++++++
+ Objects/typeobject.c                | 11 +++++++++-
+ 2 files changed, 43 insertions(+), 1 deletion(-)
+
+diff --git a/Include/internal/pycore_typecache.h b/Include/internal/pycore_typecache.h
+index 76f87e8548d..34b796cf0de 100644
+--- a/Include/internal/pycore_typecache.h
++++ b/Include/internal/pycore_typecache.h
+@@ -36,6 +36,39 @@ struct _PyTypeCacheLookupResult {
+ };
+ 
+ 
++#ifndef Py_GIL_DISABLED
++/* Inline lookup for the default (GIL) build, used on the hot path in
++ * _PyType_LookupStackRefAndVersion().  With the GIL no lock-free reader
++ * protocol is needed, so this is the same probe as _PyTypeCache_Lookup()
++ * without the out-of-line call and struct return. */
++static inline struct _PyTypeCacheLookupResult
++_PyTypeCache_LookupInCache(struct type_cache *cache, PyTypeObject *type, PyObject *name)
++{
++    struct _PyTypeCacheLookupResult miss = {PyStackRef_NULL, 0, 0};
++    if (cache == NULL) {
++        return miss;
++    }
++    Py_hash_t hash = PyUnstable_Unicode_GET_CACHED_HASH(name);
++    uint32_t index = (uint32_t)hash & cache->mask;
++    for (;;) {
++        PyObject *entry_name = cache->hashtable[index].name;
++        if (entry_name == name) {
++            break;
++        }
++        if (entry_name == NULL) {
++            return miss;
++        }
++        index = (index + 1) & cache->mask;
++    }
++    if (cache->version_tag != type->tp_version_tag) {
++        return miss;
++    }
++    PyObject *v = cache->hashtable[index].value;
++    _PyStackRef out_ref = v ? PyStackRef_FromPyObjectNew(v) : PyStackRef_NULL;
++    return (struct _PyTypeCacheLookupResult){out_ref, 1, cache->version_tag};
++}
++#endif
++
+ extern void _PyTypeCache_InitType(PyTypeObject *type);
+ extern void _PyTypeCache_Insert(PyTypeObject *type, PyObject *name, PyObject *value);
+ PyAPI_FUNC(struct _PyTypeCacheLookupResult) _PyTypeCache_Lookup(PyTypeObject *type, PyObject *name);
+diff --git a/Objects/typeobject.c b/Objects/typeobject.c
+index b9e11426042..a6f7e4fc60f 100644
+--- a/Objects/typeobject.c
++++ b/Objects/typeobject.c
+@@ -6215,7 +6215,16 @@ _PyType_LookupStackRefAndVersion(PyTypeObject *type, PyObject *name, _PyStackRef
+ {
+     int cacheable = MCACHE_CACHEABLE_NAME(name);
+     if (cacheable) {
+-        struct _PyTypeCacheLookupResult r = _PyTypeCache_Lookup(type, name);
++        struct _PyTypeCacheLookupResult r;
++#ifndef Py_GIL_DISABLED
++        if (!(type->tp_flags & _Py_TPFLAGS_STATIC_BUILTIN)) {
++            r = _PyTypeCache_LookupInCache((struct type_cache *)type->_tp_cache, type, name);
++        }
++        else
++#endif
++        {
++            r = _PyTypeCache_Lookup(type, name);
++        }
+         if (r.cache_hit) {
+             OBJECT_STAT_INC_COND(type_cache_hits, !is_dunder_name(name));
+             OBJECT_STAT_INC_COND(type_cache_dunder_hits, is_dunder_name(name));
+-- 
+2.43.0
+

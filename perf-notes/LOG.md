@@ -321,3 +321,5 @@ merged); they will be re-run after a local end-to-end check.
 - 20:25 SGT macOS probe: Xcode 16.3/16.4 → 1 dispatch jmp (arm64 & x86_64); Xcode 26.0–26.3 → 123 (arm64) / 112 (x86_64)
   of ~290/269; Apple clang 21 → 200 of 328; flag restores all. Patch extended to Apple clang 1700.x
   (`__apple_build_version__` in [17000000, 18000000)), Darwin LTO uses -Wl,-mllvm (ld64). macOS patch probe launched.
+- 20:35 SGT mac1 launched (macos-15 arm64, 5 jobs, PGO+LTO): Xcode 16.4 (fully merged) and 26.3 (~60% merged),
+  each main vs main+configure patch, + same-binary control → speed impact of Apple clang dispatch merging.

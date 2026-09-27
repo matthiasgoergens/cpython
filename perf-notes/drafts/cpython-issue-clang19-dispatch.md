@@ -1,5 +1,8 @@
 # DRAFT — CPython issue (to be filed by @matthiasgoergens after review)
 
+> Filing plan: open this as a **new** issue (gh-129987 is closed). Then rename the NEWS entry and the commit title on
+> `pr/clang19-dispatch` from gh-129987 to the new number before opening the PR.
+
 **Title:** Computed-goto interpreter ~9% slower when built with Clang 19: all dispatch jumps are merged
 
 ## Bug report

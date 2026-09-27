@@ -3306,8 +3306,30 @@ next" object in the chain to 0.  This can easily lead to stack overflows.
 To avoid that, if the C stack is nearing its limit, instead of calling
 dealloc on the object, it is added to a queue to be freed later when the
 stack is shallower */
+static void Py_NO_INLINE
+dealloc_with_checks(PyObject *op);
+
 void
 _Py_Dealloc(PyObject *op)
+{
+#if !defined(Py_DEBUG) && !defined(Py_TRACE_REFS)
+    /* Fast path for objects that are not GC-tracked: no recursion-margin
+     * check and no trashcan, so there is no need to set up a stack frame
+     * with callee-saved registers.  This compiles to a tail call.
+     * The reference tracer, if any, is handled by the slow path. */
+    PyTypeObject *type = Py_TYPE(op);
+    if (!(type->tp_flags & Py_TPFLAGS_HAVE_GC) &&
+        _PyRuntime.ref_tracer.tracer_func == NULL)
+    {
+        (*type->tp_dealloc)(op);
+        return;
+    }
+#endif
+    dealloc_with_checks(op);
+}
+
+static void Py_NO_INLINE
+dealloc_with_checks(PyObject *op)
 {
     PyTypeObject *type = Py_TYPE(op);
     unsigned long gc_flag = type->tp_flags & Py_TPFLAGS_HAVE_GC;

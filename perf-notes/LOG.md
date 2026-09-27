@@ -288,3 +288,8 @@ conda-forge macOS 3.11–3.13 builds, python.org 3.14.4 macOS (partial). Correct
 (20.1.0 = partial, #116072), Apple clang: 1700.0.13.x (Xcode 16.3/16.4) fully affected, 1700.3–1700.6
 (Xcode 26.0–26.3) partial, clang 21 fixed. No public bug report found. The macOS probe (running) measures Apple clang directly.
 TODO: extend the configure check to affected Apple clang build ranges (and 20.1.0 if the probe shows merging).
+
+## exp11 (19:12 SGT): FreeBSD-like configuration — clang 19, --with-lto=thin, no PGO
+c19 (main) vs c19patched (perf/clang19-taildup, configure adds the flag automatically), 8 jobs. Numbers for the
+FreeBSD ports report. User decision: all issues/PRs are filed under the user's name; drafts go to
+perf-notes/drafts/ for review first.

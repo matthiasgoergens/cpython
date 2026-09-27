@@ -1,5 +1,3 @@
-### Summary
-
 When CPython is built with **Clang/LLVM 19** (or an Apple clang based on it), the computed-goto interpreter loop ends up with a **single shared indirect jump** instead of one dispatch jump per instruction. This defeats per-opcode branch prediction, which is the reason the computed-goto interpreter exists. On pyperformance this costs about **9%**.
 
 The cause is an LLVM 19 change that limits tail duplication of blocks ending in an indirect branch (llvm/llvm-project#78582). Clang always lowers computed gotos to one shared `indirectbr` block and relies on tail duplication to copy it back into every predecessor. LLVM 20.1.0 partially fixed this (llvm/llvm-project#116072), and LLVM 20.1.1 fixed it fully (llvm/llvm-project#114990). **No 19.x release has the fix.**

@@ -9,8 +9,6 @@
 
 ## Bug report
 
-### Summary
-
 When CPython is built with **Clang/LLVM 19** (or an Apple clang based on it), the computed-goto
 interpreter loop ends up with a **single shared indirect jump** instead of one dispatch jump per
 instruction. This defeats per-opcode branch prediction, which is the reason the computed-goto

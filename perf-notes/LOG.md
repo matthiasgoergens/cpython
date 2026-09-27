@@ -293,3 +293,19 @@ TODO: extend the configure check to affected Apple clang build ranges (and 20.1.
 c19 (main) vs c19patched (perf/clang19-taildup, configure adds the flag automatically), 8 jobs. Numbers for the
 FreeBSD ports report. User decision: all issues/PRs are filed under the user's name; drafts go to
 perf-notes/drafts/ for review first.
+
+## RESULTS (19:40 SGT): exp7, exp8, exp9 + Apple clang evidence
+- **exp8 typecache-inline vs main (20 builds): +0.17% [−0.06, +0.41]** → my inline fix does NOT recover #150160's
+  0.5%; the out-of-line call is not the cause. Next: per-function Ir diff tc-before vs tc-after to locate the cost.
+- **exp7 Stabilizer validation (10 jobs, non-PGO clang-21):** stab overhead +17.3% [16.7, 17.9].
+  plain_pad −0.13% [−0.36,+0.09] (the unused function did not produce a consistent layout bias → weak test);
+  stab_pad +0.20% [−0.30,+0.60]. vecfast: plain +0.24% [+0.06,+0.41] ("significant") vs Stabilizer −0.27%
+  [−0.63,−0.00] vs PGO (exp6) +0.08% → vecfast is ~neutral; the plain-build "significance" is plausibly layout luck.
+  Better validation needed: padding placed right before _PyEval_EvalFrameDefault / several padding sizes.
+- **exp9 configure path (PGO+LTO, default linker): c19patched still merged (1–6 dispatch jmps)** — the configure check
+  sets the flags (verified locally: CFLAGS_CEVAL and CONFIGURE_LDFLAGS_NODIST contain -mllvm -tail-dup-pred-size=1000)
+  but with ThinLTO via the default linker the option apparently does not reach the LTO backend. exp3 (lld,
+  -Wl,-mllvm,...) worked. Investigating locally (default ld vs lld, thin LTO). The patch is NOT ready.
+- **Apple clang evidence (APPLE_CLANG_EVIDENCE.md):** from swiftlang branches: Xcode 16.0–16.2 not affected (LLVM 17);
+  16.3–16.4 affected (LLVM 19 limit, no fix); 26.0–26.3 partial (#116072, per Apple ≈ fine on arm64; x86-64 unknown);
+  26.4+ fixed. No published measurements of Apple-clang CPython. macOS probe still queued.

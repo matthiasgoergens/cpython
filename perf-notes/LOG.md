@@ -219,3 +219,10 @@ exp1 gave −0.37% [−0.78, +0.04] from 6 builds. Build-to-build noise is ~0.5%
 - Overhead ~+19% vs plain clang-21 -O3 (transformed program: tabled calls/globals, no jump tables), so it
   tells whether an effect is real, not how big. Entry stubs still fixed; data/extension modules not randomised.
 - Local variance test inconclusive: the VM is too loaded (2–5% process noise). Next: run it on CI runners.
+
+## exp7 (launched ~16:25 SGT): Stabilizer validation on CI runners
+Non-PGO builds of 8e4bbcab in two families: plain clang-21 -O3 {base, pad, vecfast} and Stabilizer
+{base, pad, vecfast}. `pad` (perf/layout-pad) only adds an unused function to ceval.c, i.e. a pure layout
+change. Prediction: plain pad-vs-base shows a *consistent* nonzero "effect" across jobs (deterministic
+builds, so layout bias); under Stabilizer pad-vs-base ≈ 0; vecfast keeps its effect in both if it is real.
+10 jobs × 1 block × 3 rounds.

@@ -210,3 +210,12 @@ comparisons (a patch that shifts allocations changes address- and hash-dependent
 User guidance: 1% was an arbitrary bar; a simple change with a smaller but robust win is worth having.
 exp1 gave −0.37% [−0.78, +0.04] from 6 builds. Build-to-build noise is ~0.5% per job, so exp6 uses
 20 independent jobs × 1 block (base, same-binary control, vecfast) with random per-round hash seeds.
+
+## Stabilizer (16:10 SGT): CPython builds and runs with code randomisation (see STABILIZER.md)
+- Non-PGO -O3 via szc/LLVM 21; all 7,821 core functions randomised. Mode: STABILIZER_CODE_MODE=retained
+  STABILIZER_MAX_EPOCHS=1 (one fresh layout per process; legacy trap mode breaks vfork children and regrtest).
+- Stabilizer patches: matthiasgoergens/stabilizer branch `claude/cpython-support` (8 commits), incl. a real
+  sampling fix (copies previously always started at 16 mod 32, so the eval loop saw only ~12 page offsets).
+- Overhead ~+19% vs plain clang-21 -O3 (transformed program: tabled calls/globals, no jump tables), so it
+  tells whether an effect is real, not how big. Entry stubs still fixed; data/extension modules not randomised.
+- Local variance test inconclusive: the VM is too loaded (2–5% process noise). Next: run it on CI runners.

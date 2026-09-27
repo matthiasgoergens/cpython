@@ -91,12 +91,25 @@ for name, spec in arms.items():
         env['CC'] = 'clang'
     elif spec.get('cc'):
         env['CC'] = spec['cc']
+    arm_dir = bdir
+    if sys.platform == 'darwin':
+        # The filesystem is case-insensitive: 'python' would name the build's
+        # Python/ directory, and the binary is python.exe.  Build in a
+        # subdirectory and put a wrapper at the arm's usual path.
+        bdir = f'{arm_dir}/build'
+        os.makedirs(bdir, exist_ok=True)
     try:
         sh(f'{src}/configure {configure} {spec.get("configure_extra", "")} > configure.log 2>&1', cwd=bdir, env=env)
         sh(f'make -j{os.cpu_count()} > make.log 2>&1', cwd=bdir, env=env)
-        sh(f'grep -m1 "^CC=" Makefile; {bdir}/python -c "import sys; print(sys.version)"', cwd=bdir, env=env)
+        if sys.platform == 'darwin':
+            with open(f'{arm_dir}/python', 'w') as f:
+                f.write(f'#!/bin/sh\nexec {bdir}/python.exe "$@"\n')
+            os.chmod(f'{arm_dir}/python', 0o755)
+            bdir = arm_dir
+        sh(f'grep -m1 "^CC=" Makefile; {bdir}/python -c "import sys; print(sys.version)"',
+           cwd=f'{bdir}/build' if sys.platform == 'darwin' else bdir, env=env)
     except subprocess.CalledProcessError:
-        sh(f'tail -60 {bdir}/configure.log {bdir}/make.log || true')
+        sh(f'tail -60 {bdir}/configure.log {bdir}/make.log {bdir}/build/configure.log {bdir}/build/make.log 2>/dev/null || true')
         raise
     built[key] = bdir
     if spec.get('stabilizer'):

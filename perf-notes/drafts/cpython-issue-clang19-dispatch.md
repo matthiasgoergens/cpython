@@ -1,101 +1,71 @@
-# DRAFT — CPython issue (to be filed by @matthiasgoergens after review)
+# CPython issue python/cpython#158283 (filed 2026-09-27)
 
-> **FILED** 2026-09-27 22:35 SGT as python/cpython#158283; PR python/cpython#158286.
-
-> Filing plan: open this as a **new** issue (gh-129987 is closed). Then rename the NEWS entry and the commit title on
-> `pr/clang19-dispatch` from gh-129987 to the new number before opening the PR.
+Copy of the text as it stands on GitHub (checked 2026-09-28). GitHub is the source of truth.
 
 **Title:** Computed-goto interpreter 9–11% slower when built with Clang 19 or Xcode 16.3–16.4: dispatch jumps are merged
 
-## Bug report
+---
 
-When CPython is built with **Clang/LLVM 19** (or an Apple clang based on it), the computed-goto
-interpreter loop ends up with a **single shared indirect jump** instead of one dispatch jump per
-instruction. This defeats per-opcode branch prediction, which is the reason the computed-goto
-interpreter exists. On pyperformance this costs about **9%**.
+When CPython is built with Clang 19, or with Apple clang from Xcode 16.3 or 16.4, the computed-goto interpreter ends up with a single shared indirect jump instead of one dispatch jump per opcode. Per-opcode branch prediction is the point of computed gotos, so this costs a lot: fixing it makes pyperformance 8–9% faster on Linux and 11% faster on macOS arm64.
 
-The cause is an LLVM 19 change that limits tail duplication of blocks ending in an indirect branch
-(llvm/llvm-project#78582). Clang always lowers computed gotos to one shared `indirectbr` block and
-relies on tail duplication to copy it back into every predecessor. LLVM 20.1.0 partially fixed this
-(llvm/llvm-project#116072), and LLVM 20.1.1 fixed it fully (llvm/llvm-project#114990). **No 19.x release
-has the fix.**
+LLVM 19 limited tail duplication of blocks that end in an indirect branch (llvm/llvm-project#78582). Clang lowers all computed gotos to one shared `indirectbr` block and relies on tail duplication to copy it back into each predecessor, and with the new limit that no longer happens. LLVM 20.1.0 partially fixed this (llvm/llvm-project#116072) and 20.1.1 fully (llvm/llvm-project#114990). No 19.x release has the fix. Xcode 26.0–26.3 has the partial fix and still merges most dispatch jumps, but there it costs much less (1.4%).
 
-The tail-calling interpreter (`--with-tail-call-interp`) and GCC builds are not affected.
+GCC builds and the tail-calling interpreter (`--with-tail-call-interp`) are not affected.
 
-This is the same effect Nelson Elhage identified in March 2025 as the main source of the reported 3.14
-tail-call speedup. As far as I can tell nobody fixed it on the computed-goto side, and gh-129987 was
-closed after an unrelated GCC change.
+Nelson Elhage found in March 2025 that this LLVM 19 regression accounted for most of the originally reported speedup of the 3.14 tail-calling interpreter. His issue about merged dispatch jumps, gh-129987, is closed; the PRs linked there (gh-132295, gh-132530) changed GCC's SLP vectorization, and Clang 19 builds still end up with one dispatch jump.
 
-### Evidence
+### Measurements
 
-Indirect `jmp`s in `_PyEval_EvalFrameDefault`, measured on `Python/ceval.o` at `-O3` (x86-64) and in the
-final PGO+LTO binary:
+Indirect jumps in `_PyEval_EvalFrameDefault`, in `Python/ceval.o` built at `-O3` (x86-64) and in the final PGO+LTO binary:
 
 | compiler | `-O3` object | PGO+LTO binary |
 |---|---|---|
 | GCC 12 / 13 / 14 | 257 | 234 |
 | Clang 18 | 269 | — |
-| **Clang 19.1.7** | **1** | **1–9** |
+| Clang 19.1.7 | 1 | 1–9 |
 | Clang 19.1.7 + `-mllvm -tail-dup-pred-size=1000` | 269 | ~357 |
 | Clang 21 | 268 | ~360 |
 
-Performance on pyperformance (main at 6af40a6, `--enable-optimizations --with-lto`, x86-64 GitHub
-runners). The design was randomized blocks with the arms interleaved per benchmark, 6 independent
-builds per arm, and a 95% cluster-bootstrap CI over builds. A same-binary control measured +0.18%
-[−0.05, +0.41].
+pyperformance on x86-64 Linux GitHub runners, main at 6af40a6. Each experiment used a randomized block design with the builds interleaved per benchmark and a same-binary control; the 95% CI is a bootstrap over independent builds. Negative is faster.
 
-| comparison | geomean | 95% CI |
-|---|---|---|
-| Clang 19 + `-mllvm -tail-dup-pred-size=1000` vs Clang 19 | **−8.6%** (faster) | [−9.6, −7.4] |
-| Clang 19 vs GCC 13 | +7.7% (slower) | [+6.4, +8.7] |
-| Clang 19 + flag vs GCC 13 | −1.6% | [−1.8, −1.3] |
+| comparison | build | builds | geomean | 95% CI |
+|---|---|---|---|---|
+| Clang 19 + `-mllvm -tail-dup-pred-size=1000` vs Clang 19 | PGO+LTO | 6 | −8.6% | [−9.6, −7.4] |
+| Clang 19 vs GCC 13 | PGO+LTO | 6 | +7.7% | [+6.4, +8.7] |
+| Clang 19 + flag vs GCC 13 | PGO+LTO | 6 | −1.6% | [−1.8, −1.3] |
+| proposed configure change vs main, Clang 19 | PGO+LTO | 6 | −8.4% | [−9.5, −6.9] |
+| proposed configure change vs main, Clang 19 | thin LTO, no PGO (FreeBSD's configuration) | 8 | −8.7% | [−9.2, −8.3] |
 
-All 6 builds agreed, with per-build values between −6.0% and −10.2%.
+The same-binary controls were within ±0.2%. The biggest single-benchmark gains are 20–24% (unpack_sequence, deepcopy_memo, nbody, scimark_sor); regex_effbot gets 7–9% slower.
 
-With the proposed configure change applied (same design, same-binary control in each):
+macOS 15 arm64 GitHub runners, PGO+LTO, proposed configure change vs main:
 
-| configuration | geomean, patched vs unpatched | 95% CI | dispatch jumps (unpatched → patched) |
-|---|---|---|---|
-| Clang 19, `--with-lto=thin`, no PGO (FreeBSD ports' configuration), 8 builds | **−8.7%** | [−9.2, −8.3] | 1 → 276 |
-| Clang 19, `--enable-optimizations --with-lto`, 6 builds | **−8.4%** | [−9.5, −6.9] | 1–7 → 359–365 |
+| compiler | dispatch jumps before → after | builds | geomean | 95% CI |
+|---|---|---|---|---|
+| Xcode 16.4 (Apple clang 1700.0.13) | 1 → 357 | 5 | −11.4% | [−13.2, −9.8] |
+| Xcode 26.3 (Apple clang 1700.6) | ~120 → 357 | 5 | −1.4% | [−2.2, −0.7] |
 
-The largest gains are 20–24% (unpack_sequence, deepcopy_memo, nbody, scimark_sor). The one consistent regression is
-regex_effbot, +7–9%.
+These runners are noisier; the same-binary control there was −0.4% [−1.8, +0.9].
 
-On macOS (arm64 GitHub runners, `--enable-optimizations --with-lto`, 5 builds per arm; the A/A control here is
-noisier, at −0.4% [−1.8, +0.9]):
+Raw data, configurations and scripts: https://github.com/matthiasgoergens/cpython/tree/clang19-dispatch-data
 
-| compiler | dispatch jumps (unpatched → patched) | geomean, patched vs unpatched | 95% CI |
-|---|---|---|---|
-| Xcode 16.4 (Apple clang 1700.0.13) | 1 → 357 | **−11.4%** | [−13.2, −9.8] |
-| Xcode 26.3 (Apple clang 1700.6) | ~120 → 357 | **−1.4%** | [−2.2, −0.7] |
+### Affected builds
 
-So partial merging costs much less than full merging.
+Checked against the compiler string in shipped binaries where possible:
 
-### Who is affected (verified from the `[Clang …]` string in shipped binaries where possible)
+- FreeBSD 14 and 15 packages, python311 to python314 (base clang 19.1.7, thin LTO)
+- OpenBSD 7.8 and 7.9, python 3.12 and 3.13 (base clang 19.1.7)
+- OpenMandriva Lx 6.0, python 3.11 (clang 19.1.7)
+- macOS builds made with Xcode 16.3 or 16.4, for example MacPorts python313 and python314 on macOS 15: one dispatch jump left
+- macOS builds made with Xcode 26.0–26.3, for example Homebrew's macOS 15 bottles: 94 of ~300 (arm64) or 62 of ~276 (x86-64) dispatch jumps left in a `--with-lto` build
 
-* **FreeBSD 14.x and 15.x packages** python311–python314 (base clang 19.1.7, thin LTO, computed goto).
-* **OpenBSD 7.8 and 7.9** python 3.12 and 3.13 (base clang 19.1.7).
-* **OpenMandriva Lx 6.0** python 3.11 (clang 19.1.7).
-* **macOS builds made with Xcode 16.3–16.4** (Apple clang 1700.0.13.x, LLVM 19 based): 1 dispatch jump left, on
-  arm64 and x86-64. An example is MacPorts python313 and python314 on macOS 15.
-* **macOS builds made with Xcode 26.0–26.3** (Apple clang 1700.3–1700.6): partly merged: in a `--with-lto` binary, 94 of ~300
-  (arm64) or 62 of ~276 (x86-64) dispatch jumps are left. An example is Homebrew's macOS 15 (Sequoia) bottles. Xcode 26.4+ (Apple clang 2100)
-  still merges some (200 of 328 in the object file); the proposed fix leaves it alone.
-* Earlier python-build-standalone/uv (Jan–Feb 2025) and conda-forge macOS builds used Clang 19 too. Those
-  have since moved on.
+python-build-standalone/uv (January–February 2025) and conda-forge's macOS builds also used Clang 19 for a while, but have since moved on. Xcode 26.4 and later (Apple clang 2100) still merge some dispatch jumps (200 of 328 in `ceval.o`); the proposed change leaves them alone.
 
 ### Proposed fix
 
-A small configure check. It follows the existing Clang 22 workaround for gh-148284: when the compiler
-is Clang 19 or Apple clang 1700.x and computed gotos are enabled, add `-mllvm -tail-dup-pred-size=1000` to
-`CFLAGS_CEVAL`. Under LTO, code generation happens at link time, so the option also goes to the linker's LTO
-backend: `-Wl,-plugin-opt=` for GNU ld and lld, `-Wl,-mllvm,` for ld64. A plain `-mllvm` on the link line is
-silently ignored ("argument unused").
+Like the existing Clang 22 workaround for gh-148284, a configure check adds `-mllvm -tail-dup-pred-size=1000` to `CFLAGS_CEVAL` when the compiler is Clang 19 or Apple clang 1700.x and computed gotos are enabled. With LTO, code generation happens at link time and the clang driver ignores `-mllvm` on the link line ("argument unused"), so the option is also passed to the linker: `-Wl,-plugin-opt=` for GNU ld and lld, `-Wl,-mllvm,` for ld64.
 
-The version gate is necessary: Clang ≤ 18 rejects the option. I verified that the check selects exactly the
-affected compilers: Clang 19.1.7, and Xcode 16.3–26.3 on GitHub's macOS runners. Clang 18, Clang 21, Xcode ≤ 16.2
-and Xcode 26.4+ are left alone. PR to follow.
+The version check is needed because Clang 18 and older reject the option. On GitHub's macOS runners it matches Xcode 16.3 to 26.3 and nothing else; on Linux it matches Clang 19 but not Clang 18 or 21. The change is in gh-158286.
 
 ### CPython versions tested on:
 CPython main branch

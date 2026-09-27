@@ -76,6 +76,9 @@ for name, spec in arms.items():
         sh(f'git -C {repo} worktree add -q --detach {src} FETCH_HEAD')
     os.makedirs(bdir, exist_ok=True)
     env = dict(os.environ)
+    if spec.get('xcode'):
+        env['DEVELOPER_DIR'] = f"/Applications/{spec['xcode']}.app/Contents/Developer"
+        env['CC'] = 'clang'
     configure = spec.get('configure', base_configure)
     if spec.get('stabilizer'):
         # Non-PGO: Stabilizer's whole-program szc pipeline replaces PGO/LTO.
@@ -127,7 +130,10 @@ for name in arms:
     text = f'{HOME}/text-{name}.bin'
     if open(real, 'rb').read(2) == b'#!':
         real = open(real).read().split('exec ')[1].split()[0]
-    subprocess.run(['objcopy', '-O', 'binary', '--only-section=.text', real, text], check=True)
+    if sys.platform == 'darwin':
+        text = real  # no objcopy on macOS; hash the whole binary twice
+    else:
+        subprocess.run(['objcopy', '-O', 'binary', '--only-section=.text', real, text], check=True)
     out = subprocess.run([py, '-c', 'import sys, gc; print(sys.version.split()[0], gc.get_threshold())'],
                          capture_output=True, text=True, env=dict(os.environ, PYTHONPATH=''))
     print(f'HASH {name} binary={sha(real)} text={sha(text)} {out.stdout.strip()}', flush=True)

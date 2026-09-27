@@ -150,6 +150,8 @@ def run(args):
             n, m = futs[fut]
             try:
                 res.setdefault(n, {})[m] = fut.result()
+                with open(args.out + '.partial', 'a') as pf:  # observable progress
+                    pf.write(json.dumps({'bench': n, 'mult': m, 'ev': res[n][m]}) + '\n')
             except Exception as e:
                 print(f'{n} x{m} FAILED: {e}', file=sys.stderr)
     out = {}

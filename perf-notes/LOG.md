@@ -358,3 +358,9 @@ Dispatch jmps (final binary): x164 1, x164p 356–357, x263 110–121, x263p 356
 - Data/scripts: https://github.com/matthiasgoergens/cpython/tree/clang19-dispatch-data (orphan branch).
 - Open questions for the user: the wording of the Elhage/gh-129987 sentence in the issue (the gh-129987 clause is
   imprecise) and of the AI-disclosure line in the PR.
+
+## Ir proxy v2 (local, 3 replicates, random shared hash seeds; 01:15 SGT)
+- #150160 (tc-after vs tc-before): **+0.74% Ir [+0.50, +1.22]**; richards +6.2%, richards_super +5.9%,
+  regex_v8 +2.3%, typing_runtime_protocols +2.4%, xml_etree +2.0% → reproduces the timing regression (exp5 +0.50%).
+- PGO A/A (two PGO builds of the same commit): +0.07% Ir: the Ir floor between PGO builds.
+- vecfast vs PGO base: −0.14% Ir, i.e. about 2× the A/A floor. This is consistent with the timing null (exp6 +0.08%): not worth pursuing.

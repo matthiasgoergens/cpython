@@ -1,0 +1,116 @@
+From 68ca9af4b8101544adce240c89255f5cf338c46b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 27 Sep 2026 09:40:36 +0000
+Subject: [PATCH] gh-129987: Force dispatch tail duplication when building with
+ Clang 19
+
+LLVM 19 limits tail duplication of blocks ending in an indirect branch
+(llvm/llvm-project#78582), so the computed-goto interpreter ends up with a
+single shared dispatch jump.  With PGO+LTO this measured 8.6% slower on
+pyperformance (95% CI 7.4-9.6%, 6 independent builds) than the same compiler
+with -mllvm -tail-dup-pred-size=1000, which restores one dispatch jump per
+instruction.  LLVM 20 fixed the regression (llvm/llvm-project#114990).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_016goMvuYFRBF79g8A7LkRrG
+---
+ ...-09-27-18-00-00.gh-issue-129987.cLg19d.rst |  4 +++
+ configure                                     | 35 +++++++++++++++++++
+ configure.ac                                  | 24 +++++++++++++
+ 3 files changed, 63 insertions(+)
+ create mode 100644 Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst
+
+diff --git a/Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst b/Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst
+new file mode 100644
+index 00000000000..9316b204d3d
+--- /dev/null
++++ b/Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst
+@@ -0,0 +1,4 @@
++When building with Clang 19, force tail duplication of the interpreter's
++computed-goto dispatch jumps (``-mllvm -tail-dup-pred-size=1000``). LLVM 19
++merges them into a single indirect jump, which made the interpreter about 9%
++slower on pyperformance. LLVM 20 and newer are not affected.
+diff --git a/configure b/configure
+index e5d3f009105..82b4ca3ff18 100755
+--- a/configure
++++ b/configure
+@@ -34445,6 +34445,41 @@ if test "$block_huge_inlining_in_ceval" = yes && test "$ac_cv_computed_gotos" =
+     # interpreter.
+     CFLAGS_CEVAL="$CFLAGS_CEVAL -finline-max-stacksize=512"
+ fi
++{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if tail duplication of the dispatch jumps needs to be forced" >&5
++printf %s "checking if tail duplication of the dispatch jumps needs to be forced... " >&6; }
++cat confdefs.h - <<_ACEOF >conftest.$ac_ext
++/* end confdefs.h.  */
++
++// gh-129987: LLVM 19 limits tail duplication of blocks ending in an
++// indirect branch (llvm/llvm-project#78582), so the computed-goto
++// interpreter is compiled with a single shared dispatch jump instead of one
++// per instruction, which defeats per-opcode branch prediction (~9% slower
++// on pyperformance).  Fixed in LLVM 20 (llvm/llvm-project#114990).
++#if defined(__clang__) && !defined(__apple_build_version__) && (__clang_major__ == 19)
++#else
++#error not affected
++#endif
++
++_ACEOF
++if ac_fn_c_try_compile "$LINENO"
++then :
++  force_dispatch_tail_dup=yes
++else case e in #(
++  e) force_dispatch_tail_dup=no ;;
++esac
++fi
++rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
++{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $force_dispatch_tail_dup" >&5
++printf "%s\n" "$force_dispatch_tail_dup" >&6; }
++
++if test "$force_dispatch_tail_dup" = yes && test "$ac_cv_computed_gotos" = yes; then
++    CFLAGS_CEVAL="$CFLAGS_CEVAL -mllvm -tail-dup-pred-size=1000"
++    # With LTO, code generation happens at link time: pass the option to the
++    # linker plugin as well.
++    if test "$Py_LTO" = 'true'; then
++        LDFLAGS_NODIST="$LDFLAGS_NODIST -mllvm -tail-dup-pred-size=1000"
++    fi
++fi
+ 
+ 
+ if test "$ac_cv_gcc_asm_for_x87" = yes; then
+diff --git a/configure.ac b/configure.ac
+index 82a623fedb8..9c173e0a841 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -7813,6 +7813,30 @@ if test "$block_huge_inlining_in_ceval" = yes && test "$ac_cv_computed_gotos" =
+     # interpreter.
+     CFLAGS_CEVAL="$CFLAGS_CEVAL -finline-max-stacksize=512"
+ fi
++AC_MSG_CHECKING([if tail duplication of the dispatch jumps needs to be forced])
++AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
++// gh-129987: LLVM 19 limits tail duplication of blocks ending in an
++// indirect branch (llvm/llvm-project#78582), so the computed-goto
++// interpreter is compiled with a single shared dispatch jump instead of one
++// per instruction, which defeats per-opcode branch prediction (~9% slower
++// on pyperformance).  Fixed in LLVM 20 (llvm/llvm-project#114990).
++#if defined(__clang__) && !defined(__apple_build_version__) && (__clang_major__ == 19)
++#else
++#error not affected
++#endif
++]])],
++[force_dispatch_tail_dup=yes],
++[force_dispatch_tail_dup=no])
++AC_MSG_RESULT([$force_dispatch_tail_dup])
++
++if test "$force_dispatch_tail_dup" = yes && test "$ac_cv_computed_gotos" = yes; then
++    CFLAGS_CEVAL="$CFLAGS_CEVAL -mllvm -tail-dup-pred-size=1000"
++    # With LTO, code generation happens at link time: pass the option to the
++    # linker plugin as well.
++    if test "$Py_LTO" = 'true'; then
++        LDFLAGS_NODIST="$LDFLAGS_NODIST -mllvm -tail-dup-pred-size=1000"
++    fi
++fi
+ AC_SUBST([CFLAGS_CEVAL])
+ 
+ if test "$ac_cv_gcc_asm_for_x87" = yes; then
+-- 
+2.43.0
+

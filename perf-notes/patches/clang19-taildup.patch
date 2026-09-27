@@ -1,4 +1,4 @@
-From 3d46d2d3f9e1b4d400dda36b26be7080ef5a0ff5 Mon Sep 17 00:00:00 2001
+From c710bbeb026ce976cd9246ac4d28a55a9b917a1c Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Sun, 27 Sep 2026 09:40:36 +0000
 Subject: [PATCH] gh-129987: Force dispatch tail duplication when building with
@@ -14,27 +14,29 @@ instruction.  LLVM 20 fixed the regression (llvm/llvm-project#114990).
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_016goMvuYFRBF79g8A7LkRrG
 ---
- ...-09-27-18-00-00.gh-issue-129987.cLg19d.rst |  4 +++
- configure                                     | 36 +++++++++++++++++++
- configure.ac                                  | 25 +++++++++++++
- 3 files changed, 65 insertions(+)
+ ...-09-27-18-00-00.gh-issue-129987.cLg19d.rst |  6 +++
+ configure                                     | 48 +++++++++++++++++++
+ configure.ac                                  | 37 ++++++++++++++
+ 3 files changed, 91 insertions(+)
  create mode 100644 Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst
 
 diff --git a/Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst b/Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst
 new file mode 100644
-index 00000000000..a3902b056f7
+index 00000000000..5399a5fca2c
 --- /dev/null
 +++ b/Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst
-@@ -0,0 +1,4 @@
-+When building with Clang 19, force tail duplication of the interpreter's
-+computed-goto dispatch jumps (``-mllvm -tail-dup-pred-size=1000``). LLVM 19
-+merges them into a single indirect jump, which made the interpreter about 9%
-+slower on pyperformance. LLVM 20.1.1 and newer are not affected.
+@@ -0,0 +1,6 @@
++When building with Clang 19 or Apple clang 17 (Xcode 16.3 to 26.3), force tail
++duplication of the interpreter's computed-goto dispatch jumps
++(``-mllvm -tail-dup-pred-size=1000``). These compilers merge the per-opcode
++dispatch jumps (completely with Clang 19 and Xcode 16.3-16.4, about 60% with
++Xcode 26.0-26.3), which made the interpreter about 9% slower on pyperformance
++with Clang 19.
 diff --git a/configure b/configure
-index e5d3f009105..8a77f276164 100755
+index e5d3f009105..c6d7b29e622 100755
 --- a/configure
 +++ b/configure
-@@ -34445,6 +34445,42 @@ if test "$block_huge_inlining_in_ceval" = yes && test "$ac_cv_computed_gotos" =
+@@ -34445,6 +34445,54 @@ if test "$block_huge_inlining_in_ceval" = yes && test "$ac_cv_computed_gotos" =
      # interpreter.
      CFLAGS_CEVAL="$CFLAGS_CEVAL -finline-max-stacksize=512"
  fi
@@ -48,9 +50,14 @@ index e5d3f009105..8a77f276164 100755
 +// interpreter is compiled with a single shared dispatch jump instead of one
 +// per instruction, which defeats per-opcode branch prediction (~9% slower
 +// on pyperformance).  Fully fixed in LLVM 20.1.1 (llvm/llvm-project#114990).
-+#if defined(__clang__) && !defined(__apple_build_version__) && (__clang_major__ == 19)
-+#else
-+#error not affected
++// Apple clang 1700.0.x (Xcode 16.3-16.4) has the same bug and 1700.3-1700.6
++// (Xcode 26.0-26.3) merges about 60% of the dispatch jumps.
++#if defined(__apple_build_version__)
++#  if __apple_build_version__ < 17000000 || __apple_build_version__ >= 18000000
++#    error not affected
++#  endif
++#elif !defined(__clang__) || __clang_major__ != 19
++#  error not affected
 +#endif
 +
 +_ACEOF
@@ -69,19 +76,26 @@ index e5d3f009105..8a77f276164 100755
 +    CFLAGS_CEVAL="$CFLAGS_CEVAL -mllvm -tail-dup-pred-size=1000"
 +    # With LTO, code generation happens in the linker's LTO plugin, and the
 +    # clang driver does not forward -mllvm options there: pass the option to
-+    # the plugin directly (understood by ld.lld and by GNU ld/gold with LLVMgold).
++    # the linker directly (ld64 takes -mllvm; ld.lld and GNU ld/gold with
++    # LLVMgold take -plugin-opt).
 +    if test "$Py_LTO" = 'true'; then
-+        LDFLAGS_NODIST="$LDFLAGS_NODIST -Wl,-plugin-opt=-tail-dup-pred-size=1000"
++        case $ac_sys_system in
++            Darwin*)
++                LDFLAGS_NODIST="$LDFLAGS_NODIST -Wl,-mllvm,-tail-dup-pred-size=1000" ;;
++            *)
++                LDFLAGS_NODIST="$LDFLAGS_NODIST -Wl,-plugin-opt=-tail-dup-pred-size=1000" ;;
++        esac
 +    fi
 +fi
++
  
  
  if test "$ac_cv_gcc_asm_for_x87" = yes; then
 diff --git a/configure.ac b/configure.ac
-index 82a623fedb8..a672f5ac3dd 100644
+index 82a623fedb8..6823176bf87 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -7813,6 +7813,31 @@ if test "$block_huge_inlining_in_ceval" = yes && test "$ac_cv_computed_gotos" =
+@@ -7813,6 +7813,43 @@ if test "$block_huge_inlining_in_ceval" = yes && test "$ac_cv_computed_gotos" =
      # interpreter.
      CFLAGS_CEVAL="$CFLAGS_CEVAL -finline-max-stacksize=512"
  fi
@@ -92,9 +106,14 @@ index 82a623fedb8..a672f5ac3dd 100644
 +// interpreter is compiled with a single shared dispatch jump instead of one
 +// per instruction, which defeats per-opcode branch prediction (~9% slower
 +// on pyperformance).  Fully fixed in LLVM 20.1.1 (llvm/llvm-project#114990).
-+#if defined(__clang__) && !defined(__apple_build_version__) && (__clang_major__ == 19)
-+#else
-+#error not affected
++// Apple clang 1700.0.x (Xcode 16.3-16.4) has the same bug and 1700.3-1700.6
++// (Xcode 26.0-26.3) merges about 60% of the dispatch jumps.
++#if defined(__apple_build_version__)
++#  if __apple_build_version__ < 17000000 || __apple_build_version__ >= 18000000
++#    error not affected
++#  endif
++#elif !defined(__clang__) || __clang_major__ != 19
++#  error not affected
 +#endif
 +]])],
 +[force_dispatch_tail_dup=yes],
@@ -105,11 +124,18 @@ index 82a623fedb8..a672f5ac3dd 100644
 +    CFLAGS_CEVAL="$CFLAGS_CEVAL -mllvm -tail-dup-pred-size=1000"
 +    # With LTO, code generation happens in the linker's LTO plugin, and the
 +    # clang driver does not forward -mllvm options there: pass the option to
-+    # the plugin directly (understood by ld.lld and by GNU ld/gold with LLVMgold).
++    # the linker directly (ld64 takes -mllvm; ld.lld and GNU ld/gold with
++    # LLVMgold take -plugin-opt).
 +    if test "$Py_LTO" = 'true'; then
-+        LDFLAGS_NODIST="$LDFLAGS_NODIST -Wl,-plugin-opt=-tail-dup-pred-size=1000"
++        case $ac_sys_system in
++            Darwin*)
++                LDFLAGS_NODIST="$LDFLAGS_NODIST -Wl,-mllvm,-tail-dup-pred-size=1000" ;;
++            *)
++                LDFLAGS_NODIST="$LDFLAGS_NODIST -Wl,-plugin-opt=-tail-dup-pred-size=1000" ;;
++        esac
 +    fi
 +fi
++
  AC_SUBST([CFLAGS_CEVAL])
  
  if test "$ac_cv_gcc_asm_for_x87" = yes; then

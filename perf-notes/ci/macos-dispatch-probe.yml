@@ -56,6 +56,20 @@ jobs:
             eval "$cmd -mllvm -tail-dup-pred-size=1000" >> build.log 2>&1 && n1=$(count Python/ceval.o) || n1=build-failed
             t1=$(xcrun objdump -d --no-show-raw-insn Python/ceval.o | grep -cE $'\t(br|jmpq?)\t[^0-9#]*(x[0-9]+|\\*)' || true)
             opt=$(echo "$cmd" | grep -oE ' -O[0-3s]' | tail -1)
-            echo "RESULT runner=${{ matrix.os }} arch=$arch xcode=$(basename "$x") clang='$cc_ver' opt=$opt dispatch_default=$n0 dispatch_taildup_fix=$n1 whole_object_default=$t0 whole_object_fix=$t1"
+            decided=$(grep 'tail duplication of the dispatch' configure.log | sed 's/.*\.\.\. //')
+            ceval_flags=$(grep '^CFLAGS_CEVAL' Makefile | sed 's/^CFLAGS_CEVAL= *//')
+            echo "RESULT runner=${{ matrix.os }} arch=$arch xcode=$(basename "$x") clang='$cc_ver' opt=$opt configure_decision=${decided:-n/a} CFLAGS_CEVAL='$ceval_flags' dispatch_as_built=$n0 dispatch_taildup_fix=$n1 whole_object_default=$t0 whole_object_fix=$t1"
             cd - > /dev/null
           done
+      - name: Full LTO build with Xcode 16.4 (ld64 -mllvm path)
+        if: matrix.os == 'macos-15' || matrix.os == 'macos-15-intel'
+        run: |
+          export DEVELOPER_DIR=/Applications/Xcode_16.4.app/Contents/Developer
+          mkdir -p "$RUNNER_TEMP/lto" && cd "$RUNNER_TEMP/lto"
+          "$GITHUB_WORKSPACE/configure" CC=clang --with-lto > configure.log 2>&1 || { tail -30 configure.log; exit 0; }
+          grep -E '^(CFLAGS_CEVAL|CONFIGURE_LDFLAGS_NODIST)' Makefile
+          make -j"$(sysctl -n hw.ncpu)" python > make.log 2>&1 || { tail -30 make.log; exit 0; }
+          n=$(xcrun objdump -d --no-show-raw-insn python | awk '
+              /^[0-9a-f]+ <.*>:$/ { p = ($0 ~ /<_+PyEval_EvalFrameDefault(\.[a-z0-9.]+)?>:/) ; next }
+              p' | grep -cE $'\t(br|jmpq?)\t[^0-9#]*(x[0-9]+|\\*)' || true)
+          echo "RESULT-LTO runner=${{ matrix.os }} xcode=Xcode_16.4 dispatch_in_final_python=$n"

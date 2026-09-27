@@ -146,5 +146,6 @@ Caveat: Xcode's clang may carry changes beyond the open-source swiftlang branch.
 ### Patch verification on macOS (21:00 SGT)
 The configure check (`__apple_build_version__` in [17000000, 18000000)) selects exactly Xcode 16.3–26.3 on the
 runners and restores 291/287 (arm64) and 269 (x86_64) dispatch jumps per object. Unaffected Xcodes are left alone,
-which is required: clang ≤ 18 rejects `-tail-dup-pred-size` as an unknown option. Final-binary (LTO, ld64
-`-Wl,-mllvm`) verification and the speed impact (mac1b) are pending.
+which is required: clang ≤ 18 rejects `-tail-dup-pred-size` as an unknown option. Final binary with `--with-lto` (ld64, `-Wl,-mllvm`), unpatched → patched: Xcode 16.4 1 → 300 (arm64),
+1 → 276 (x86_64); Xcode 26.3 94 → 300 (arm64), 62 → 276 (x86_64). Under LTO, 26.3's partial merge leaves fewer
+dispatch sites than per object. Speed impact (mac1b) pending.

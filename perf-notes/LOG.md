@@ -339,3 +339,7 @@ merged); they will be re-run after a local end-to-end check.
   → the version gate is required, not just an optimisation. RESULT-LTO=0 was a probe bug (`python` is the
   Python/ dir on case-insensitive APFS; the binary is python.exe). mac1 failed on the same bug in build_arms.py.
   Fixed; relaunched as mac1b + a dedicated macOS LTO probe (Xcode 16.4/26.3 × base/patched × arm64/x86_64).
+- **21:35 SGT macOS LTO probe (final python.exe, --with-lto, ld64):** dispatch jmps base → patched:
+  Xcode 16.4 arm64 1 → 300, x86_64 1 → 276; Xcode 26.3 arm64 94 → 300, x86_64 62 → 276.
+  (Under LTO the 26.3 partial merge is worse than per-object: 94/62 left vs 123/112.) The `-Wl,-mllvm,` path works.
+  mac1b builds succeeded; blocks running.

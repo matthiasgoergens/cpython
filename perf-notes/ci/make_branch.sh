@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Create and push a throwaway perf-ci/<name> branch that runs perf-block.yml.
 #
-#   perf-notes/ci/make_branch.sh NAME CONFIG.json
+#   perf-notes/ci/make_branch.sh NAME CONFIG.json [WORKFLOW.yml]
+# (WORKFLOW defaults to perf-notes/ci/perf-block.yml)
 #
 # CONFIG.json: {"arms": {...}, "jobs": N, "blocks_per_job": B, "scale": S, "values": V,
 #               "bench": "regex", "configure": "..."}; see build_arms.py for arm specs.
@@ -11,7 +12,7 @@
 # arm's tree with all built-in workflows removed, plus perf-block.yml and the
 # perf-notes tools.  Nothing else runs on the branch.
 set -euo pipefail
-name=$1 config=$2
+name=$1 config=$2 workflow=${3:-perf-notes/ci/perf-block.yml}
 top=$(git rev-parse --show-toplevel)
 cd "$top"
 tmp=$(mktemp -d)
@@ -41,7 +42,7 @@ export GIT_INDEX_FILE=$tmp/index
 git read-tree "$first"
 git ls-files .github | xargs -r git update-index --force-remove
 add() { git update-index --add --cacheinfo 100644,"$(git hash-object -w "$1")","$2"; }
-add perf-notes/ci/perf-block.yml .github/workflows/perf-block.yml
+add "$workflow" ".github/workflows/$(basename "$workflow")"
 for f in perf-notes/tools/*.py perf-notes/ci/*.py; do add "$f" "$f"; done
 add perf-notes/ci/loops.json perf-notes/ci/loops.json
 add "$tmp/config.json" perf-notes/ci/config.json

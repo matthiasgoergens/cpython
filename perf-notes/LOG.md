@@ -159,3 +159,39 @@ barnes_hut ~3 s). The jobs may run into the 350-minute job limit; the report ste
 partial results. From now on `perf-notes/ci/loops.json` is time-targeted (about 0.3 s per process,
 estimated from per-loop Ir at ~3e9 Ir/s) and configs use scale 1. The four >3 s/loop benchmarks are
 excluded from CI timing (they stay in the deterministic Ir proxy). Estimated ~30 min per block with 6 arms × 3 rounds.
+
+## RESULTS (15:30 SGT): first CI timing experiments (GitHub runners, PGO+LTO, randomized interleaved blocks)
+Analysis: paired log-ratios within blocks. CIs come from a cluster bootstrap over jobs, since each job
+has its own builds and blocks within a job share binaries. Negative = faster.
+
+### Controls: where the noise is
+- Same binary run as two arms: exp1 −0.06% [−0.19, +0.04]; exp2 +0.07% [−0.05, +0.22]. Run-to-run noise is ≈ ±0.1%.
+- **PGO builds are not reproducible**: `.text` hashes differ between two builds of the same commit, and
+  also between jobs. The A/A arm (same commit, separate PGO build) varies per job from −1.18% to +0.44%.
+  **Build-to-build variation dominates**, so what's needed is more independent builds (jobs), not more
+  blocks per job, or deterministic PGO training.
+
+### exp1: prototypes (6 builds × 2 blocks)
+- dealloc fast path: **+0.38% slower** [+0.18, +0.57]; all 6 builds slower (+0.07…+0.76), even though the
+  Ir proxy shows fewer instructions. **Rejected.** Instruction counts alone misled here.
+- `_PyEval_Vector` exact-args fast path: −0.37% [−0.78, +0.04], 4/6 builds faster. Promising, not
+  significant. Needs more independent builds.
+
+### exp2: disputes (8 builds × 2 blocks)
+| arm | all 88 | excl. async_tree* (72) | 95% CI (all) |
+|---|---|---|---|
+| GC gen-0 threshold ×2 | −2.24% | −0.28% | [−2.40, −2.12] |
+| GC gen-0 threshold ×4 | −3.75% | −0.64% | [−4.07, −3.51] |
+| --without-frame-pointers | −1.15% | −1.19% | [−1.53, −0.81] |
+| revert gh-132336 noinline | −0.12% | −0.10% | [−0.37, +0.12] |
+- GC: async_tree* −15…−34%, xml_etree_parse −14%; small losses on deltablue +1.9% and create_gc_cycles +1.6%.
+  **This answers Pitrou's question on PEP 848: raising the existing thresholds captures most of the claimed
+  3–5%, and the headline number is dominated by the 14 async_tree variants.** Memory impact not yet measured.
+- Frame pointers: a broad −1.2% cost, consistent with PEP 831's own estimate (known trade-off).
+- gh-132336 (noinline): the claimed 0.9% default-build slowdown is **not reproduced** (any effect ≤ ~0.4%).
+
+### Deterministic Ir proxy (local, PGO+LTO, ASLR off): per-type method cache #150160
+after vs before: **+0.75% geomean instructions** (66 benchmarks); richards +6.0%, richards_super +5.7%,
+regex_v8 +2.3%, typing_runtime_protocols +2.2%, xml_etree +2.2%, argparse +2.0%, async_tree +0.3…2%.
+Consistent with the PR's own "1% slower" measurement. Being re-run with warm .pyc caches (a K/2K
+compile race was found) and with a PGO A/A for the Ir noise floor. Timing confirmation is still to do (exp5).

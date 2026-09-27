@@ -1,3 +1,8 @@
+> **Measured so far (2026-09-27, see LOG.md):** M1 per-type cache: +0.75% geomean *instructions*
+> (richards +6%), timing pending. M2 gh-132336 noinline: claimed 0.9% slowdown **not reproduced**
+> (−0.12% [−0.37, +0.12]). M3 frame pointers: −1.15% [−1.53, −0.81] without them. R1 PEP 848 vs.
+> thresholds: gen-0 ×2 −2.24%, ×4 −3.75% geomean, but only −0.28% / −0.64% excluding async_tree*.
+
 # Disputed or inconclusive CPython performance measurements
 
 Compiled 2026-09-27 against `main` (3.16a0; local HEAD e7a995ef; the clone is shallow).

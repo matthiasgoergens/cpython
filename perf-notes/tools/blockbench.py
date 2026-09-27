@@ -180,6 +180,25 @@ def cmd_analyze(args):
             print(f'{"GEOMEAN (" + str(len(good)) + " benches)":34s} {100 * (math.exp(g) - 1):+7.2f}%  '
                   f'CI [{100 * (math.exp(lo) - 1):+6.2f}, {100 * (math.exp(hi) - 1):+6.2f}]  '
                   f'(block bootstrap over {len(blk_list)} complete blocks)')
+            # Blocks from one job share the same builds, so they are not independent
+            # samples of build-to-build (PGO/layout) variation.  Cluster bootstrap:
+            # resample jobs, keeping all of each job's blocks.
+            jobs = {}
+            for blk in blk_list:
+                jobs.setdefault(blk.rsplit(':', 1)[0], []).append(blk)
+            if len(jobs) > 1:
+                keys = list(jobs)
+                rng = random.Random(2)
+                reps = []
+                for _ in range(2000):
+                    sample = [b for k in (rng.choice(keys) for _ in keys) for b in jobs[k]]
+                    reps.append(geo(sample))
+                reps.sort()
+                lo, hi = reps[50], reps[1949]
+                per_job = sorted(100 * (math.exp(geo(v)) - 1) for v in jobs.values())
+                print(f'{"":34s}          CI [{100 * (math.exp(lo) - 1):+6.2f}, {100 * (math.exp(hi) - 1):+6.2f}]  '
+                      f'(cluster bootstrap over {len(jobs)} jobs/builds); per-job: '
+                      + ' '.join(f'{x:+.2f}' for x in per_job))
 
 
 def main():

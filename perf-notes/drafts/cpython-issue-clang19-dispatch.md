@@ -81,7 +81,7 @@ So partial merging costs much less than full merging.
   arm64 and x86-64. An example is MacPorts python313 and python314 on macOS 15.
 * **macOS builds made with Xcode 26.0–26.3** (Apple clang 1700.3–1700.6): partly merged: in a `--with-lto` binary, 94 of ~300
   (arm64) or 62 of ~276 (x86-64) dispatch jumps are left. An example is Homebrew's macOS 15 (Sequoia) bottles. Xcode 26.4+ (Apple clang 2100)
-  still merges some (200 of 328 in the object file); this PR leaves it alone.
+  still merges some (200 of 328 in the object file); the proposed fix leaves it alone.
 * Earlier python-build-standalone/uv (Jan–Feb 2025) and conda-forge macOS builds used Clang 19 too. Those
   have since moved on.
 

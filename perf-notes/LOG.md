@@ -351,3 +351,10 @@ Dispatch jmps (final binary): x164 1, x164p 356–357, x263 110–121, x263p 356
 - x164 vs x263: +11.8% [+10.7, +13.3]; x164p vs x263p ≈ equal (x164p vs x263 −1.0%).
 - A/A (same vs x263): −0.38% [−1.81, +0.94], per-job −2.8…+1.8 → macOS runners are much noisier than Linux;
   the 26.3 effect is real-but-modest evidence (all jobs agree in sign), the 16.4 effect is unambiguous.
+
+## FILED (22:35 SGT)
+- Issue: https://github.com/python/cpython/issues/158283 (filed by a dedicated session in @matthiasgoergens' name).
+- PR: https://github.com/python/cpython/pull/158286 from matthiasgoergens:pr/clang19-dispatch (one commit, gh-158283).
+- Data/scripts: https://github.com/matthiasgoergens/cpython/tree/clang19-dispatch-data (orphan branch).
+- Open questions for the user: the wording of the Elhage/gh-129987 sentence in the issue (the gh-129987 clause is
+  imprecise) and of the AI-disclosure line in the PR.

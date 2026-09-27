@@ -1,5 +1,7 @@
 # DRAFT — CPython issue (to be filed by @matthiasgoergens after review)
 
+> **FILED** 2026-09-27 22:35 SGT as python/cpython#158283; PR python/cpython#158286.
+
 > Filing plan: open this as a **new** issue (gh-129987 is closed). Then rename the NEWS entry and the commit title on
 > `pr/clang19-dispatch` from gh-129987 to the new number before opening the PR.
 

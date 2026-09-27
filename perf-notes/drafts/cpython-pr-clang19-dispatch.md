@@ -1,5 +1,7 @@
 # DRAFT: CPython PR (to be opened by @matthiasgoergens after review)
 
+> **FILED** 2026-09-27 22:35 SGT as python/cpython#158283; PR python/cpython#158286.
+
 **Branch:** `matthiasgoergens:pr/clang19-dispatch` (one commit on current `main`)
 
 **Title:** gh-158283: Force dispatch tail duplication with Clang 19 and Apple clang 17

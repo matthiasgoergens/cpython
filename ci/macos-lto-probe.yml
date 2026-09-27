@@ -1,0 +1,46 @@
+# gh-129987 follow-up: with --with-lto and an affected Apple clang, does the
+# configure patch (-Wl,-mllvm,-tail-dup-pred-size=1000 for ld64) restore the
+# per-opcode dispatch jumps in the final linked binary?  Builds each arm commit
+# (config.json) with and without the patch's effect visible in the Makefile.
+name: macos-lto-probe
+
+on:
+  push:
+    branches: ['perf-ci/**']
+
+permissions:
+  contents: read
+
+jobs:
+  lto:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-15-intel]
+        xcode: [Xcode_16.4, Xcode_26.3]
+        ref: [base, patched]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Full LTO build and dispatch count
+        run: |
+          set -u
+          arms=perf-notes/ci/config.json
+          sha=$(python3 -c "import json;a=json.load(open('$arms'))['arms'];print(a['${{ matrix.ref }}']['ref'])")
+          git worktree add -q --detach "$RUNNER_TEMP/src" "$sha"
+          export DEVELOPER_DIR=/Applications/${{ matrix.xcode }}.app/Contents/Developer
+          sudo xcodebuild -license accept > /dev/null 2>&1 || true
+          mkdir -p "$RUNNER_TEMP/lto" && cd "$RUNNER_TEMP/lto"
+          "$RUNNER_TEMP/src/configure" CC=clang --with-lto > configure.log 2>&1 || { tail -30 configure.log; exit 1; }
+          grep -E '^(CFLAGS_CEVAL|CONFIGURE_LDFLAGS_NODIST)' Makefile
+          make -j"$(sysctl -n hw.ncpu)" python.exe > make.log 2>&1 || { tail -30 make.log; exit 1; }
+          grep -i 'tail-dup\|unused' make.log | sort | uniq -c | head -5 || true
+          ls -la python.exe
+          n=$(xcrun objdump -d --no-show-raw-insn python.exe | awk '
+              /^[0-9a-f]+ <.*>:$/ { p = ($0 ~ /<_+PyEval_EvalFrameDefault(\.[a-z0-9.]+)?>:/) ; next }
+              p' | grep -cE $'\t(br|jmpq?)\t[^0-9#]*(x[0-9]+|\\*)' || true)
+          echo "RESULT-LTO runner=${{ matrix.os }} xcode=${{ matrix.xcode }} ref=${{ matrix.ref }} dispatch_in_final_python=$n"
+          python3 "$GITHUB_WORKSPACE/perf-notes/tools/dispatch_sites.py" python.exe || true

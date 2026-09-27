@@ -1,0 +1,552 @@
+
+=== c19 vs base  (negative = faster)  blocks=12
+pickle_dict                         -14.94%  CI [-17.15, -12.84]  p=0.001 n=12 *
+pickle_list                         -10.21%  CI [-11.56,  -8.37]  p=0.001 n=12 *
+base32_large                         -7.92%  CI [ -9.83,  -5.77]  p=0.001 n=12 *
+unpickle_list                        -7.45%  CI [ -8.79,  -6.05]  p=0.001 n=12 *
+base16_large                         -7.04%  CI [-10.80,  -3.52]  p=0.007 n=12 *
+pickle                               -4.94%  CI [ -6.30,  -3.42]  p=0.002 n=12 *
+base16_small                         -1.44%  CI [ -5.71,  +2.55]  p=0.532 n=12  
+base64_large                         -0.52%  CI [ -1.70,  +0.82]  p=0.459 n=12  
+json_dumps                           +0.11%  CI [ -2.86,  +2.35]  p=0.956 n=12  
+async_generators                     +0.29%  CI [ -1.26,  +2.02]  p=0.734 n=12  
+pathlib                              +0.75%  CI [ -0.08,  +1.39]  p=0.098 n=12  
+telco                                +1.20%  CI [ -0.23,  +2.68]  p=0.143 n=12  
+decimal_factorial                    +1.44%  CI [ +0.68,  +2.33]  p=0.004 n=12 *
+xml_etree_generate                   +2.02%  CI [ +0.84,  +3.28]  p=0.007 n=12 *
+urlsafe_base64_small                 +2.09%  CI [ +0.02,  +4.06]  p=0.079 n=12  
+scimark_sparse_mat_mult              +2.89%  CI [ -0.00,  +5.98]  p=0.100 n=12  
+base32_small                         +2.91%  CI [ +1.26,  +4.77]  p=0.007 n=12 *
+coroutines                           +3.08%  CI [ -0.60,  +6.19]  p=0.102 n=12  
+decimal_pi                           +3.50%  CI [ +1.81,  +4.86]  p=0.004 n=12 *
+typing_runtime_protocols             +3.68%  CI [ +2.68,  +4.58]  p=0.001 n=12 *
+regex_dna                            +3.73%  CI [ +1.55,  +5.98]  p=0.007 n=12 *
+async_tree_eager_io                  +3.76%  CI [ +2.19,  +4.86]  p=0.003 n=12 *
+json_loads                           +3.79%  CI [ +2.47,  +5.13]  p=0.001 n=12 *
+deepcopy_reduce                      +4.37%  CI [ +2.09,  +7.09]  p=0.004 n=12 *
+unpickle                             +4.62%  CI [ +1.97,  +7.04]  p=0.009 n=12 *
+xml_etree_process                    +4.86%  CI [ +3.47,  +6.34]  p=0.001 n=12 *
+many_optionals                       +4.91%  CI [ +2.97,  +6.70]  p=0.003 n=12 *
+async_tree_eager_cpu_io_mixed        +5.05%  CI [ +2.58,  +7.38]  p=0.008 n=12 *
+async_tree_eager_cpu_io_mixed_tg     +5.19%  CI [ +3.03,  +7.29]  p=0.003 n=12 *
+async_tree_cpu_io_mixed              +5.20%  CI [ +3.10,  +7.17]  p=0.003 n=12 *
+async_tree_eager_io_tg               +5.43%  CI [ +4.62,  +6.42]  p=0.001 n=12 *
+async_tree_memoization_tg            +5.46%  CI [ +4.59,  +6.33]  p=0.001 n=12 *
+async_tree_cpu_io_mixed_tg           +5.47%  CI [ +3.51,  +7.25]  p=0.003 n=12 *
+async_tree_none                      +5.53%  CI [ +3.23,  +7.59]  p=0.004 n=12 *
+async_tree_memoization               +5.60%  CI [ +4.52,  +6.55]  p=0.001 n=12 *
+async_tree_eager_tg                  +5.72%  CI [ +3.83,  +7.34]  p=0.002 n=12 *
+mdp                                  +5.72%  CI [ +4.07,  +7.30]  p=0.001 n=12 *
+async_tree_io_tg                     +5.84%  CI [ +4.33,  +7.19]  p=0.001 n=12 *
+scimark_fft                          +5.86%  CI [ +2.82,  +9.70]  p=0.001 n=12 *
+regex_v8                             +5.90%  CI [ +2.84,  +9.33]  p=0.003 n=12 *
+spectral_norm                        +5.93%  CI [ +2.85,  +8.88]  p=0.006 n=12 *
+async_tree_eager_memoization         +6.04%  CI [ +3.93,  +8.08]  p=0.002 n=12 *
+async_tree_eager_memoization_tg      +6.07%  CI [ +4.66,  +7.28]  p=0.002 n=12 *
+async_tree_eager                     +6.07%  CI [ +4.78,  +7.42]  p=0.001 n=12 *
+async_tree_none_tg                   +6.08%  CI [ +5.23,  +6.94]  p=0.001 n=12 *
+logging_format                       +6.11%  CI [ +4.28,  +7.89]  p=0.001 n=12 *
+meteor_contest                       +6.20%  CI [ +5.10,  +7.24]  p=0.001 n=12 *
+logging_simple                       +6.38%  CI [ +4.45,  +8.68]  p=0.001 n=12 *
+base64_small                         +6.63%  CI [ +4.30,  +9.95]  p=0.001 n=12 *
+async_tree_io                        +7.03%  CI [ +5.80,  +8.43]  p=0.001 n=12 *
+deepcopy                             +7.84%  CI [ +6.42,  +9.43]  p=0.001 n=12 *
+richards_super                       +7.94%  CI [ +3.97, +13.16]  p=0.002 n=12 *
+richards                             +8.14%  CI [ +4.46, +12.94]  p=0.001 n=12 *
+scimark_lu                           +8.27%  CI [ +6.02, +10.91]  p=0.001 n=12 *
+xml_etree_iterparse                  +8.47%  CI [ +7.10,  +9.90]  p=0.001 n=12 *
+bpe_tokeniser                        +8.48%  CI [ +6.84, +10.55]  p=0.001 n=12 *
+raytrace                             +8.72%  CI [ +7.18, +10.33]  p=0.001 n=12 *
+logging_silent                       +8.74%  CI [ +5.39, +11.96]  p=0.002 n=12 *
+chaos                                +9.28%  CI [ +7.49, +11.28]  p=0.001 n=12 *
+subparsers                           +9.46%  CI [ +7.82, +10.93]  p=0.001 n=12 *
+xml_etree_parse                     +10.26%  CI [ +6.90, +13.99]  p=0.001 n=12 *
+comprehensions                      +11.21%  CI [ +8.74, +13.64]  p=0.001 n=12 *
+create_gc_cycles                    +11.33%  CI [ +9.34, +13.19]  p=0.001 n=12 *
+regex_effbot                        +12.21%  CI [ +8.53, +15.48]  p=0.001 n=12 *
+pyflate                             +12.42%  CI [+10.87, +13.82]  p=0.001 n=12 *
+ascii85_small                       +12.64%  CI [+11.24, +13.99]  p=0.001 n=12 *
+pidigits                            +12.66%  CI [+10.69, +14.85]  p=0.001 n=12 *
+nqueens                             +12.77%  CI [+10.02, +15.16]  p=0.001 n=12 *
+base85_small                        +12.82%  CI [ +8.47, +17.11]  p=0.001 n=12 *
+quadtree_nbody                      +12.89%  CI [+10.59, +15.23]  p=0.001 n=12 *
+float                               +13.16%  CI [+10.97, +15.09]  p=0.001 n=12 *
+unpickle_pure_python                +14.09%  CI [ +9.67, +18.04]  p=0.001 n=12 *
+deltablue                           +14.82%  CI [+12.11, +17.59]  p=0.001 n=12 *
+pickle_pure_python                  +14.92%  CI [+13.02, +16.74]  p=0.001 n=12 *
+pprint_pformat                      +15.37%  CI [+13.38, +17.13]  p=0.001 n=12 *
+scimark_monte_carlo                 +15.83%  CI [+12.19, +20.10]  p=0.001 n=12 *
+pprint_safe_repr                    +15.85%  CI [+13.67, +17.78]  p=0.001 n=12 *
+fannkuch                            +16.31%  CI [+13.79, +19.04]  p=0.001 n=12 *
+nbody                               +17.09%  CI [+11.14, +23.47]  p=0.001 n=12 *
+generators                          +19.86%  CI [+16.13, +23.49]  p=0.001 n=12 *
+go                                  +20.02%  CI [+17.71, +23.11]  p=0.001 n=12 *
+hexiom                              +20.56%  CI [+18.48, +23.01]  p=0.001 n=12 *
+base85_large                        +22.46%  CI [+15.44, +29.12]  p=0.001 n=12 *
+deepcopy_memo                       +22.58%  CI [+19.02, +26.29]  p=0.001 n=12 *
+gc_traversal                        +22.63%  CI [+16.92, +28.24]  p=0.001 n=12 *
+scimark_sor                         +26.18%  CI [+21.73, +31.93]  p=0.001 n=12 *
+ascii85_large                       +31.64%  CI [+26.82, +36.27]  p=0.001 n=12 *
+unpack_sequence                     +37.66%  CI [+33.52, +42.53]  p=0.001 n=12 *
+GEOMEAN (88 benches)                 +7.66%  CI [ +6.77,  +8.45]  (block bootstrap over 12 complete blocks)
+                                            CI [ +6.41,  +8.69]  (cluster bootstrap over 6 jobs/builds); per-job: +5.05 +6.59 +8.17 +8.41 +8.45 +9.34
+
+=== c19fix vs base  (negative = faster)  blocks=12
+pickle_dict                         -14.27%  CI [-16.50, -11.83]  p=0.001 n=12 *
+base16_small                        -12.96%  CI [-15.63, -10.10]  p=0.001 n=12 *
+scimark_fft                         -11.64%  CI [-13.56,  -9.58]  p=0.001 n=12 *
+nbody                               -11.51%  CI [-14.05,  -9.40]  p=0.001 n=12 *
+spectral_norm                       -10.58%  CI [-13.64,  -7.83]  p=0.001 n=12 *
+pickle_list                          -9.79%  CI [-11.11,  -8.06]  p=0.001 n=12 *
+base16_large                         -9.56%  CI [-14.03,  -4.94]  p=0.005 n=12 *
+logging_silent                       -9.13%  CI [-11.29,  -6.80]  p=0.001 n=12 *
+deepcopy_reduce                      -8.75%  CI [-10.29,  -7.16]  p=0.001 n=12 *
+urlsafe_base64_small                 -8.29%  CI [ -9.76,  -6.66]  p=0.001 n=12 *
+scimark_sparse_mat_mult              -7.77%  CI [ -9.64,  -5.81]  p=0.001 n=12 *
+unpickle_list                        -7.65%  CI [ -9.33,  -5.79]  p=0.001 n=12 *
+json_dumps                           -7.58%  CI [-10.05,  -5.73]  p=0.001 n=12 *
+base32_large                         -7.31%  CI [ -9.84,  -4.30]  p=0.003 n=12 *
+async_generators                     -6.95%  CI [ -7.72,  -6.14]  p=0.001 n=12 *
+base32_small                         -6.78%  CI [ -8.58,  -4.75]  p=0.001 n=12 *
+typing_runtime_protocols             -6.61%  CI [ -8.77,  -4.17]  p=0.003 n=12 *
+comprehensions                       -6.56%  CI [ -7.93,  -5.09]  p=0.001 n=12 *
+scimark_lu                           -6.55%  CI [ -8.71,  -4.18]  p=0.003 n=12 *
+base64_small                         -6.35%  CI [ -8.54,  -4.06]  p=0.002 n=12 *
+pickle                               -6.30%  CI [ -7.66,  -4.85]  p=0.001 n=12 *
+deepcopy                             -6.12%  CI [ -8.28,  -3.81]  p=0.003 n=12 *
+xml_etree_generate                   -6.02%  CI [ -7.35,  -4.50]  p=0.001 n=12 *
+xml_etree_process                    -5.68%  CI [ -7.05,  -4.21]  p=0.001 n=12 *
+scimark_monte_carlo                  -5.36%  CI [ -6.99,  -3.53]  p=0.002 n=12 *
+coroutines                           -4.87%  CI [ -9.63,  -0.33]  p=0.100 n=12  
+logging_simple                       -4.66%  CI [ -6.37,  -2.67]  p=0.004 n=12 *
+telco                                -4.28%  CI [ -5.93,  -2.54]  p=0.003 n=12 *
+raytrace                             -4.25%  CI [ -5.73,  -2.51]  p=0.003 n=12 *
+logging_format                       -4.06%  CI [ -5.57,  -2.18]  p=0.004 n=12 *
+chaos                                -3.89%  CI [ -5.24,  -2.13]  p=0.003 n=12 *
+deltablue                            -3.86%  CI [ -4.84,  -2.87]  p=0.001 n=12 *
+mdp                                  -3.50%  CI [ -4.56,  -2.63]  p=0.001 n=12 *
+unpickle_pure_python                 -3.35%  CI [ -6.28,  -0.90]  p=0.017 n=12 *
+pathlib                              -3.31%  CI [ -3.91,  -2.84]  p=0.001 n=12 *
+nqueens                              -3.27%  CI [ -4.75,  -1.65]  p=0.007 n=12 *
+float                                -3.24%  CI [ -4.88,  -1.52]  p=0.006 n=12 *
+pyflate                              -3.21%  CI [ -4.40,  -2.02]  p=0.001 n=12 *
+quadtree_nbody                       -3.17%  CI [ -4.73,  -1.74]  p=0.002 n=12 *
+richards                             -2.67%  CI [ -7.85,  +2.67]  p=0.353 n=12  
+richards_super                       -2.47%  CI [ -7.59,  +2.57]  p=0.383 n=12  
+regex_v8                             -2.30%  CI [ -4.56,  +0.23]  p=0.121 n=12  
+deepcopy_memo                        -2.27%  CI [ -3.39,  -1.02]  p=0.008 n=12 *
+scimark_sor                          -2.10%  CI [ -4.50,  -0.03]  p=0.103 n=12  
+many_optionals                       -1.91%  CI [ -2.92,  -0.89]  p=0.009 n=12 *
+subparsers                           -1.91%  CI [ -3.39,  -0.15]  p=0.052 n=12  
+bpe_tokeniser                        -1.89%  CI [ -2.85,  -0.89]  p=0.008 n=12 *
+fannkuch                             -1.74%  CI [ -3.69,  +0.27]  p=0.130 n=12  
+pickle_pure_python                   -1.74%  CI [ -2.69,  -0.90]  p=0.004 n=12 *
+async_tree_eager_memoization         -1.63%  CI [ -2.51,  -0.67]  p=0.010 n=12 *
+async_tree_none_tg                   -1.51%  CI [ -2.49,  -0.29]  p=0.037 n=12 *
+async_tree_memoization               -1.50%  CI [ -2.18,  -0.80]  p=0.005 n=12 *
+pprint_pformat                       -1.13%  CI [ -1.93,  -0.40]  p=0.020 n=12 *
+async_tree_none                      -1.10%  CI [ -2.11,  -0.17]  p=0.064 n=12  
+pprint_safe_repr                     -1.05%  CI [ -2.37,  -0.02]  p=0.107 n=12  
+async_tree_memoization_tg            -0.78%  CI [ -1.85,  +0.38]  p=0.198 n=12  
+async_tree_eager                     -0.68%  CI [ -1.74,  +0.69]  p=0.302 n=12  
+async_tree_eager_io                  -0.66%  CI [ -1.32,  -0.02]  p=0.089 n=12  
+generators                           -0.64%  CI [ -2.19,  +0.73]  p=0.459 n=12  
+async_tree_eager_memoization_tg      -0.47%  CI [ -2.43,  +1.64]  p=0.662 n=12  
+decimal_pi                           -0.45%  CI [ -1.30,  +0.43]  p=0.359 n=12  
+go                                   -0.32%  CI [ -1.82,  +1.46]  p=0.719 n=12  
+async_tree_io_tg                     -0.13%  CI [ -0.82,  +0.40]  p=0.768 n=12  
+decimal_factorial                    +0.27%  CI [ -0.46,  +1.07]  p=0.539 n=12  
+async_tree_eager_cpu_io_mixed        +0.41%  CI [ -1.22,  +1.97]  p=0.650 n=12  
+async_tree_io                        +0.45%  CI [ -0.68,  +1.67]  p=0.518 n=12  
+base64_large                         +0.48%  CI [ -1.61,  +3.11]  p=0.777 n=12  
+async_tree_eager_tg                  +0.49%  CI [ -0.94,  +2.06]  p=0.558 n=12  
+async_tree_eager_io_tg               +0.67%  CI [ -0.19,  +1.71]  p=0.218 n=12  
+async_tree_cpu_io_mixed              +0.69%  CI [ -0.75,  +2.08]  p=0.373 n=12  
+async_tree_eager_cpu_io_mixed_tg     +1.13%  CI [ -0.65,  +2.75]  p=0.243 n=12  
+meteor_contest                       +1.21%  CI [ +0.31,  +2.10]  p=0.034 n=12 *
+async_tree_cpu_io_mixed_tg           +1.33%  CI [ +0.18,  +2.43]  p=0.055 n=12  
+json_loads                           +1.66%  CI [ +0.20,  +3.31]  p=0.053 n=12  
+regex_dna                            +1.86%  CI [ +0.47,  +3.36]  p=0.038 n=12 *
+hexiom                               +2.92%  CI [ -0.15,  +6.08]  p=0.123 n=12  
+xml_etree_iterparse                  +3.69%  CI [ +0.89,  +6.79]  p=0.031 n=12 *
+unpickle                             +3.95%  CI [ +1.01,  +6.79]  p=0.033 n=12 *
+base85_small                         +6.46%  CI [ +2.84, +10.13]  p=0.010 n=12 *
+unpack_sequence                      +8.23%  CI [ +4.27, +12.50]  p=0.005 n=12 *
+ascii85_small                        +8.98%  CI [ +7.30, +10.75]  p=0.001 n=12 *
+xml_etree_parse                     +10.25%  CI [ +6.07, +15.05]  p=0.001 n=12 *
+pidigits                            +11.99%  CI [+10.46, +13.71]  p=0.001 n=12 *
+create_gc_cycles                    +12.46%  CI [ +9.49, +15.20]  p=0.001 n=12 *
+regex_effbot                        +18.70%  CI [+14.49, +22.73]  p=0.001 n=12 *
+base85_large                        +22.56%  CI [+15.91, +28.93]  p=0.001 n=12 *
+gc_traversal                        +24.91%  CI [+17.47, +32.41]  p=0.001 n=12 *
+ascii85_large                       +32.51%  CI [+28.28, +36.63]  p=0.001 n=12 *
+GEOMEAN (88 benches)                 -1.56%  CI [ -1.79,  -1.32]  (block bootstrap over 12 complete blocks)
+                                            CI [ -1.82,  -1.29]  (cluster bootstrap over 6 jobs/builds); per-job: -2.02 -1.82 -1.70 -1.61 -1.21 -1.02
+
+=== c21 vs base  (negative = faster)  blocks=12
+pickle_dict                         -15.96%  CI [-18.11, -13.75]  p=0.001 n=12 *
+base16_small                        -14.21%  CI [-16.80, -11.41]  p=0.001 n=12 *
+pickle_list                         -10.36%  CI [-12.37,  -8.07]  p=0.002 n=12 *
+scimark_fft                         -10.12%  CI [-11.41,  -8.74]  p=0.001 n=12 *
+deepcopy_reduce                      -9.62%  CI [-11.29,  -7.91]  p=0.001 n=12 *
+base32_large                         -8.87%  CI [-10.30,  -7.29]  p=0.001 n=12 *
+spectral_norm                        -8.87%  CI [-12.51,  -5.48]  p=0.002 n=12 *
+logging_silent                       -8.70%  CI [-10.85,  -6.36]  p=0.001 n=12 *
+deepcopy                             -8.39%  CI [ -9.96,  -6.75]  p=0.001 n=12 *
+unpickle_list                        -8.29%  CI [ -9.84,  -6.39]  p=0.002 n=12 *
+nbody                                -8.19%  CI [-10.91,  -5.55]  p=0.001 n=12 *
+base32_small                         -8.14%  CI [-10.20,  -5.94]  p=0.001 n=12 *
+urlsafe_base64_small                 -8.04%  CI [ -9.36,  -6.82]  p=0.001 n=12 *
+base16_large                         -7.97%  CI [-11.15,  -4.74]  p=0.001 n=12 *
+async_generators                     -7.57%  CI [ -8.27,  -6.82]  p=0.001 n=12 *
+comprehensions                       -7.54%  CI [ -8.39,  -6.65]  p=0.001 n=12 *
+typing_runtime_protocols             -6.89%  CI [ -9.20,  -3.97]  p=0.003 n=12 *
+richards                             -6.82%  CI [ -8.55,  -5.31]  p=0.001 n=12 *
+scimark_lu                           -6.66%  CI [ -7.90,  -5.41]  p=0.001 n=12 *
+json_dumps                           -6.65%  CI [ -9.00,  -4.72]  p=0.001 n=12 *
+scimark_sparse_mat_mult              -6.57%  CI [ -7.76,  -5.42]  p=0.001 n=12 *
+scimark_monte_carlo                  -6.45%  CI [ -7.97,  -4.75]  p=0.001 n=12 *
+base64_small                         -6.34%  CI [ -7.72,  -4.65]  p=0.001 n=12 *
+xml_etree_generate                   -6.30%  CI [ -7.61,  -4.93]  p=0.001 n=12 *
+xml_etree_process                    -6.15%  CI [ -7.23,  -4.96]  p=0.001 n=12 *
+richards_super                       -5.62%  CI [ -7.60,  -3.65]  p=0.001 n=12 *
+chaos                                -5.55%  CI [ -6.13,  -5.09]  p=0.001 n=12 *
+logging_simple                       -5.42%  CI [ -6.72,  -3.90]  p=0.001 n=12 *
+pickle                               -5.37%  CI [ -6.92,  -3.90]  p=0.001 n=12 *
+raytrace                             -5.13%  CI [ -6.21,  -4.13]  p=0.001 n=12 *
+logging_format                       -4.90%  CI [ -5.86,  -3.80]  p=0.001 n=12 *
+nqueens                              -4.86%  CI [ -6.03,  -3.62]  p=0.001 n=12 *
+regex_v8                             -4.83%  CI [ -6.69,  -3.04]  p=0.002 n=12 *
+telco                                -4.63%  CI [ -5.60,  -3.66]  p=0.001 n=12 *
+coroutines                           -4.34%  CI [ -9.07,  +0.17]  p=0.133 n=12  
+quadtree_nbody                       -4.20%  CI [ -5.79,  -2.75]  p=0.002 n=12 *
+deltablue                            -4.11%  CI [ -5.06,  -3.12]  p=0.001 n=12 *
+scimark_sor                          -3.64%  CI [ -6.43,  -0.80]  p=0.039 n=12 *
+unpickle_pure_python                 -3.44%  CI [ -6.26,  -0.90]  p=0.024 n=12 *
+mdp                                  -3.30%  CI [ -5.06,  -1.01]  p=0.015 n=12 *
+deepcopy_memo                        -3.24%  CI [ -4.89,  -1.27]  p=0.009 n=12 *
+pathlib                              -3.09%  CI [ -3.65,  -2.55]  p=0.001 n=12 *
+pyflate                              -2.94%  CI [ -4.07,  -1.88]  p=0.001 n=12 *
+pickle_pure_python                   -2.85%  CI [ -4.34,  -0.97]  p=0.015 n=12 *
+float                                -2.81%  CI [ -4.99,  -0.33]  p=0.052 n=12  
+many_optionals                       -2.76%  CI [ -4.14,  -1.37]  p=0.006 n=12 *
+subparsers                           -2.42%  CI [ -3.66,  -1.09]  p=0.009 n=12 *
+fannkuch                             -2.02%  CI [ -5.11,  +1.49]  p=0.258 n=12  
+async_tree_eager_memoization         -1.87%  CI [ -2.93,  -0.79]  p=0.014 n=12 *
+async_tree_none_tg                   -1.66%  CI [ -2.49,  -0.69]  p=0.008 n=12 *
+bpe_tokeniser                        -1.49%  CI [ -2.24,  -0.72]  p=0.010 n=12 *
+async_tree_eager_io                  -1.28%  CI [ -2.12,  -0.31]  p=0.032 n=12 *
+async_tree_memoization               -1.14%  CI [ -2.27,  +0.20]  p=0.132 n=12  
+hexiom                               -1.06%  CI [ -2.79,  +0.55]  p=0.289 n=12  
+async_tree_eager_memoization_tg      -0.67%  CI [ -2.30,  +0.92]  p=0.459 n=12  
+go                                   -0.61%  CI [ -1.75,  +0.46]  p=0.305 n=12  
+async_tree_none                      -0.61%  CI [ -1.65,  +0.51]  p=0.296 n=12  
+async_tree_eager                     -0.60%  CI [ -1.79,  +0.46]  p=0.342 n=12  
+pprint_pformat                       -0.58%  CI [ -2.28,  +0.98]  p=0.516 n=12  
+pprint_safe_repr                     -0.31%  CI [ -1.99,  +1.33]  p=0.744 n=12  
+async_tree_memoization_tg            -0.12%  CI [ -1.75,  +1.45]  p=0.892 n=12  
+async_tree_io_tg                     -0.09%  CI [ -0.91,  +0.91]  p=0.866 n=12  
+async_tree_eager_tg                  -0.01%  CI [ -1.71,  +2.35]  p=0.997 n=12  
+regex_dna                            +0.06%  CI [ -1.57,  +1.86]  p=0.939 n=12  
+meteor_contest                       +0.20%  CI [ -0.83,  +1.17]  p=0.717 n=12  
+base64_large                         +0.35%  CI [ -1.21,  +2.29]  p=0.737 n=12  
+async_tree_eager_cpu_io_mixed_tg     +0.73%  CI [ -0.33,  +1.69]  p=0.228 n=12  
+async_tree_io                        +0.85%  CI [ -0.71,  +2.71]  p=0.402 n=12  
+async_tree_eager_io_tg               +0.85%  CI [ -0.57,  +2.74]  p=0.412 n=12  
+generators                           +0.86%  CI [ -1.59,  +3.53]  p=0.594 n=12  
+async_tree_cpu_io_mixed              +0.97%  CI [ -0.16,  +2.07]  p=0.126 n=12  
+async_tree_cpu_io_mixed_tg           +0.99%  CI [ +0.07,  +1.91]  p=0.067 n=12  
+async_tree_eager_cpu_io_mixed        +1.04%  CI [ -0.23,  +2.19]  p=0.161 n=12  
+decimal_factorial                    +1.13%  CI [ -0.50,  +2.82]  p=0.229 n=12  
+decimal_pi                           +2.21%  CI [ +0.05,  +4.81]  p=0.119 n=12  
+json_loads                           +2.32%  CI [ +1.41,  +3.19]  p=0.002 n=12 *
+xml_etree_iterparse                  +2.67%  CI [ +0.53,  +5.05]  p=0.046 n=12 *
+unpickle                             +3.05%  CI [ +0.93,  +5.06]  p=0.026 n=12 *
+ascii85_small                        +5.78%  CI [ +4.14,  +7.72]  p=0.001 n=12 *
+base85_small                         +7.39%  CI [ +3.88, +10.76]  p=0.005 n=12 *
+unpack_sequence                     +10.09%  CI [ +6.49, +14.00]  p=0.001 n=12 *
+xml_etree_parse                     +10.36%  CI [ +6.60, +14.45]  p=0.001 n=12 *
+pidigits                            +11.94%  CI [+10.66, +13.34]  p=0.001 n=12 *
+create_gc_cycles                    +12.46%  CI [+10.19, +14.71]  p=0.001 n=12 *
+regex_effbot                        +13.01%  CI [ +8.12, +18.04]  p=0.001 n=12 *
+base85_large                        +23.03%  CI [+16.75, +29.19]  p=0.001 n=12 *
+gc_traversal                        +23.62%  CI [+19.27, +28.51]  p=0.001 n=12 *
+ascii85_large                       +26.61%  CI [+23.02, +29.47]  p=0.001 n=12 *
+GEOMEAN (88 benches)                 -1.96%  CI [ -2.26,  -1.65]  (block bootstrap over 12 complete blocks)
+                                            CI [ -2.33,  -1.52]  (cluster bootstrap over 6 jobs/builds); per-job: -2.64 -2.08 -2.06 -2.05 -1.94 -0.99
+
+=== c21tc vs base  (negative = faster)  blocks=12
+pickle_dict                         -15.48%  CI [-16.83, -13.85]  p=0.001 n=12 *
+base16_small                        -12.78%  CI [-15.29,  -9.58]  p=0.001 n=12 *
+pickle_list                          -9.49%  CI [-11.72,  -7.30]  p=0.001 n=12 *
+scimark_fft                          -8.68%  CI [-10.31,  -6.83]  p=0.001 n=12 *
+base32_large                         -8.57%  CI [-10.08,  -6.87]  p=0.001 n=12 *
+logging_silent                       -8.18%  CI [-10.81,  -5.04]  p=0.002 n=12 *
+spectral_norm                        -7.87%  CI [-11.69,  -3.94]  p=0.004 n=12 *
+deepcopy_reduce                      -7.86%  CI [-10.44,  -5.13]  p=0.002 n=12 *
+urlsafe_base64_small                 -7.54%  CI [ -8.54,  -6.44]  p=0.001 n=12 *
+scimark_monte_carlo                  -7.27%  CI [ -8.35,  -5.93]  p=0.001 n=12 *
+richards                             -7.23%  CI [-10.08,  -4.21]  p=0.002 n=12 *
+json_dumps                           -7.04%  CI [ -9.31,  -5.28]  p=0.001 n=12 *
+typing_runtime_protocols             -6.97%  CI [ -9.64,  -3.78]  p=0.004 n=12 *
+base32_small                         -6.94%  CI [ -8.43,  -5.32]  p=0.001 n=12 *
+base16_large                         -6.76%  CI [ -9.45,  -4.07]  p=0.002 n=12 *
+nbody                                -6.63%  CI [ -8.16,  -5.15]  p=0.001 n=12 *
+xml_etree_generate                   -6.44%  CI [ -8.74,  -3.87]  p=0.003 n=12 *
+pickle                               -6.42%  CI [ -7.36,  -5.56]  p=0.001 n=12 *
+deepcopy                             -6.30%  CI [ -8.02,  -4.30]  p=0.001 n=12 *
+richards_super                       -6.24%  CI [ -8.93,  -3.57]  p=0.002 n=12 *
+xml_etree_process                    -5.44%  CI [ -7.48,  -3.17]  p=0.004 n=12 *
+scimark_lu                           -5.40%  CI [ -7.84,  -3.00]  p=0.003 n=12 *
+comprehensions                       -5.33%  CI [ -6.78,  -3.94]  p=0.001 n=12 *
+regex_v8                             -5.21%  CI [ -6.73,  -3.56]  p=0.001 n=12 *
+scimark_sparse_mat_mult              -5.12%  CI [ -6.42,  -3.71]  p=0.001 n=12 *
+async_generators                     -5.10%  CI [ -6.20,  -3.93]  p=0.001 n=12 *
+unpickle_list                        -5.03%  CI [ -6.37,  -3.68]  p=0.001 n=12 *
+quadtree_nbody                       -4.87%  CI [ -6.54,  -3.02]  p=0.003 n=12 *
+logging_format                       -4.81%  CI [ -6.98,  -2.12]  p=0.009 n=12 *
+chaos                                -4.79%  CI [ -6.67,  -2.91]  p=0.002 n=12 *
+logging_simple                       -4.48%  CI [ -6.72,  -1.71]  p=0.012 n=12 *
+unpickle_pure_python                 -4.48%  CI [ -6.61,  -2.47]  p=0.001 n=12 *
+nqueens                              -4.25%  CI [ -5.65,  -2.78]  p=0.002 n=12 *
+base64_small                         -3.99%  CI [ -5.35,  -2.49]  p=0.001 n=12 *
+mdp                                  -3.66%  CI [ -4.90,  -2.61]  p=0.001 n=12 *
+pickle_pure_python                   -3.57%  CI [ -4.72,  -2.56]  p=0.001 n=12 *
+deltablue                            -3.53%  CI [ -5.41,  -1.55]  p=0.009 n=12 *
+raytrace                             -3.50%  CI [ -5.22,  -1.52]  p=0.008 n=12 *
+hexiom                               -3.34%  CI [ -5.08,  -1.42]  p=0.007 n=12 *
+pyflate                              -3.25%  CI [ -4.29,  -2.40]  p=0.001 n=12 *
+telco                                -3.24%  CI [ -4.32,  -2.14]  p=0.002 n=12 *
+many_optionals                       -3.22%  CI [ -4.81,  -1.37]  p=0.009 n=12 *
+subparsers                           -3.02%  CI [ -4.02,  -1.95]  p=0.003 n=12 *
+bpe_tokeniser                        -2.49%  CI [ -3.82,  -1.27]  p=0.005 n=12 *
+async_tree_none                      -2.27%  CI [ -2.86,  -1.59]  p=0.001 n=12 *
+scimark_sor                          -2.04%  CI [ -4.40,  +0.22]  p=0.133 n=12  
+async_tree_eager_memoization         -2.00%  CI [ -3.14,  -0.83]  p=0.019 n=12 *
+pathlib                              -1.85%  CI [ -3.03,  -0.31]  p=0.035 n=12 *
+pprint_pformat                       -1.76%  CI [ -3.43,  -0.28]  p=0.073 n=12  
+async_tree_eager_memoization_tg      -1.42%  CI [ -3.20,  +0.59]  p=0.193 n=12  
+pprint_safe_repr                     -1.42%  CI [ -2.79,  -0.11]  p=0.103 n=12  
+decimal_factorial                    -1.33%  CI [ -2.43,  -0.10]  p=0.064 n=12  
+go                                   -1.31%  CI [ -2.88,  +0.91]  p=0.243 n=12  
+float                                -1.30%  CI [ -2.84,  +0.31]  p=0.150 n=12  
+async_tree_none_tg                   -1.30%  CI [ -2.11,  -0.44]  p=0.021 n=12 *
+async_tree_eager_io                  -1.29%  CI [ -1.99,  -0.68]  p=0.003 n=12 *
+async_tree_memoization               -1.25%  CI [ -2.08,  -0.48]  p=0.014 n=12 *
+async_tree_eager                     -1.17%  CI [ -2.10,  -0.26]  p=0.045 n=12 *
+async_tree_eager_tg                  -1.14%  CI [ -2.35,  +0.26]  p=0.134 n=12  
+async_tree_io_tg                     -0.90%  CI [ -1.63,  -0.08]  p=0.054 n=12  
+async_tree_memoization_tg            -0.68%  CI [ -1.93,  +0.41]  p=0.323 n=12  
+fannkuch                             -0.65%  CI [ -1.89,  +0.76]  p=0.371 n=12  
+async_tree_io                        -0.57%  CI [ -1.48,  +0.39]  p=0.269 n=12  
+async_tree_eager_io_tg               -0.17%  CI [ -0.98,  +1.05]  p=0.869 n=12  
+deepcopy_memo                        -0.07%  CI [ -0.97,  +0.94]  p=0.889 n=12  
+meteor_contest                       -0.07%  CI [ -1.32,  +1.60]  p=0.954 n=12  
+coroutines                           -0.01%  CI [ -3.55,  +3.27]  p=0.998 n=12  
+regex_dna                            +0.08%  CI [ -2.03,  +2.41]  p=0.950 n=12  
+base64_large                         +0.11%  CI [ -1.07,  +1.39]  p=0.881 n=12  
+decimal_pi                           +0.27%  CI [ -0.92,  +1.52]  p=0.685 n=12  
+async_tree_cpu_io_mixed              +0.32%  CI [ -1.10,  +1.61]  p=0.672 n=12  
+async_tree_eager_cpu_io_mixed_tg     +0.84%  CI [ -0.24,  +1.87]  p=0.160 n=12  
+async_tree_eager_cpu_io_mixed        +0.85%  CI [ -0.20,  +1.85]  p=0.160 n=12  
+async_tree_cpu_io_mixed_tg           +1.29%  CI [ +0.62,  +1.96]  p=0.007 n=12 *
+json_loads                           +2.18%  CI [ +0.54,  +3.96]  p=0.034 n=12 *
+unpickle                             +2.93%  CI [ +0.24,  +5.55]  p=0.068 n=12  
+xml_etree_iterparse                  +3.19%  CI [ +1.25,  +5.32]  p=0.006 n=12 *
+generators                           +4.28%  CI [ +1.93,  +7.03]  p=0.004 n=12 *
+ascii85_small                        +5.78%  CI [ +4.41,  +7.20]  p=0.001 n=12 *
+base85_small                         +7.02%  CI [ +4.33,  +9.58]  p=0.002 n=12 *
+xml_etree_parse                      +9.78%  CI [ +6.53, +13.35]  p=0.001 n=12 *
+create_gc_cycles                    +11.56%  CI [ +9.20, +13.82]  p=0.001 n=12 *
+pidigits                            +12.36%  CI [+10.82, +14.11]  p=0.001 n=12 *
+regex_effbot                        +15.88%  CI [+10.99, +22.35]  p=0.001 n=12 *
+unpack_sequence                     +16.18%  CI [+10.93, +21.74]  p=0.001 n=12 *
+base85_large                        +22.21%  CI [+15.02, +29.10]  p=0.002 n=12 *
+gc_traversal                        +24.92%  CI [+17.85, +32.29]  p=0.001 n=12 *
+ascii85_large                       +25.65%  CI [+21.99, +28.69]  p=0.001 n=12 *
+GEOMEAN (88 benches)                 -1.60%  CI [ -1.89,  -1.30]  (block bootstrap over 12 complete blocks)
+                                            CI [ -1.96,  -1.25]  (cluster bootstrap over 6 jobs/builds); per-job: -2.23 -2.14 -1.51 -1.50 -1.37 -0.87
+
+=== gcc_switch vs base  (negative = faster)  blocks=12
+json_loads                           -1.44%  CI [ -2.37,  -0.64]  p=0.006 n=12 *
+gc_traversal                         -1.13%  CI [ -4.06,  +1.92]  p=0.511 n=12  
+ascii85_large                        -1.05%  CI [ -3.82,  +0.69]  p=0.718 n=12  
+create_gc_cycles                     -0.91%  CI [ -1.86,  -0.04]  p=0.090 n=12  
+unpickle                             -0.88%  CI [ -1.82,  +0.15]  p=0.122 n=12  
+pickle                               -0.78%  CI [ -2.66,  +1.29]  p=0.456 n=12  
+pickle_list                          -0.48%  CI [ -2.71,  +1.75]  p=0.691 n=12  
+base85_large                         -0.47%  CI [ -1.45,  +0.33]  p=0.363 n=12  
+async_tree_eager_io                  -0.31%  CI [ -2.50,  +1.26]  p=0.908 n=12  
+regex_effbot                         -0.17%  CI [ -2.20,  +1.87]  p=0.887 n=12  
+base32_large                         +0.31%  CI [ -0.98,  +1.88]  p=0.535 n=12  
+pidigits                             +0.38%  CI [ -0.36,  +1.03]  p=0.334 n=12  
+base64_large                         +0.44%  CI [ -1.04,  +2.36]  p=0.588 n=12  
+meteor_contest                       +0.72%  CI [ -0.26,  +1.71]  p=0.200 n=12  
+ascii85_small                        +0.97%  CI [ -0.08,  +2.12]  p=0.150 n=12  
+async_generators                     +1.27%  CI [ +0.05,  +2.20]  p=0.056 n=12  
+xml_etree_parse                      +1.38%  CI [ -0.64,  +3.59]  p=0.246 n=12  
+async_tree_cpu_io_mixed              +1.39%  CI [ +0.47,  +2.19]  p=0.014 n=12 *
+pathlib                              +1.40%  CI [ +0.88,  +1.91]  p=0.003 n=12 *
+unpickle_list                        +1.41%  CI [ -1.30,  +4.36]  p=0.349 n=12  
+mdp                                  +1.42%  CI [ +0.43,  +2.41]  p=0.018 n=12 *
+json_dumps                           +1.57%  CI [ -0.74,  +3.44]  p=0.197 n=12  
+typing_runtime_protocols             +1.62%  CI [ +0.63,  +2.65]  p=0.013 n=12 *
+coroutines                           +1.73%  CI [ -0.79,  +4.53]  p=0.241 n=12  
+async_tree_eager_io_tg               +1.76%  CI [ +0.92,  +2.64]  p=0.006 n=12 *
+async_tree_io                        +1.83%  CI [ +0.96,  +2.61]  p=0.004 n=12 *
+async_tree_eager_cpu_io_mixed_tg     +1.93%  CI [ +1.49,  +2.37]  p=0.001 n=12 *
+base64_small                         +1.93%  CI [ +0.49,  +3.79]  p=0.018 n=12 *
+async_tree_cpu_io_mixed_tg           +1.99%  CI [ +1.38,  +2.56]  p=0.001 n=12 *
+decimal_factorial                    +2.06%  CI [ +0.94,  +3.32]  p=0.003 n=12 *
+telco                                +2.08%  CI [ +1.11,  +3.13]  p=0.004 n=12 *
+float                                +2.12%  CI [ +1.30,  +2.90]  p=0.001 n=12 *
+async_tree_io_tg                     +2.13%  CI [ +0.66,  +3.79]  p=0.020 n=12 *
+async_tree_memoization               +2.15%  CI [ +0.94,  +3.42]  p=0.010 n=12 *
+async_tree_memoization_tg            +2.15%  CI [ +1.11,  +3.15]  p=0.005 n=12 *
+async_tree_none                      +2.19%  CI [ +1.09,  +3.22]  p=0.005 n=12 *
+pickle_dict                          +2.20%  CI [ +0.08,  +4.52]  p=0.095 n=12  
+async_tree_eager_cpu_io_mixed        +2.26%  CI [ +1.67,  +2.85]  p=0.001 n=12 *
+xml_etree_generate                   +2.59%  CI [ +1.48,  +3.97]  p=0.001 n=12 *
+async_tree_eager_memoization_tg      +2.60%  CI [ +0.86,  +4.41]  p=0.017 n=12 *
+bpe_tokeniser                        +2.64%  CI [ +1.63,  +3.47]  p=0.002 n=12 *
+xml_etree_iterparse                  +2.65%  CI [ +0.95,  +4.62]  p=0.011 n=12 *
+regex_dna                            +2.66%  CI [ -0.93,  +6.50]  p=0.219 n=12  
+async_tree_eager_memoization         +2.77%  CI [ +1.64,  +3.93]  p=0.002 n=12 *
+async_tree_eager                     +2.81%  CI [ +1.98,  +3.69]  p=0.001 n=12 *
+base85_small                         +2.84%  CI [ +1.75,  +4.00]  p=0.003 n=12 *
+xml_etree_process                    +2.93%  CI [ +1.76,  +4.07]  p=0.002 n=12 *
+base32_small                         +2.95%  CI [ +1.69,  +4.28]  p=0.002 n=12 *
+logging_format                       +2.96%  CI [ +1.10,  +4.67]  p=0.016 n=12 *
+unpickle_pure_python                 +3.07%  CI [ -0.20,  +5.63]  p=0.086 n=12  
+async_tree_eager_tg                  +3.08%  CI [ +2.02,  +4.29]  p=0.002 n=12 *
+base16_large                         +3.25%  CI [ -0.13,  +7.05]  p=0.121 n=12  
+logging_simple                       +3.35%  CI [ +2.21,  +4.51]  p=0.002 n=12 *
+urlsafe_base64_small                 +3.70%  CI [ +2.08,  +5.41]  p=0.003 n=12 *
+decimal_pi                           +3.73%  CI [ +1.94,  +5.71]  p=0.003 n=12 *
+subparsers                           +3.75%  CI [ +2.48,  +4.94]  p=0.002 n=12 *
+spectral_norm                        +3.85%  CI [ -0.69,  +9.76]  p=0.180 n=12  
+deepcopy_reduce                      +3.87%  CI [ +2.52,  +5.42]  p=0.001 n=12 *
+async_tree_none_tg                   +3.87%  CI [ +2.67,  +5.28]  p=0.002 n=12 *
+raytrace                             +3.88%  CI [ +2.03,  +5.74]  p=0.007 n=12 *
+deepcopy                             +4.46%  CI [ +3.52,  +5.24]  p=0.001 n=12 *
+richards_super                       +4.64%  CI [ +1.11,  +8.02]  p=0.027 n=12 *
+many_optionals                       +4.73%  CI [ +3.39,  +6.04]  p=0.001 n=12 *
+pyflate                              +4.97%  CI [ +3.83,  +6.19]  p=0.001 n=12 *
+scimark_fft                          +5.34%  CI [ +3.81,  +7.29]  p=0.001 n=12 *
+richards                             +5.44%  CI [ +2.08,  +8.45]  p=0.013 n=12 *
+scimark_sparse_mat_mult              +5.91%  CI [ +3.82,  +8.10]  p=0.001 n=12 *
+scimark_lu                           +5.98%  CI [ +3.39,  +8.87]  p=0.002 n=12 *
+chaos                                +6.04%  CI [ +4.92,  +7.33]  p=0.001 n=12 *
+comprehensions                       +6.53%  CI [ +5.07,  +7.83]  p=0.001 n=12 *
+pickle_pure_python                   +6.74%  CI [ +5.81,  +7.96]  p=0.001 n=12 *
+nqueens                              +6.89%  CI [ +5.15,  +8.67]  p=0.001 n=12 *
+hexiom                               +7.13%  CI [ +5.42,  +8.83]  p=0.002 n=12 *
+base16_small                         +7.16%  CI [ +1.63, +12.79]  p=0.032 n=12 *
+regex_v8                             +7.30%  CI [ +5.04, +10.61]  p=0.001 n=12 *
+logging_silent                       +7.31%  CI [ +4.22, +10.65]  p=0.001 n=12 *
+deltablue                            +7.47%  CI [ +4.93, +10.06]  p=0.001 n=12 *
+scimark_monte_carlo                  +7.50%  CI [ +5.60,  +9.33]  p=0.001 n=12 *
+pprint_pformat                       +7.77%  CI [ +6.90,  +8.64]  p=0.001 n=12 *
+deepcopy_memo                        +7.87%  CI [ +6.47,  +9.44]  p=0.001 n=12 *
+pprint_safe_repr                     +8.12%  CI [ +7.31,  +8.90]  p=0.001 n=12 *
+go                                   +8.94%  CI [ +7.28, +10.29]  p=0.001 n=12 *
+generators                           +8.97%  CI [ +6.18, +12.05]  p=0.001 n=12 *
+quadtree_nbody                       +9.06%  CI [ +7.37, +10.76]  p=0.001 n=12 *
+fannkuch                             +9.51%  CI [ +8.27, +10.91]  p=0.001 n=12 *
+nbody                               +11.39%  CI [ +6.20, +17.80]  p=0.002 n=12 *
+scimark_sor                         +11.89%  CI [ +9.23, +14.69]  p=0.001 n=12 *
+unpack_sequence                     +13.18%  CI [ +7.39, +20.36]  p=0.001 n=12 *
+GEOMEAN (88 benches)                 +3.54%  CI [ +3.22,  +3.85]  (block bootstrap over 12 complete blocks)
+                                            CI [ +3.13,  +3.93]  (cluster bootstrap over 6 jobs/builds); per-job: +2.78 +3.04 +3.56 +3.59 +4.08 +4.17
+
+=== same vs base  (negative = faster)  blocks=12
+coroutines                           -1.81%  CI [ -3.52,  -0.41]  p=0.016 n=12 *
+nbody                                -1.76%  CI [ -3.83,  +0.17]  p=0.139 n=12  
+meteor_contest                       -1.62%  CI [ -2.80,  -0.51]  p=0.018 n=12 *
+unpickle_pure_python                 -1.58%  CI [ -4.19,  +0.44]  p=0.339 n=12  
+ascii85_large                        -1.16%  CI [ -4.08,  +0.73]  p=0.683 n=12  
+spectral_norm                        -0.99%  CI [ -3.18,  +0.78]  p=0.466 n=12  
+async_tree_eager_io                  -0.97%  CI [ -3.41,  +0.64]  p=0.550 n=12  
+json_dumps                           -0.87%  CI [ -2.35,  +0.26]  p=0.426 n=12  
+pyflate                              -0.71%  CI [ -1.62,  -0.06]  p=0.071 n=12  
+xml_etree_iterparse                  -0.69%  CI [ -1.75,  +0.29]  p=0.242 n=12  
+xml_etree_generate                   -0.66%  CI [ -1.75,  +0.05]  p=0.181 n=12  
+many_optionals                       -0.65%  CI [ -2.11,  +0.85]  p=0.379 n=12  
+regex_effbot                         -0.60%  CI [ -2.51,  +0.85]  p=0.706 n=12  
+float                                -0.55%  CI [ -1.88,  +0.88]  p=0.456 n=12  
+raytrace                             -0.52%  CI [ -1.55,  +0.50]  p=0.417 n=12  
+ascii85_small                        -0.46%  CI [ -1.53,  +1.11]  p=0.564 n=12  
+unpickle_list                        -0.44%  CI [ -1.34,  +0.32]  p=0.361 n=12  
+unpack_sequence                      -0.41%  CI [ -1.50,  +0.58]  p=0.492 n=12  
+base32_small                         -0.37%  CI [ -1.77,  +1.26]  p=0.659 n=12  
+pathlib                              -0.35%  CI [ -1.03,  +0.15]  p=0.344 n=12  
+decimal_pi                           -0.34%  CI [ -1.64,  +0.64]  p=0.708 n=12  
+regex_v8                             -0.30%  CI [ -1.46,  +0.89]  p=0.649 n=12  
+deltablue                            -0.26%  CI [ -0.79,  +0.27]  p=0.373 n=12  
+async_tree_eager_cpu_io_mixed_tg     -0.19%  CI [ -0.79,  +0.38]  p=0.563 n=12  
+xml_etree_parse                      -0.17%  CI [ -1.02,  +0.69]  p=0.699 n=12  
+typing_runtime_protocols             -0.15%  CI [ -0.68,  +0.34]  p=0.589 n=12  
+mdp                                  -0.12%  CI [ -0.99,  +0.95]  p=0.838 n=12  
+create_gc_cycles                     -0.12%  CI [ -1.13,  +0.70]  p=0.902 n=12  
+base16_small                         -0.11%  CI [ -2.24,  +2.16]  p=0.927 n=12  
+regex_dna                            -0.10%  CI [ -0.63,  +0.42]  p=0.714 n=12  
+pickle_pure_python                   -0.09%  CI [ -0.93,  +0.67]  p=0.838 n=12  
+async_tree_memoization_tg            -0.03%  CI [ -0.70,  +0.71]  p=0.927 n=12  
+comprehensions                       -0.03%  CI [ -0.48,  +0.39]  p=0.915 n=12  
+async_generators                     -0.01%  CI [ -0.49,  +0.52]  p=0.969 n=12  
+pickle                               +0.00%  CI [ -1.40,  +1.50]  p=0.995 n=12  
+async_tree_eager_tg                  +0.02%  CI [ -1.28,  +1.04]  p=0.947 n=12  
+async_tree_eager_cpu_io_mixed        +0.02%  CI [ -0.36,  +0.41]  p=0.916 n=12  
+base64_small                         +0.07%  CI [ -1.81,  +2.30]  p=0.934 n=12  
+telco                                +0.07%  CI [ -0.74,  +0.82]  p=0.856 n=12  
+base85_large                         +0.07%  CI [ -1.43,  +1.54]  p=0.929 n=12  
+quadtree_nbody                       +0.08%  CI [ -0.66,  +0.74]  p=0.839 n=12  
+async_tree_io_tg                     +0.09%  CI [ -0.33,  +0.53]  p=0.700 n=12  
+generators                           +0.14%  CI [ -1.98,  +1.88]  p=0.881 n=12  
+go                                   +0.16%  CI [ -0.52,  +0.98]  p=0.724 n=12  
+async_tree_memoization               +0.16%  CI [ -0.71,  +1.24]  p=0.812 n=12  
+async_tree_cpu_io_mixed              +0.17%  CI [ -0.67,  +1.00]  p=0.712 n=12  
+async_tree_none_tg                   +0.21%  CI [ -0.64,  +1.15]  p=0.672 n=12  
+bpe_tokeniser                        +0.21%  CI [ -0.48,  +1.05]  p=0.704 n=12  
+async_tree_none                      +0.22%  CI [ -0.52,  +0.93]  p=0.595 n=12  
+pickle_dict                          +0.24%  CI [ -0.08,  +0.59]  p=0.235 n=12  
+richards_super                       +0.25%  CI [ -1.00,  +1.69]  p=0.803 n=12  
+async_tree_cpu_io_mixed_tg           +0.28%  CI [ -0.27,  +0.89]  p=0.419 n=12  
+async_tree_eager_memoization         +0.30%  CI [ -0.22,  +0.80]  p=0.292 n=12  
+urlsafe_base64_small                 +0.30%  CI [ -0.90,  +1.82]  p=0.734 n=12  
+subparsers                           +0.33%  CI [ -0.47,  +1.20]  p=0.446 n=12  
+base64_large                         +0.35%  CI [ -0.71,  +1.70]  p=0.517 n=12  
+base32_large                         +0.36%  CI [ -0.67,  +1.86]  p=0.863 n=12  
+pprint_pformat                       +0.37%  CI [ -0.43,  +1.02]  p=0.360 n=12  
+decimal_factorial                    +0.39%  CI [ -0.04,  +0.87]  p=0.154 n=12  
+nqueens                              +0.45%  CI [ -0.40,  +1.15]  p=0.304 n=12  
+hexiom                               +0.47%  CI [ -1.25,  +2.47]  p=0.637 n=12  
+xml_etree_process                    +0.55%  CI [ -0.41,  +1.66]  p=0.392 n=12  
+logging_simple                       +0.59%  CI [ +0.16,  +1.09]  p=0.026 n=12 *
+logging_format                       +0.60%  CI [ -0.11,  +1.36]  p=0.196 n=12  
+richards                             +0.60%  CI [ -0.14,  +1.41]  p=0.171 n=12  
+scimark_monte_carlo                  +0.64%  CI [ -0.94,  +2.72]  p=0.610 n=12  
+fannkuch                             +0.67%  CI [ +0.03,  +1.30]  p=0.067 n=12  
+json_loads                           +0.71%  CI [ -0.06,  +1.84]  p=0.150 n=12  
+pprint_safe_repr                     +0.75%  CI [ +0.14,  +1.36]  p=0.047 n=12 *
+base16_large                         +0.77%  CI [ -0.75,  +2.68]  p=0.443 n=12  
+async_tree_eager                     +0.85%  CI [ -0.35,  +2.17]  p=0.293 n=12  
+async_tree_eager_memoization_tg      +0.88%  CI [ -0.67,  +2.31]  p=0.279 n=12  
+chaos                                +0.91%  CI [ -0.21,  +2.60]  p=0.253 n=12  
+deepcopy_memo                        +0.99%  CI [ +0.02,  +2.65]  p=0.089 n=12  
+scimark_fft                          +0.99%  CI [ -0.80,  +4.00]  p=0.793 n=12  
+scimark_lu                           +1.02%  CI [ -1.09,  +3.90]  p=0.540 n=12  
+async_tree_eager_io_tg               +1.04%  CI [ -0.30,  +2.92]  p=0.317 n=12  
+base85_small                         +1.06%  CI [ -1.08,  +4.27]  p=0.617 n=12  
+async_tree_io                        +1.09%  CI [ -0.31,  +2.81]  p=0.243 n=12  
+deepcopy                             +1.12%  CI [ -0.29,  +3.43]  p=0.357 n=12  
+pidigits                             +1.18%  CI [ +0.32,  +2.16]  p=0.001 n=12 *
+pickle_list                          +1.29%  CI [ +0.17,  +2.74]  p=0.057 n=12  
+logging_silent                       +1.42%  CI [ -1.29,  +3.98]  p=0.321 n=12  
+scimark_sor                          +1.53%  CI [ -0.47,  +4.63]  p=0.344 n=12  
+unpickle                             +1.64%  CI [ +0.12,  +3.82]  p=0.071 n=12  
+deepcopy_reduce                      +1.85%  CI [ +0.00,  +4.31]  p=0.093 n=12  
+gc_traversal                         +1.89%  CI [ -0.65,  +4.35]  p=0.171 n=12  
+scimark_sparse_mat_mult              +2.63%  CI [ -0.29,  +7.46]  p=0.210 n=12  
+GEOMEAN (88 benches)                 +0.18%  CI [ -0.06,  +0.47]  (block bootstrap over 12 complete blocks)
+                                            CI [ -0.05,  +0.41]  (cluster bootstrap over 6 jobs/builds); per-job: -0.22 -0.03 +0.01 +0.25 +0.38 +0.68

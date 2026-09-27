@@ -29,6 +29,8 @@ Branch: `claude/cpython-performance-optimization-vv6mlp` on `matthiasgoergens/cp
 
 ## Working rules I set myself
 
+- The user is in Singapore: report times in SGT (UTC+8).
+
 - Keep a written log of candidates, proxy results and full-run results
   (`perf-notes/LOG.md`).
 - Before believing a proxy, check it against real timing on at least a few

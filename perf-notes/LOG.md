@@ -75,3 +75,19 @@ The PR itself measured the GIL build about 1% slower, which was waved off as noi
 In non-LTO builds `_PyTypeCache_Lookup` is an out-of-line call returning a 24-byte struct;
 the dunder micro spends ~100 Ir per slot lookup (`_PyTypeCache_Lookup` 43 + `_PyType_LookupStackRefAndVersion`
 33 + `lookup_method_ex` 26). Next: measure on PGO+LTO, and try an inline fast path for the GIL build.
+
+## Methodology update (after user guidance): randomized block designs, relative numbers only
+- `perf-notes/tools/blockbench.py`: a block is one pass over all (benchmark × build) cells in a fresh
+  random order on one machine. The response is log(time), and comparisons are paired within blocks.
+  Arms can contain several builds (layout seeds), which are treated as a random factor.
+  Per benchmark: mean paired log-ratio, block-bootstrap CI, sign-flip permutation p. The geomean CI comes
+  from resampling whole blocks.
+- An A/A arm (the same commit built separately) is always included as a negative control.
+- A local A/A smoke test on this overloaded 4-core VM (load ~12) showed ±15% swings between identical
+  binaries at n=2. That is why absolute numbers are never compared across blocks.
+- **GitHub CI as a block farm** (`perf-notes/ci/`): `make_branch.sh` pushes a throwaway `perf-ci/<name>` branch.
+  Its tip commit has all arm commits as parents (so they are fetchable by SHA), and its tree has every
+  built-in workflow removed and only `perf-block.yml` added. Each matrix job builds all arms (PGO+LTO)
+  on its own runner and runs complete blocks, so runner-to-runner variation is a block effect.
+  Results come back base64-gzipped in the job log and as an artifact.
+- exp1 (run 36291034777): arms base / aa (A/A) / dealloc / vecfast, 6 jobs × 4 blocks, all 66 benchmarks.

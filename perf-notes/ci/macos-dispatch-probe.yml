@@ -39,12 +39,14 @@ jobs:
           for x in /Applications/Xcode*.app; do
             [ -L "$x" ] && continue
             export DEVELOPER_DIR="$x/Contents/Developer"
+            sudo xcodebuild -license accept > /dev/null 2>&1 || true
+            sudo DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -runFirstLaunch > /dev/null 2>&1 || true
             cc_ver=$(xcrun clang --version 2>/dev/null | head -1) || continue
             b="$RUNNER_TEMP/b-$(basename "$x" .app)"
             mkdir -p "$b" && cd "$b"
-            if ! "$GITHUB_WORKSPACE/configure" CC="$(xcrun -f clang)" > configure.log 2>&1; then
+            if ! "$GITHUB_WORKSPACE/configure" CC=clang > configure.log 2>&1; then
               echo "RESULT xcode=$(basename "$x") clang='$cc_ver' configure-failed"
-              [ -n "${cfgshown:-}" ] || { grep -E 'error|Error' configure.log | tail -5; tail -15 configure.log; cfgshown=1; }
+              [ -n "${cfgshown:-}" ] || { grep -B2 -A12 'checking whether the C compiler works' config.log | head -40; cfgshown=1; }
               cd - > /dev/null; continue
             fi
             cmd=$(make -n Python/ceval.o 2>/dev/null | grep -E ' -c .*ceval\.c' | tail -1)

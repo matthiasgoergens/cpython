@@ -309,3 +309,10 @@ perf-notes/drafts/ for review first.
 - **Apple clang evidence (APPLE_CLANG_EVIDENCE.md):** from swiftlang branches: Xcode 16.0–16.2 not affected (LLVM 17);
   16.3–16.4 affected (LLVM 19 limit, no fix); 26.0–26.3 partial (#116072, per Apple ≈ fine on arm64; x86-64 unknown);
   26.4+ fixed. No published measurements of Apple-clang CPython. macOS probe still queued.
+
+## clang-19 patch fix (20:00 SGT)
+Local test (clang 19.1.7, --with-lto=thin): with the flag only as driver-level `-mllvm` on the link line, the
+dispatch stays merged (1 jmp) with both GNU ld and lld; clang warns "argument unused". Passing it to the LTO
+plugin directly works: `-Wl,-plugin-opt=-tail-dup-pred-size=1000` → 276 jmps with GNU ld (LLVMgold) and with lld.
+The patch now uses that form under LTO (configure regenerated). exp9/exp11 measured the broken version (both arms
+merged); they will be re-run after a local end-to-end check.

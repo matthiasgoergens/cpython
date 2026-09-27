@@ -1,4 +1,4 @@
-From 0b4cdb92ec7c94b20a7c17fa9f02b30ec3f1a589 Mon Sep 17 00:00:00 2001
+From 3d46d2d3f9e1b4d400dda36b26be7080ef5a0ff5 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Sun, 27 Sep 2026 09:40:36 +0000
 Subject: [PATCH] gh-129987: Force dispatch tail duplication when building with
@@ -15,9 +15,9 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_016goMvuYFRBF79g8A7LkRrG
 ---
  ...-09-27-18-00-00.gh-issue-129987.cLg19d.rst |  4 +++
- configure                                     | 35 +++++++++++++++++++
- configure.ac                                  | 24 +++++++++++++
- 3 files changed, 63 insertions(+)
+ configure                                     | 36 +++++++++++++++++++
+ configure.ac                                  | 25 +++++++++++++
+ 3 files changed, 65 insertions(+)
  create mode 100644 Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst
 
 diff --git a/Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst b/Misc/NEWS.d/next/Build/2026-09-27-18-00-00.gh-issue-129987.cLg19d.rst
@@ -31,10 +31,10 @@ index 00000000000..a3902b056f7
 +merges them into a single indirect jump, which made the interpreter about 9%
 +slower on pyperformance. LLVM 20.1.1 and newer are not affected.
 diff --git a/configure b/configure
-index e5d3f009105..4e3c1f3da05 100755
+index e5d3f009105..8a77f276164 100755
 --- a/configure
 +++ b/configure
-@@ -34445,6 +34445,41 @@ if test "$block_huge_inlining_in_ceval" = yes && test "$ac_cv_computed_gotos" =
+@@ -34445,6 +34445,42 @@ if test "$block_huge_inlining_in_ceval" = yes && test "$ac_cv_computed_gotos" =
      # interpreter.
      CFLAGS_CEVAL="$CFLAGS_CEVAL -finline-max-stacksize=512"
  fi
@@ -67,20 +67,21 @@ index e5d3f009105..4e3c1f3da05 100755
 +
 +if test "$force_dispatch_tail_dup" = yes && test "$ac_cv_computed_gotos" = yes; then
 +    CFLAGS_CEVAL="$CFLAGS_CEVAL -mllvm -tail-dup-pred-size=1000"
-+    # With LTO, code generation happens at link time: pass the option to the
-+    # linker plugin as well.
++    # With LTO, code generation happens in the linker's LTO plugin, and the
++    # clang driver does not forward -mllvm options there: pass the option to
++    # the plugin directly (understood by ld.lld and by GNU ld/gold with LLVMgold).
 +    if test "$Py_LTO" = 'true'; then
-+        LDFLAGS_NODIST="$LDFLAGS_NODIST -mllvm -tail-dup-pred-size=1000"
++        LDFLAGS_NODIST="$LDFLAGS_NODIST -Wl,-plugin-opt=-tail-dup-pred-size=1000"
 +    fi
 +fi
  
  
  if test "$ac_cv_gcc_asm_for_x87" = yes; then
 diff --git a/configure.ac b/configure.ac
-index 82a623fedb8..ea660bb9746 100644
+index 82a623fedb8..a672f5ac3dd 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -7813,6 +7813,30 @@ if test "$block_huge_inlining_in_ceval" = yes && test "$ac_cv_computed_gotos" =
+@@ -7813,6 +7813,31 @@ if test "$block_huge_inlining_in_ceval" = yes && test "$ac_cv_computed_gotos" =
      # interpreter.
      CFLAGS_CEVAL="$CFLAGS_CEVAL -finline-max-stacksize=512"
  fi
@@ -102,10 +103,11 @@ index 82a623fedb8..ea660bb9746 100644
 +
 +if test "$force_dispatch_tail_dup" = yes && test "$ac_cv_computed_gotos" = yes; then
 +    CFLAGS_CEVAL="$CFLAGS_CEVAL -mllvm -tail-dup-pred-size=1000"
-+    # With LTO, code generation happens at link time: pass the option to the
-+    # linker plugin as well.
++    # With LTO, code generation happens in the linker's LTO plugin, and the
++    # clang driver does not forward -mllvm options there: pass the option to
++    # the plugin directly (understood by ld.lld and by GNU ld/gold with LLVMgold).
 +    if test "$Py_LTO" = 'true'; then
-+        LDFLAGS_NODIST="$LDFLAGS_NODIST -mllvm -tail-dup-pred-size=1000"
++        LDFLAGS_NODIST="$LDFLAGS_NODIST -Wl,-plugin-opt=-tail-dup-pred-size=1000"
 +    fi
 +fi
  AC_SUBST([CFLAGS_CEVAL])

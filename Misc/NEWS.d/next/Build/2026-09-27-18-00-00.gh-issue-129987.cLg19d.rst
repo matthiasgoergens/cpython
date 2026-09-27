@@ -1,0 +1,4 @@
+When building with Clang 19, force tail duplication of the interpreter's
+computed-goto dispatch jumps (``-mllvm -tail-dup-pred-size=1000``). LLVM 19
+merges them into a single indirect jump, which made the interpreter about 9%
+slower on pyperformance. LLVM 20 and newer are not affected.

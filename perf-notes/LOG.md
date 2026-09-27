@@ -104,3 +104,12 @@ the dunder micro spends ~100 Ir per slot lookup (`_PyTypeCache_Lookup` 43 + `_Py
 Arms: base=6af40a6 (anchor), same (same binary: run-to-run control), m2_inline (gh-132336 noinline
 reverted), nofp (--without-frame-pointers, PEP 831), gc2x / gc4x (gen-0 threshold ×2 / ×4 via sitecustomize,
 Pitrou's untested question on PEP 848). 8 jobs × 3 blocks.
+
+## Dispatch replication (user question: is 234 jumps for 232 targets good or bad?)
+With computed gotos each handler ends in its own indirect `jmp`, which gives the predictor per-opcode
+state. Merged tails (gh-129987, LLVM 19 tail-dup) share one slot and mispredict more. So "unmerged" is the
+intended state. Counts (`perf-notes/tools/dispatch_sites.py`, reported by every CI build):
+non-PGO GCC 13: 257 indirect jmps (tail duplication even exceeds the 231 TARGETs); PGO+LTO: 233 + 1 in .cold.
+Open question worth measuring: how much replication still buys on modern ITTAGE-style predictors
+(Rohou et al. 2015 found the switch-vs-threaded gap nearly gone). Planned exp3: GCC computed-goto vs
+`--without-computed-gotos` (fully merged extreme) vs clang-21 CG vs clang-21 tail-call.

@@ -125,3 +125,20 @@ Caveat: Xcode's clang may carry changes beyond the open-source swiftlang branch.
    The BSD ports could apply the flag themselves today.
 5. **Open measurement question:** does the #116072-only state (LLVM 20.1.0, Apple clang 1700.3–1700.6) still merge
    CPython's dispatch on x86-64 PGO+LTO? Count `jmp *` in `_PyEval_EvalFrameDefault` with a clang 20.1.0 build.
+
+## Measured: Apple clang on GitHub macOS runners (2026-09-27, 20:25 SGT)
+`Python/ceval.o` at -O3 (main 6af40a6), indirect dispatch branches in `_PyEval_EvalFrameDefault`
+(arm64 `br xN` / x86-64 `jmp *`), default vs with `-mllvm -tail-dup-pred-size=1000`:
+
+| Xcode | Apple clang | arm64 | x86_64 | with flag (arm64/x86_64) |
+|---|---|---|---|---|
+| 15.0.1–15.4 | clang-1500.x | 275 | — | (n/a) |
+| 16.0–16.2 | clang-1600.0.26.x | 290 | 269 | (n/a) |
+| **16.3, 16.4** | **clang-1700.0.13.3/.5** | **1** | **1** | 291 / 269 |
+| **26.0.1–26.3** | **clang-1700.3.19.1 – 1700.6.4.2** | **123** | **112** | 287 / 269 |
+| 26.4.1–26.6 | clang-2100.x (Apple clang 21) | 200 | (not installed) | 328 |
+
+- Xcode 16.3–16.4 = fully merged (LLVM 19 state) on both architectures.
+- Xcode 26.0–26.3 ("partial fix") still merges ~60% of dispatch sites on CPython — affects current Homebrew Sequoia bottles.
+- Apple clang 21 (Darwin-specific late duplication) replicates fewer sites than the flag achieves (200 vs 328); perf impact unknown.
+- Performance impact on macOS not measured yet (only dispatch counts).

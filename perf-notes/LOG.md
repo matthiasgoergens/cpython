@@ -318,3 +318,6 @@ The patch now uses that form under LTO (configure regenerated). exp9/exp11 measu
 merged); they will be re-run after a local end-to-end check.
 - 20:00 SGT: local end-to-end with the fixed patch (fresh configure, clang 19, thin LTO): 276 dispatch jmps. Relaunched
   exp9b (PGO+LTO, default linker) and exp11b (thin LTO, no PGO = FreeBSD config) with the fixed patch.
+- 20:25 SGT macOS probe: Xcode 16.3/16.4 → 1 dispatch jmp (arm64 & x86_64); Xcode 26.0–26.3 → 123 (arm64) / 112 (x86_64)
+  of ~290/269; Apple clang 21 → 200 of 328; flag restores all. Patch extended to Apple clang 1700.x
+  (`__apple_build_version__` in [17000000, 18000000)), Darwin LTO uses -Wl,-mllvm (ld64). macOS patch probe launched.

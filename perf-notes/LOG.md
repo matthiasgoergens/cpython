@@ -316,3 +316,5 @@ dispatch stays merged (1 jmp) with both GNU ld and lld; clang warns "argument un
 plugin directly works: `-Wl,-plugin-opt=-tail-dup-pred-size=1000` → 276 jmps with GNU ld (LLVMgold) and with lld.
 The patch now uses that form under LTO (configure regenerated). exp9/exp11 measured the broken version (both arms
 merged); they will be re-run after a local end-to-end check.
+- 20:00 SGT: local end-to-end with the fixed patch (fresh configure, clang 19, thin LTO): 276 dispatch jmps. Relaunched
+  exp9b (PGO+LTO, default linker) and exp11b (thin LTO, no PGO = FreeBSD config) with the fixed patch.

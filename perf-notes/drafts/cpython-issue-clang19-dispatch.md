@@ -3,7 +3,7 @@
 > Filing plan: open this as a **new** issue (gh-129987 is closed). Then rename the NEWS entry and the commit title on
 > `pr/clang19-dispatch` from gh-129987 to the new number before opening the PR.
 
-**Title:** Computed-goto interpreter ~9% slower when built with Clang 19: all dispatch jumps are merged
+**Title:** Computed-goto interpreter 9–11% slower when built with Clang 19 or Xcode 16.3–16.4: dispatch jumps are merged
 
 ## Bug report
 
@@ -51,6 +51,7 @@ builds per arm, and a 95% cluster-bootstrap CI over builds. A same-binary contro
 | Clang 19 + flag vs GCC 13 | −1.6% | [−1.8, −1.3] |
 
 All 6 builds agreed, with per-build values between −6.0% and −10.2%.
+
 With the proposed configure change applied (same design, same-binary control in each):
 
 | configuration | geomean, patched vs unpatched | 95% CI | dispatch jumps (unpatched → patched) |
@@ -78,9 +79,9 @@ So partial merging costs much less than full merging.
 * **OpenMandriva Lx 6.0** python 3.11 (clang 19.1.7).
 * **macOS builds made with Xcode 16.3–16.4** (Apple clang 1700.0.13.x, LLVM 19 based): 1 dispatch jump left, on
   arm64 and x86-64. An example is MacPorts python313 and python314 on macOS 15.
-* **macOS builds made with Xcode 26.0–26.3** (Apple clang 1700.3–1700.6): partly merged, with 123 of ~290 (arm64) or
-  112 of ~269 (x86-64) left. An example is Homebrew's macOS 15 (Sequoia) bottles. Xcode 26.4+ (Apple clang 2100)
-  still merges some: 200 of 328.
+* **macOS builds made with Xcode 26.0–26.3** (Apple clang 1700.3–1700.6): partly merged: in a `--with-lto` binary, 94 of ~300
+  (arm64) or 62 of ~276 (x86-64) dispatch jumps are left. An example is Homebrew's macOS 15 (Sequoia) bottles. Xcode 26.4+ (Apple clang 2100)
+  still merges some (200 of 328 in the object file); this PR leaves it alone.
 * Earlier python-build-standalone/uv (Jan–Feb 2025) and conda-forge macOS builds used Clang 19 too. Those
   have since moved on.
 

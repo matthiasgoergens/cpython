@@ -48,28 +48,7 @@ jobs:
         run: |
           nproc; lscpu | grep -E 'Model name|MHz|L3'; free -g
       - name: Build arms
-        run: |
-          set -eux
-          cfg=ci/perf-notes/ci/config.json
-          configure_args=$(python3 -c "import json;print(json.load(open('$cfg')).get('configure','--enable-optimizations --with-lto'))")
-          for arm in $(python3 -c "import json;print(' '.join(json.load(open('$cfg'))['arms']))"); do
-            ref=$(python3 -c "import json;print(json.load(open('$cfg'))['arms']['$arm'])")
-            git -C ci fetch -q --depth=1 origin "$ref"
-            git -C ci worktree add -q --detach "$HOME/src-$arm" FETCH_HEAD
-            mkdir -p "$HOME/b-$arm"
-            (cd "$HOME/b-$arm" && "$HOME/src-$arm/configure" $configure_args > configure.log 2>&1 && make -j"$(nproc)" > make.log 2>&1) \
-              || { tail -50 "$HOME/b-$arm/make.log" "$HOME/b-$arm/configure.log"; exit 1; }
-            "$HOME/b-$arm/python" -c 'import sys; print(sys.version)'
-          done
-          # Build determinism evidence: whole binary and .text section hashes per arm.
-          for arm in $(python3 -c "import json;print(' '.join(json.load(open('$cfg'))['arms']))"); do
-            objcopy -O binary --only-section=.text "$HOME/b-$arm/python" "$HOME/text-$arm.bin"
-            echo "HASH $arm binary=$(sha256sum < "$HOME/b-$arm/python" | cut -c1-16) text=$(sha256sum < "$HOME/text-$arm.bin" | cut -c1-16)"
-          done
-          # Optional same-binary control arm: "<name>=same:<arm>" is a symlink to that arm's build.
-          for pair in $(python3 -c "import json;print(' '.join(f'{k}={v}' for k,v in json.load(open('$cfg')).get('same_binary', {}).items()))"); do
-            ln -s "$HOME/b-${pair#*=}" "$HOME/b-${pair%%=*}"
-          done
+        run: python3 ci/perf-notes/ci/build_arms.py ci/perf-notes/ci/config.json ci
       - name: Install pyperf / pyperformance
         run: |
           python3 -m venv "$HOME/drv"
@@ -85,7 +64,7 @@ jobs:
           import json, os
           c = json.load(open("$cfg"))
           home = os.environ["HOME"]
-          a = [f"--arm {k}={home}/b-{k}/python" for k in list(c["arms"]) + list(c.get("same_binary", {}))]
+          a = [f"--arm {k}={home}/b-{k}/python" for k in c["arms"]]
           a += ["--blocks", str(c.get("blocks_per_job", 1)), "--values", str(c.get("values", 3)),
                 "--scale", str(c.get("scale", 1.0))]
           if c.get("bench"):

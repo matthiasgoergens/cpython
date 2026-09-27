@@ -2,12 +2,12 @@
 
 **Branch:** `matthiasgoergens:pr/clang19-dispatch` (one commit on current `main`)
 
-**Title:** gh-NNNNNN: Force dispatch tail duplication with Clang 19 and Apple clang 17
+**Title:** gh-158283: Force dispatch tail duplication with Clang 19 and Apple clang 17
 
 ---
 
 Clang 19, and Apple clang from Xcode 16.3–26.3, merge the computed-goto interpreter's per-opcode dispatch jumps
-into one shared indirect jump. That defeats per-opcode branch prediction. See gh-NNNNNN for the analysis and
+into one shared indirect jump. That defeats per-opcode branch prediction. See gh-158283 for the analysis and
 measurements.
 
 This PR adds a configure check for the affected compilers. When the check matches, configure adds
@@ -52,5 +52,5 @@ bootstrap over independent builds, and a same-binary A/A control ran in each exp
 No change for GCC, MSVC, Clang ≤ 18 or Clang ≥ 20, or for the tail-calling interpreter: the flag only affects
 tail duplication of indirect branches.
 
-This PR was prepared with the help of an AI assistant (Claude Code) and reviewed by me. The measurements, and the
-scripts that produced them, are available on request.
+This PR was prepared with the help of an AI assistant (Claude Code) and reviewed by me. The raw data and scripts are on the
+[`clang19-dispatch-data`](https://github.com/matthiasgoergens/cpython/tree/clang19-dispatch-data) branch of my fork.

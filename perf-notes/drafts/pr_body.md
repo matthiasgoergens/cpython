@@ -1,4 +1,4 @@
-Clang 19, and Apple clang from Xcode 16.3–26.3, merge the computed-goto interpreter's per-opcode dispatch jumps into one shared indirect jump. That defeats per-opcode branch prediction. See gh-NNNNNN for the analysis and measurements.
+Clang 19, and Apple clang from Xcode 16.3–26.3, merge the computed-goto interpreter's per-opcode dispatch jumps into one shared indirect jump. That defeats per-opcode branch prediction. See gh-158283 for the analysis and measurements.
 
 This PR adds a configure check for the affected compilers. When the check matches, configure adds `-mllvm -tail-dup-pred-size=1000` to `CFLAGS_CEVAL`. The limit comes from llvm/llvm-project#78582, and raising it restores the tail duplication.
 
@@ -34,6 +34,6 @@ pyperformance, patched vs unpatched. Randomized blocks with arms interleaved per
 
 No change for GCC, MSVC, Clang ≤ 18 or Clang ≥ 20, or for the tail-calling interpreter: the flag only affects tail duplication of indirect branches.
 
-This PR was prepared with the help of an AI assistant (Claude Code) and reviewed by me. The measurements, and the scripts that produced them, are available on request.
+This PR was prepared with the help of an AI assistant (Claude Code) and reviewed by me. The raw measurements, the per-experiment configurations, the analysis outputs and the scripts that produced them are on the [`clang19-dispatch-data`](https://github.com/matthiasgoergens/cpython/tree/clang19-dispatch-data) branch of my fork.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

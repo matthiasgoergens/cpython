@@ -113,3 +113,22 @@ non-PGO GCC 13: 257 indirect jmps (tail duplication even exceeds the 231 TARGETs
 Open question worth measuring: how much replication still buys on modern ITTAGE-style predictors
 (Rohou et al. 2015 found the switch-vs-threaded gap nearly gone). Planned exp3: GCC computed-goto vs
 `--without-computed-gotos` (fully merged extreme) vs clang-21 CG vs clang-21 tail-call.
+
+## FINDING: gh-129987 was the LLVM 19 tail-dup regression; clang 19 still merges every dispatch site
+Compiling Python/ceval.c at -O3 (same flags as the build), counting indirect `jmp`s in _PyEval_EvalFrameDefault:
+| compiler | dispatch jmps |
+|---|---|
+| gcc-12 / gcc-13 / gcc-14 | 257 |
+| clang-18 | 269 |
+| **clang-19 (19.1.7)** | **1** (fully merged) |
+| clang-21 | 268 |
+| clang-19 + empty `asm volatile` barrier per DISPATCH | 1 (barrier does not help: clang forms one shared indirectbr in IR and relies on backend tail duplication) |
+| **clang-19 + `-mllvm -tail-dup-pred-size=1000`** | **269** (restored) |
+So the upstream-able fix is a configure check: when CC is clang 19, add `-mllvm -tail-dup-pred-size=1000`
+(or restrict it to ceval.o). Anyone still on clang 19 is affected (FreeBSD base LLVM 19? Apple clang based on LLVM 19? to verify).
+TODO: measure the speed effect in CI (clang-19 PGO+LTO with/without the flag).
+
+## TODO (user): -O2 vs -O3, per-flag ablation, evolutionary flag search (cf. Don Stewart's GA for GHC flags, Acovea)
+1. CI arms: OPT=-O2 vs -O3 (PGO+LTO). 2. Ablate -O3-only passes on the Ir+cache/branch-sim proxy.
+3. GA over flags using the cheap proxy; finalists re-checked with PGO in CI (flag effects interact with PGO).
+Lower priority (user): test where tail-call gains come from (dispatch vs regalloc/layout).

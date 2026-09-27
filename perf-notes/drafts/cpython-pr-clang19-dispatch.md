@@ -46,7 +46,8 @@ bootstrap over independent builds, and a same-binary A/A control ran in each exp
 |---|---|---|
 | Clang 19, `--with-lto=thin`, no PGO (FreeBSD ports' configuration), 8 builds | −8.7% | [−9.2, −8.3] |
 | Clang 19, `--enable-optimizations --with-lto`, 6 builds | −8.4% | [−9.5, −6.9] |
-<!-- TODO: macOS rows from mac1b -->
+| Xcode 16.4, `--enable-optimizations --with-lto`, macOS arm64, 5 builds | −11.4% | [−13.2, −9.8] |
+| Xcode 26.3, `--enable-optimizations --with-lto`, macOS arm64, 5 builds | −1.4% | [−2.2, −0.7] |
 
 No change for GCC, MSVC, Clang ≤ 18 or Clang ≥ 20, or for the tail-calling interpreter: the flag only affects
 tail duplication of indirect branches.

@@ -343,3 +343,11 @@ merged); they will be re-run after a local end-to-end check.
   Xcode 16.4 arm64 1 → 300, x86_64 1 → 276; Xcode 26.3 arm64 94 → 300, x86_64 62 → 276.
   (Under LTO the 26.3 partial merge is worse than per-object: 94/62 left vs 123/112.) The `-Wl,-mllvm,` path works.
   mac1b builds succeeded; blocks running.
+
+## RESULTS (22:15 SGT): mac1b — speed impact of Apple clang dispatch merging (macos-15 arm64, PGO+LTO, 5 jobs)
+Dispatch jmps (final binary): x164 1, x164p 356–357, x263 110–121, x263p 356–358.
+- **x164p vs x164 (Xcode 16.4, full merge): −11.45%, cluster CI [−13.16, −9.84]**; per-job −14.7…−9.2.
+- **x263p vs x263 (Xcode 26.3, partial merge): −1.36% [−2.19, −0.72]**; per-job −2.8…−0.7 (all 5 negative).
+- x164 vs x263: +11.8% [+10.7, +13.3]; x164p vs x263p ≈ equal (x164p vs x263 −1.0%).
+- A/A (same vs x263): −0.38% [−1.81, +0.94], per-job −2.8…+1.8 → macOS runners are much noisier than Linux;
+  the 26.3 effect is real-but-modest evidence (all jobs agree in sign), the 16.4 effect is unambiguous.

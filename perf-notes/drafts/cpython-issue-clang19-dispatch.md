@@ -61,6 +61,16 @@ With the proposed configure change applied (same design, same-binary control in 
 The largest gains are 20–24% (unpack_sequence, deepcopy_memo, nbody, scimark_sor). The one consistent regression is
 regex_effbot, +7–9%.
 
+On macOS (arm64 GitHub runners, `--enable-optimizations --with-lto`, 5 builds per arm; the A/A control here is
+noisier, at −0.4% [−1.8, +0.9]):
+
+| compiler | dispatch jumps (unpatched → patched) | geomean, patched vs unpatched | 95% CI |
+|---|---|---|---|
+| Xcode 16.4 (Apple clang 1700.0.13) | 1 → 357 | **−11.4%** | [−13.2, −9.8] |
+| Xcode 26.3 (Apple clang 1700.6) | ~120 → 357 | **−1.4%** | [−2.2, −0.7] |
+
+So partial merging costs much less than full merging.
+
 ### Who is affected (verified from the `[Clang …]` string in shipped binaries where possible)
 
 * **FreeBSD 14.x and 15.x packages** python311–python314 (base clang 19.1.7, thin LTO, computed goto).
@@ -71,7 +81,6 @@ regex_effbot, +7–9%.
 * **macOS builds made with Xcode 26.0–26.3** (Apple clang 1700.3–1700.6): partly merged, with 123 of ~290 (arm64) or
   112 of ~269 (x86-64) left. An example is Homebrew's macOS 15 (Sequoia) bottles. Xcode 26.4+ (Apple clang 2100)
   still merges some: 200 of 328.
-  <!-- TODO: speed impact from mac1b -->
 * Earlier python-build-standalone/uv (Jan–Feb 2025) and conda-forge macOS builds used Clang 19 too. Those
   have since moved on.
 

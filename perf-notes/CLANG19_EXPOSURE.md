@@ -148,4 +148,6 @@ The configure check (`__apple_build_version__` in [17000000, 18000000)) selects 
 runners and restores 291/287 (arm64) and 269 (x86_64) dispatch jumps per object. Unaffected Xcodes are left alone,
 which is required: clang ≤ 18 rejects `-tail-dup-pred-size` as an unknown option. Final binary with `--with-lto` (ld64, `-Wl,-mllvm`), unpatched → patched: Xcode 16.4 1 → 300 (arm64),
 1 → 276 (x86_64); Xcode 26.3 94 → 300 (arm64), 62 → 276 (x86_64). Under LTO, 26.3's partial merge leaves fewer
-dispatch sites than per object. Speed impact (mac1b) pending.
+dispatch sites than per object. Speed impact (PGO+LTO, macos-15 arm64, 5 builds per arm; A/A −0.4% [−1.8, +0.9]): patching Xcode 16.4 gives
+**−11.4% [−13.2, −9.8]**; patching Xcode 26.3 gives **−1.4% [−2.2, −0.7]**. Homebrew's Sequoia bottles (26.3) thus
+lose ~1.4%; MacPorts' macOS 15 builds (16.4) lose ~11%.

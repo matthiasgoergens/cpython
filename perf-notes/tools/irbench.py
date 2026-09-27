@@ -70,7 +70,7 @@ def worker_cmd(python, script, extra, loops):
 def run_native(python, script, extra, loops):
     t = time.perf_counter()
     p = subprocess.run(worker_cmd(python, script, extra, loops), env=env_for(),
-                       capture_output=True, text=True, cwd=os.path.dirname(script))
+                       capture_output=True, text=True, cwd=os.path.dirname(script), timeout=120)
     dt = time.perf_counter() - t
     if p.returncode:
         raise RuntimeError(p.stderr[-2000:])
@@ -87,7 +87,7 @@ def run_cg(python, script, extra, loops, sim):
             cmd += ['--cache-sim=no']
         cmd += worker_cmd(python, script, extra, loops)
         p = subprocess.run(cmd, env=env_for(), capture_output=True, text=True,
-                           cwd=os.path.dirname(script))
+                           cwd=os.path.dirname(script), timeout=3600)
         if p.returncode:
             raise RuntimeError(p.stderr[-3000:])
         events = summary = None

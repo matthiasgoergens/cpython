@@ -151,3 +151,139 @@ For scale, `LOAD_FAST_BORROW` itself (https://github.com/python/cpython/issues/1
 - **Practical advice:** report geomean on at least two machines and compilers. Pin the compiler version, the frame-pointer setting, and whether tail calls are on.
 
 **Unverified or could not access:** the Arch MR contents; the GCC 16 changes page (403); the GCC AArch64 `preserve_none` status; the pyperformance claim in PR 150425; comment threads on some python/cpython issues (the GitHub API is not enabled for python/cpython in this session, so I used WebFetch summaries). A shallow clone of faster-cpython/ideas was made in the session scratchpad.
+
+---
+
+# Diagnoses & complaints (added 2026-09-27)
+
+This section collects places where someone measured, profiled or complained that "X is slow" or "Y regressed", whether or not a fix followed. For each entry: the complaint or diagnosis, the evidence, a link, whether current `main` (6af40a6) addresses it (checked in source where feasible), and how it could become a fix.
+
+**Main data source.** The newest public tier-1 pystats aggregate from the Faster CPython benchmark runner is `faster-cpython/benchmarking-public`, `results/bm-20250719-3.15.0a0-800d37f/...-pystats.md`. It covers all of pyperformance, about 231 billion tier-1 instructions. **The public pystats runs stop in July 2025**, after the Azure runner was lost in the layoffs; nobody has published pystats for current main. Where I cite pystats below, I checked current `Python/specialize.c` and `Python/bytecodes.c` to see whether the gap still exists.
+
+## A. Specific and still unaddressed (highest value)
+
+**A1. FOR_ITER over zip, dict views and enumerate is never specialized.**
+- **Evidence:** pystats show 28.9% of FOR_ITER executions deferred (1.48B). The failure kinds are zip 33.8%, dict items 18.4%, dict keys 17.2%, enumerate 9.0%, set 4.5%, seq iter 4.3%.
+- **Main:** in `_Py_Specialize_ForIter` (`Python/specialize.c:2681`), the "null index" path only handles `PyRangeIter_Type` and `PyGen_Type`. Everything else falls through to generic `FOR_ITER`. An attempt for dict items, https://github.com/python/cpython/pull/143666, was JIT-oriented and closed unmerged in 2026-01.
+- **Fix:** add a tier-1 `FOR_ITER_ITERNEXT`, guarded on the type version or exact type, that calls `tp->tp_iternext` directly and skips the generic path. Or add direct variants for zip, enumerate and dict item iterators.
+
+**A2. COMPARE_OP and CONTAINS_OP miss common types.**
+- **COMPARE_OP evidence:** 9.3% deferred (530M). Of the failures, tuple is 35%, different types (for example int vs float) 23.5%, big int 10%, baseobject 7.5%.
+- **CONTAINS_OP evidence:** 7.8% deferred. Failures are str 34%, list 25%, tuple 25%.
+- **Main:** COMPARE_OP has only `FLOAT`, `INT` and `STR`; CONTAINS_OP has only `SET` and `DICT` (`bytecodes.c`). Both gaps are unaddressed.
+- **Fix:** mixed int/float compare, `x in str`, and `x in tuple/list` (small linear scan with an identity fast path). Tuple compare could route through `BINARY_OP_EXTEND`-style descriptors.
+
+**A3. Array, dict-subclass and Python-`__setitem__` subscripts fall back to the generic path.**
+- **BINARY_OP evidence:** 12.3% deferred (2.38B, the largest deferred family). Failures include subscr array 11.6%, subscr Counter 10.5%, tuple slice 10.1%, defaultdict 8.0%, remainder 5.8%, floor divide 3.9%, shifts about 5%, and subscr bytes 2.4%.
+- **STORE_SUBSCR evidence:** 42.7% deferred. Failures are other 38%, array int 24%, Python `__setitem__` 20%, dict subclass without override 10.6%.
+- **Related complaint:** array loops are 1.57x slower in 3.12 than 3.11 on macOS; https://github.com/python/cpython/issues/123540 is **still open with no diagnosis**. My inference is that the array subscript gap is a likely contributor.
+- **Main:** the xor/and/or int cases are now handled by `BINARY_OP_EXTEND` (`specialize.c:2255`). Array, Counter/defaultdict (dict subclasses with `__missing__`), tuple slices, `%`, `//` and shifts on compact ints are still unhandled. `BINARY_OP_SUBSCR_DICT` requires an exact dict.
+- **Fixes:**
+  - `BINARY_OP_SUBSCR_SQ_ITEM`: any type whose `mp_subscript` or `sq_item` is known, with a compact int index. This covers array, deque, bytes, bytearray, range and memoryview.
+  - `BINARY_OP_SUBSCR_DICT_SUBCLASS`, when the type's `mp_subscript == dict_subscript`.
+  - `STORE_SUBSCR_GETITEM`-style frame pushing for Python `__setitem__`.
+  - Int `%`, `//`, `<<` and `>>` added to `binaryop_extend_descrs`.
+
+**A4. About 25% of Python-function frames are entered from C, through a full `_PyEval_EvalFrameDefault` entry.**
+- **Evidence (pystats "Call stats"):** 24.8% of Python calls are not inlined. The breakdown is function vectorcall from C 17.0%, generator resumption from C 7.7%, `api` 6.1%, slot wrappers (Python dunders via `slot_tp_*`) 4.1%, method 1.7%.
+- **Supporting counts:** `INTERPRETER_EXIT` runs 1.87B times (0.8% of instructions); 72% of those follow `RETURN_VALUE` and 26% follow `YIELD_VALUE`. Each C→Python entry pays C-stack frame setup, the entry frame, and loss of specialization context.
+- **Main:** structurally unchanged. `CALL_ALLOC_AND_ENTER_INIT`, `BINARY_OP_SUBSCR_GETITEM`, `LOAD_ATTR_PROPERTY` and `FOR_ITER_GEN` inline some cases, but consumers such as `sorted(key=)`, `map`, `sum(gen)`, `"".join(gen)` and `list(gen)` still re-enter.
+- **Fix:** inline more Python-dunder calls: `STORE_SUBSCR` with Python `__setitem__`, COMPARE_OP with Python `__eq__`/`__lt__`, CONTAINS_OP with `__contains__`, FOR_ITER with Python `__next__`. Also specialize `CALL` of `list`/`tuple`/`sum`/`join` on a generator into an in-interpreter loop. Shannon's 3.14 plan item "move `any`/`all`/`enumerate` to Python" (`faster-cpython/ideas/3.14/README.md`) targets the same cost.
+
+**A5. Class instantiation with keywords, or with a non-simple `__init__`, is not specialized.**
+- **Evidence:** pystats CALL failure kinds are dominated by "init not simple" and "init not python". CALL_KW is 91.8% deferred with an 85.8% miss rate (small in pyperformance, but ubiquitous in real code: `Point(x=1, y=2)`, dataclasses with `kw_only`, attrs).
+- **Main:** `specialize_class_call` (`specialize.c:1641-1649`) needs a Python `__init__` with `function_kind == SIMPLE_FUNCTION`, meaning no `*args`, `**kwargs` or keyword-only arguments (`specialize.c:1474`). The CALL_KW family is only `BOUND_METHOD`, `PY` and `NON_PY`, with no `CALL_KW_ALLOC_AND_ENTER_INIT`. Unaddressed.
+- **Fix:** add `CALL_KW_ALLOC_AND_ENTER_INIT`, and allow keyword-only arguments in the init check (reusing the `CALL_KW_PY` arg binding).
+
+**A6. `STORE_ATTR` specializations do wasted work on fresh objects** (https://github.com/python/cpython/issues/144141, Shannon, 2026-01, open, no PR).
+- **Diagnosis:** a store into a newly created object reads the old value, tests it for NULL, updates insertion order and XDECREFs it. That is 48 instructions instead of 26 for `_STORE_ATTR_INSTANCE_VALUE`, and 32 instead of 14 for `_STORE_ATTR_SLOT`, on AArch64.
+- **Related:** pystats show `STORE_ATTR_INSTANCE_VALUE` with a **10.6% miss ratio**. Shannon's TODO list (https://github.com/python/cpython/issues/144388) also flags the insertion-order update cost.
+- **Main:** unchanged (`bytecodes.c:3130-3147`).
+- **Fix:** a `_STORE_ATTR_INSTANCE_VALUE_NULL` variant, selected when the optimizer knows or guards that the slot is NULL (inside `__init__`), and a cheaper insertion-order update.
+
+**A7. High deopt ratios on the hottest attribute specializations.**
+- **Evidence:** `LOAD_ATTR_INSTANCE_VALUE` (5.3B executions, 2.3% of all instructions) has a 6.9% miss ratio. Other miss ratios: `LOAD_ATTR_METHOD_WITH_VALUES` 10.2%, `LOAD_ATTR_NONDESCRIPTOR_WITH_VALUES` 38.6%, `CALL_BOUND_METHOD_EXACT_ARGS` 14.4%, `FOR_ITER_TUPLE` 15.1%, `TO_BOOL_ALWAYS_TRUE` 25.5%, `TO_BOOL_NONE` 11%. Misses total 1.54B (0.7% of instructions), and each costs a deopt plus re-dispatch of the generic op.
+- **LOAD_ATTR failure kinds:** mutable class 17%, method 14%, overriding descriptor 11%, metaclass attribute 5%.
+- **Diagnosis:** tier 1 has monomorphic caches only, so polymorphic sites keep deopting and re-specializing under backoff.
+- **Fix ideas:** 2-way polymorphic `LOAD_ATTR_INSTANCE_VALUE` (two type versions), or a less oscillation-prone backoff. Cheap to prototype and measure with pystats miss counters first.
+
+**A8. `NOP`s are executed about 2.6B times (1.1% of all tier-1 instructions).**
+- **Evidence (pystats):** 28% are NOP→NOP chains; the predecessors are `JUMP_BACKWARD` 30%, `RESUME_CHECK` 19.5% and `POP_JUMP_IF_FALSE` 9%.
+- **Verified on main** with a local build (`dis`): the compiler leaves a `NOP` for the line of `while True:` (the loop back-edge jumps to it, so it runs every iteration), for `try:` (runs on every call of a function whose body starts with `try`), and for `pass`.
+- **Fix:** let line-number events be derived without a real instruction. For example, point jump targets past line-only NOPs and let instrumentation (sys.monitoring) re-insert line markers when tracing is on. Expected gain is small (≤0.5%) but it is nearly free at runtime.
+
+**A9. Stack-shuffle overhead: `COPY` + `SWAP` are 2.0% of executed instructions.**
+- **Evidence (pair counts):** `COPY COPY → BINARY_OP_SUBSCR_LIST_INT/BINARY_OP` and `... → SWAP SWAP → STORE_SUBSCR` is the `a[i] op= x` pattern, with 4 extra dispatches each time. `COPY → TO_BOOL_BOOL` comes from `and`/`or` and comparison chains.
+- **Other stack traffic:** `PUSH_NULL` is 0.7%, mostly after `LOAD_ATTR_MODULE` and `LOAD_FAST_BORROW` for calls.
+- **Fix:** macro-instructions for augmented subscript and attribute assignment, or compiler changes that avoid DUP/ROT. `LOAD_ATTR_MODULE`+`PUSH_NULL` fusion (it could push NULL itself, as `LOAD_GLOBAL` does).
+
+**A10. Shared-libpython builds pay `__tls_get_addr` on every `_PyThreadState_GET()` / `_PyInterpreterState_GET()` (my own diagnosis, not measured).**
+- **Evidence:**
+  - `_Py_tss_tstate` and `_Py_tss_interp` are plain `extern thread_local` (`Include/internal/pycore_pystate.h:93-94`, `Include/pyport.h:487-499`) with no `tls_model` attribute.
+  - With `-fPIC` (used by `--enable-shared`, the configuration Fedora and others ship), GCC emits `call __tls_get_addr@PLT` for such an access. I verified the codegen with a minimal repro (gcc 13, `-O2 -fPIC -fno-semantic-interposition`); with `-mtls-dialect=gnu2` it becomes a TLSDESC indirect call.
+  - Hot paths that hit it:
+    - every freelist push and pop (`_Py_freelists_GET` → `_PyInterpreterState_GET`, `pycore_freelist.h:28`);
+    - every GC-object dealloc (`_Py_Dealloc`, `Objects/object.c:3318`);
+    - many allocation paths.
+  - Static builds (python.org, bench_runner) use `%fs:` directly, so **pyperformance as normally run cannot see this cost.**
+- **Main:** unaddressed. The only prior discussion I found (https://discuss.python.org/t/tls-related-code-in-python-pystate-c/56822) contains no measurements.
+- **Fix:** `__attribute__((tls_model("initial-exec")))` on these two variables when building libpython (glibc reserves surplus static TLS for dlopen'd libraries; musl needs checking), or `-mtls-dialect=gnu2`. **To measure:** pyperformance with `--enable-shared`, before and after.
+
+**A11. The trashcan now runs inside `_Py_Dealloc` for every GC object** (https://github.com/python/cpython/pull/132280, gh-124715, merged 2025-04 for 3.14).
+- **Diagnosis (mine, not measured):** every dealloc of a GC type now reads the thread state and computes the recursion-margin check before calling `tp_dealloc` (`Objects/object.c:3317-3324`). In shared builds that read is also the TLS call from A10.
+- **Separately:** https://github.com/python/cpython/issues/130706 (open) shows the reftracer check in `_Py_Dealloc` forcing 3 push/pop register spills on x86-64. The report is about the free-threaded build but the check exists in both builds (`_PyReftracerTrack` at `object.c:3345`).
+- **Fix:** move the rare paths (trash deposit, reftracer) out of line and pass tstate in from callers that already have it.
+
+**A12. Remaining refcount traffic.**
+- **Evidence (pystats object stats):** interpreter mortal increfs are 43.2B and decrefs 55.0B. Outside the interpreter there are 23.5B *immortal* increfs and 23.1B immortal decrefs: C code still branches on immortality for, for example, None, True, False and small ints. Only 70.6% of allocations come from freelists.
+- **Remaining non-borrowed local loads:** `LOAD_FAST` (non-borrow) still runs 3.47B times, 8% of local loads.
+- **Related issues:**
+  - https://github.com/python/cpython/issues/117425 (remove incref/decref of specific immortal objects; open since 2024);
+  - https://github.com/python/cpython/issues/145860 (`BUILD_INTERPOLATION`/`BUILD_TEMPLATE` do incref-then-decref; open, PR https://github.com/python/cpython/pull/148201);
+  - the unchecked items on https://github.com/python/cpython/issues/144388.
+- **Fix:** convert more `LOAD_FAST` to `LOAD_FAST_BORROW` via extended basic blocks (Shannon's TODO), and use `Py_DECREF_MORTAL` / immortal-aware no-op variants in hot C paths.
+
+**A13. `BINARY_SLICE` and `STORE_SLICE` are never specialized** (100% deferred; 556M and 113M executions).
+- **Main:** `_SPECIALIZE_BINARY_SLICE` and `_SPECIALIZE_STORE_SLICE` are literal "Placeholder until we implement ... specialization" stubs (`bytecodes.c` around lines 1078 and 1116). `_BINARY_SLICE` has inline fast paths for list, tuple and str, but **bytes/bytearray slicing allocates a slice object** and goes through `PyObject_GetItem`.
+- **Related complaint:** 188-byte `bytes` packet slicing in a loop was reported as 3–6x slower on 3.14 than 3.11 (https://discuss.python.org/t/python-3-11-and-function-call-frequency/108013, July 2026). It was never reproduced or diagnosed.
+- **Fix:** a bytes fast path in `_BINARY_SLICE`; real specializations; a list `STORE_SLICE` (JIT-only PR https://github.com/python/cpython/pull/149446 is open).
+
+## B. Reported regressions between versions
+
+| Complaint | Evidence | Link | Status on main | Turn into fix |
+|---|---|---|---|---|
+| Loops over `array.array` are 1.57x slower (macOS) and about 5% slower (Linux) in 3.12 than 3.11 | reproducer in the issue | https://github.com/python/cpython/issues/123540 (open) | likely partly A3 (array subscripts unspecialized) | A3 |
+| List comprehension about 3–7% slower in 3.12 than 3.11, with higher variance | `[a*2 for a in range(10**6)]` | https://github.com/python/cpython/issues/113041 (open, no diagnosis) | unknown; re-measure on main | bisect with pystats |
+| Comprehensions and generators 1.34x slower in 3.15a3 than 3.11.14 (microbenchmarks) | Zenodo report; quality and methodology unverified | https://zenodo.org/records/18355482 | unknown | re-measure; generator-from-C is A4 |
+| Cyclic GC 6.3x slower on main vs 3.13 (incremental GC) | `bm_gc_collect.py` | https://github.com/python/cpython/issues/129210 (open) | incremental GC reverted in 3.14.5/3.15; the linked PR https://github.com/python/cpython/pull/132488 (skip resurrection check without finalizers) is still unmerged | revive #132488 |
+| Sphinx 48% slower (incremental GC) | | https://github.com/python/cpython/issues/124567 (closed) | reverted | — |
+| pyperformance `coverage` benchmark 1.36x slower in 3.13 than 3.12; `sys.settrace` "dramatic slowdown" in 3.12; tracing severely degraded in 3.11; cProfile 10x overhead in 3.11–3.14 (previously 1.5–2.5x), which also defeats specialization | | https://github.com/python/cpython/issues/107674 (open), https://github.com/python/cpython/issues/93516 (open), https://en.lewoniewski.info/2024/python-3-12-vs-python-3-13-performance-testing/, https://discuss.python.org/t/cprofile-performance-3-8-vs-3-11-9/59034 | open. The `coverage` benchmark sits inside the pyperformance geomean, so the legacy tracing path matters for the headline number | cheaper legacy `settrace` over sys.monitoring |
+| `create_gc_cycles` +22%, `gc_traversal` +9%, `many_optionals` +65–73% (argparse) in 3.14 vs 3.13 (Windows) | | https://en.lewoniewski.info/2025/python-314-vs-313-312-311-310-performance-testing-video/ | argparse fixed (https://github.com/python/cpython/issues/142267, formatter recreated twice per `add_argument`, 3.8x); GC items reverted | — |
+| `pickle` +19% vs 3.11 and `json_dumps` +7–13% vs 3.12 (Windows, 3.14) | same source | same | not analysed; unverified | profile |
+| `bench_mp_pool` 27–315x slower in 3.14 on Linux | | https://github.com/python/cpython/issues/139881 (closed "not planned") | my inference: the default start method on Linux changed from `fork` to `forkserver` in 3.14. This is a benchmark artifact, but it drags the geomean when comparing across versions | set the start method in the benchmark |
+| 3.13 about 7.5–25% slower on the python.org macOS ARM installer | | https://github.com/python/cpython/issues/122580 | fixed (build config) | — |
+| `pathlib.Path` hashing 3–4x slower since 3.12 | | https://github.com/python/cpython/issues/138407 (open; PR https://github.com/python/cpython/pull/138645) | open | stdlib only |
+| `asyncio.gather()` slower and more memory since gh-157213 | | https://github.com/python/cpython/issues/158239 (open, PR https://github.com/python/cpython/pull/158240) | **new regression on main (Sept 2026)**; relevant to the async_tree benchmarks | merge the fix |
+| Bound-method creation regression (3.9) | Raymond Hettinger | https://github.com/python/cpython/issues/83298 (open since 2019) | largely mitigated: `LOAD_ATTR_METHOD_*` avoids creation for calls, and there is a `pymethodobjects` freelist (`pycore_freelist_state.h:33`) | close or re-measure |
+| perf trampoline / frame pointers cost 8% (2023 estimate) | | https://discuss.python.org/t/the-performance-of-python-with-perf-support-is-not-great-and-is-going-to-get-a-lot-worse/25280 | PEP 831 later measured 0.1–2.3% and made frame pointers the default in 3.15 | `--without-frame-pointers` recovers it |
+
+## C. Regressions from the free-threading refactors in the default (GIL) build
+
+**No published measurement isolates these.** Checked in source:
+
+- `LOCK_OBJECT`/`UNLOCK_OBJECT` are `(1)`/no-op in the default build (`Python/ceval_macros.h:322-323`).
+- `FT_ATOMIC_*` wrappers are plain loads and stores (`Include/internal/pycore_pyatomic_ft_wrappers.h:150-164`).
+- Stackref close and dup test a tag bit in place of the immortality check (`pycore_stackref.h:527-724`). This should be roughly cost-neutral, but no one has published an A/B.
+
+Real candidates for leftover cost:
+- TLS in shared builds (A10);
+- the trashcan and reftracer in `_Py_Dealloc` (A11);
+- the extra `index_or_null` stack slot for every iterator (virtual iterators, 3.15), which adds `POP_ITER` at 0.5% of instructions.
+
+The free-threaded build itself has many open scaling and overhead issues, for example https://github.com/python/cpython/issues/157914 (PyMutex spin loop), https://github.com/python/cpython/issues/156132 (refcount memory ordering) and https://github.com/python/cpython/issues/140795 (ssl). They are out of scope for the GIL-build geomean.
+
+## D. Methodology notes relevant to diagnoses
+
+- Pystats have not been published for main since 2025-07. **Regenerating pystats for main** (`--enable-pystats` plus `Tools/scripts/summarize_stats.py`) is the cheapest first step to re-rank A1–A9.
+- Pystats "Failure kind" percentages count specialization *attempts*, not executions. Rank candidates by the deferred execution counts. I reported both.
+- The July 2025 pystats run used the incremental GC (gen-0 collections were 0). GC visit numbers (gen-1: 9.8B visits for 95M objects collected) do not describe the restored generational GC.

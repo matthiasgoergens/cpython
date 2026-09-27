@@ -54,3 +54,24 @@ BINARY_OP_SUBSCR_GETITEM does for `__getitem__`) would save ~500 Ir per op.
   the GC (trashcan/recursion-margin) path needs; no shrink-wrapping. It is 2.9% of raytrace Ir.
 - `PyFloat_FromDouble` / `_PyLong_FromMedium` freelist path calls out-of-line `_Py_NewReference`
   (refcnt=1 plus a ref-tracer check). LTO may inline it.
+
+## Candidate: _PyEval_Vector exact-positional-args fast path (branch perf/eval-vector-fast)
+C→Python calls (20% of all Python calls in the suite: sorted/map keys, callbacks, slot dunders, asyncio)
+built a zeroed 8-slot temp array, increfed args into it, then ran the fully general initialize_locals().
+New fast path when kwnames==NULL, argcount==co_argcount, no kwonly and no */** params: push the frame and
+write the args straight into localsplus (as CALL_PY_EXACT_ARGS does).
+Micro (non-PGO Ir/iter): sorted(key=lambda) 835→707, list(map(lambda)) 834→706, `v+v` via __add__ 1019→886.
+Tests: test_call test_extcall test_funcattrs test_sys_settrace test_monitoring test_generators test_descr
+test_class test_inspect test_capi.test_misc all pass.
+
+## Candidate: _Py_Dealloc non-GC fast path (branch perf/dealloc-split)
+Non-GC objects with no ref tracer now tail-jump to tp_dealloc (7 instructions instead of 23). The GC /
+trashcan / tracer logic moved to a noinline helper. Micro: `for i in range(N): pass` 168→153 Ir/iter.
+Tests: test_gc test_capi.test_object test_weakref test_finalization test_descr pass.
+
+## Suspect regression: per-type method cache (gh-145685, PR #150160, merged 2026-07-21)
+It replaced the global type-attribute cache with a per-type open-addressing table in Python/typecache.c.
+The PR itself measured the GIL build about 1% slower, which was waved off as noise (M. Shannon objected).
+In non-LTO builds `_PyTypeCache_Lookup` is an out-of-line call returning a 24-byte struct;
+the dunder micro spends ~100 Ir per slot lookup (`_PyTypeCache_Lookup` 43 + `_PyType_LookupStackRefAndVersion`
+33 + `lookup_method_ex` 26). Next: measure on PGO+LTO, and try an inline fast path for the GIL build.

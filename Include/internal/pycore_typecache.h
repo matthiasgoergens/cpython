@@ -36,6 +36,39 @@ struct _PyTypeCacheLookupResult {
 };
 
 
+#ifndef Py_GIL_DISABLED
+/* Inline lookup for the default (GIL) build, used on the hot path in
+ * _PyType_LookupStackRefAndVersion().  With the GIL no lock-free reader
+ * protocol is needed, so this is the same probe as _PyTypeCache_Lookup()
+ * without the out-of-line call and struct return. */
+static inline struct _PyTypeCacheLookupResult
+_PyTypeCache_LookupInCache(struct type_cache *cache, PyTypeObject *type, PyObject *name)
+{
+    struct _PyTypeCacheLookupResult miss = {PyStackRef_NULL, 0, 0};
+    if (cache == NULL) {
+        return miss;
+    }
+    Py_hash_t hash = PyUnstable_Unicode_GET_CACHED_HASH(name);
+    uint32_t index = (uint32_t)hash & cache->mask;
+    for (;;) {
+        PyObject *entry_name = cache->hashtable[index].name;
+        if (entry_name == name) {
+            break;
+        }
+        if (entry_name == NULL) {
+            return miss;
+        }
+        index = (index + 1) & cache->mask;
+    }
+    if (cache->version_tag != type->tp_version_tag) {
+        return miss;
+    }
+    PyObject *v = cache->hashtable[index].value;
+    _PyStackRef out_ref = v ? PyStackRef_FromPyObjectNew(v) : PyStackRef_NULL;
+    return (struct _PyTypeCacheLookupResult){out_ref, 1, cache->version_tag};
+}
+#endif
+
 extern void _PyTypeCache_InitType(PyTypeObject *type);
 extern void _PyTypeCache_Insert(PyTypeObject *type, PyObject *name, PyObject *value);
 PyAPI_FUNC(struct _PyTypeCacheLookupResult) _PyTypeCache_Lookup(PyTypeObject *type, PyObject *name);

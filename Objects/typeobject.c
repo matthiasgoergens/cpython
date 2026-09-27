@@ -6215,7 +6215,16 @@ _PyType_LookupStackRefAndVersion(PyTypeObject *type, PyObject *name, _PyStackRef
 {
     int cacheable = MCACHE_CACHEABLE_NAME(name);
     if (cacheable) {
-        struct _PyTypeCacheLookupResult r = _PyTypeCache_Lookup(type, name);
+        struct _PyTypeCacheLookupResult r;
+#ifndef Py_GIL_DISABLED
+        if (!(type->tp_flags & _Py_TPFLAGS_STATIC_BUILTIN)) {
+            r = _PyTypeCache_LookupInCache((struct type_cache *)type->_tp_cache, type, name);
+        }
+        else
+#endif
+        {
+            r = _PyTypeCache_Lookup(type, name);
+        }
         if (r.cache_hit) {
             OBJECT_STAT_INC_COND(type_cache_hits, !is_dunder_name(name));
             OBJECT_STAT_INC_COND(type_cache_dunder_hits, is_dunder_name(name));

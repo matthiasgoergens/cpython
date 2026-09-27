@@ -43,7 +43,9 @@ jobs:
             b="$RUNNER_TEMP/b-$(basename "$x" .app)"
             mkdir -p "$b" && cd "$b"
             if ! "$GITHUB_WORKSPACE/configure" CC="$(xcrun -f clang)" > configure.log 2>&1; then
-              echo "RESULT xcode=$(basename "$x") clang='$cc_ver' configure-failed"; cd - > /dev/null; continue
+              echo "RESULT xcode=$(basename "$x") clang='$cc_ver' configure-failed"
+              [ -n "${cfgshown:-}" ] || { grep -E 'error|Error' configure.log | tail -5; tail -15 configure.log; cfgshown=1; }
+              cd - > /dev/null; continue
             fi
             cmd=$(make -n Python/ceval.o 2>/dev/null | grep -E ' -c .*ceval\.c' | tail -1)
             eval "$cmd" > build.log 2>&1 && n0=$(count Python/ceval.o) || n0=build-failed

@@ -132,3 +132,12 @@ TODO: measure the speed effect in CI (clang-19 PGO+LTO with/without the flag).
 1. CI arms: OPT=-O2 vs -O3 (PGO+LTO). 2. Ablate -O3-only passes on the Ir+cache/branch-sim proxy.
 3. GA over flags using the cheap proxy; finalists re-checked with PGO in CI (flag effects interact with PGO).
 Lower priority (user): test where tail-call gains come from (dispatch vs regalloc/layout).
+
+## CI experiment queue (times SGT)
+- exp1 (run 36291438990): base/aa/same/dealloc/vecfast. Builds took 43–58 min per job; blocks running since ~12:15.
+- exp2 (run 36291441251): base/same/m2_inline/nofp/gc2x/gc4x. Same timing.
+- exp3 (perf-ci/exp3-dispatch-compilers, pushed ~12:50): base (gcc13 CG), same, gcc_switch
+  (--without-computed-gotos), c19 (clang-19: 1 dispatch site), c19fix (clang-19 + tail-dup-pred-size=1000,
+  lld), c21 (clang-21 CG), c21tc (clang-21 tail-call). Each build logs its dispatch-site count.
+- exp4 (perf-ci/exp4-optlevel): 2×2 factorial of -O2/-O3 × frame pointers on/off (+ same-binary control).
+  It also replicates exp2's nofp arm on independent runners.

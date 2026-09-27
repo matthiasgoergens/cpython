@@ -36,14 +36,32 @@ built = {}
 
 # Per-arm compilers: "cc": "clang-19" installs that LLVM from apt.llvm.org and
 # builds with its clang/llvm-ar/llvm-profdata first on PATH.
+# "stabilizer": true builds CPython with Stabilizer's szc (-Rcode, LLVM 21) and
+# runs it with one fresh random code layout per process.
+STABILIZER_REPO = cfg.get('stabilizer_repo', 'https://github.com/matthiasgoergens/stabilizer')
+STABILIZER_REF = cfg.get('stabilizer_ref', 'claude/cpython-support')
+want_stab = any(isinstance(v, dict) and v.get('stabilizer') for v in arms.values())
 llvm_versions = sorted({int(v['cc'].split('-')[1]) for v in arms.values()
-                        if isinstance(v, dict) and v.get('cc', '').startswith('clang-')})
+                        if isinstance(v, dict) and v.get('cc', '').startswith('clang-')}
+                       | ({21} if want_stab else set()))
 if llvm_versions:
     sh('curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc >/dev/null')
     for n in llvm_versions:
         sh(f'echo "deb https://apt.llvm.org/noble/ llvm-toolchain-noble-{n} main" | sudo tee /etc/apt/sources.list.d/llvm{n}.list')
     sh('sudo apt-get update -q')
-    sh('sudo apt-get install -yq ' + ' '.join(f'clang-{n} lld-{n} llvm-{n}' for n in llvm_versions))
+    sh('sudo apt-get install -yq ' + ' '.join(f'clang-{n} lld-{n} llvm-{n}' for n in llvm_versions)
+       + (' llvm-21-dev' if want_stab else ''))
+
+STAB = f'{HOME}/stabilizer'
+if want_stab:
+    sh(f'git clone -q --depth 1 -b {STABILIZER_REF} {STABILIZER_REPO} {STAB}')
+    senv = dict(os.environ, PATH='/usr/lib/llvm-21/bin:' + os.environ['PATH'],
+                CPATH='/usr/lib/llvm-21/include')
+    sh(f'make -C {STAB} release > {HOME}/stabilizer-build.log 2>&1 || (tail -40 {HOME}/stabilizer-build.log; false)',
+       env=senv)
+    with open(f'{HOME}/szc-cc', 'w') as f:
+        f.write(f'#!/bin/sh\nPATH=/usr/lib/llvm-21/bin:$PATH; export PATH\nexec {STAB}/szc -Rcode "$@"\n')
+    os.chmod(f'{HOME}/szc-cc', 0o755)
 
 for name, spec in arms.items():
     if isinstance(spec, str):
@@ -58,6 +76,12 @@ for name, spec in arms.items():
         sh(f'git -C {repo} worktree add -q --detach {src} FETCH_HEAD')
     os.makedirs(bdir, exist_ok=True)
     env = dict(os.environ)
+    configure = spec.get('configure', base_configure)
+    if spec.get('stabilizer'):
+        # Non-PGO: Stabilizer's whole-program szc pipeline replaces PGO/LTO.
+        configure = (f"CC={HOME}/szc-cc AR=/usr/lib/llvm-21/bin/llvm-ar "
+                     f"ax_cv_c_float_words_bigendian=no {spec.get('configure', '')}")
+        env.update(STABILIZER_CODE_MODE='retained', STABILIZER_MAX_EPOCHS='1', STABILIZER_QUIET='1')
     if spec.get('cc', '').startswith('clang-'):
         n = spec['cc'].split('-')[1]
         env['PATH'] = f'/usr/lib/llvm-{n}/bin:' + env['PATH']
@@ -65,13 +89,19 @@ for name, spec in arms.items():
     elif spec.get('cc'):
         env['CC'] = spec['cc']
     try:
-        sh(f'{src}/configure {base_configure} {spec.get("configure_extra", "")} > configure.log 2>&1', cwd=bdir, env=env)
+        sh(f'{src}/configure {configure} {spec.get("configure_extra", "")} > configure.log 2>&1', cwd=bdir, env=env)
         sh(f'make -j{os.cpu_count()} > make.log 2>&1', cwd=bdir, env=env)
-        sh(f'grep -m1 "^CC=" Makefile; {bdir}/python -c "import sys; print(sys.version)"', cwd=bdir)
+        sh(f'grep -m1 "^CC=" Makefile; {bdir}/python -c "import sys; print(sys.version)"', cwd=bdir, env=env)
     except subprocess.CalledProcessError:
         sh(f'tail -60 {bdir}/configure.log {bdir}/make.log || true')
         raise
     built[key] = bdir
+    if spec.get('stabilizer'):
+        os.rename(f'{bdir}/python', f'{bdir}/python.real')
+        with open(f'{bdir}/python', 'w') as f:
+            f.write('#!/bin/sh\nSTABILIZER_CODE_MODE=retained STABILIZER_MAX_EPOCHS=1 STABILIZER_QUIET=1 '
+                    f'exec {bdir}/python.real "$@"\n')
+        os.chmod(f'{bdir}/python', 0o755)
     # Fail early if an optional-but-benchmarked extension module did not build.
     sh(f'{bdir}/python -c "import _decimal, _pickle, _json, _elementtree, _sqlite3"')
 

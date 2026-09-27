@@ -81,3 +81,6 @@ for name in arms:
     out = subprocess.run([py, '-c', 'import sys, gc; print(sys.version.split()[0], gc.get_threshold())'],
                          capture_output=True, text=True, env=dict(os.environ, PYTHONPATH=''))
     print(f'HASH {name} binary={sha(real)} text={sha(text)} {out.stdout.strip()}', flush=True)
+    ds = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'tools',
+                         'dispatch_sites.py'), real], capture_output=True, text=True)
+    print(f'DISPATCH {name}: {ds.stdout.strip().splitlines()[0] if ds.stdout.strip() else ds.stderr[-200:]}', flush=True)

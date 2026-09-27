@@ -142,3 +142,9 @@ Caveat: Xcode's clang may carry changes beyond the open-source swiftlang branch.
 - Xcode 26.0–26.3 ("partial fix") still merges ~60% of dispatch sites on CPython — affects current Homebrew Sequoia bottles.
 - Apple clang 21 (Darwin-specific late duplication) replicates fewer sites than the flag achieves (200 vs 328); perf impact unknown.
 - Performance impact on macOS not measured yet (only dispatch counts).
+
+### Patch verification on macOS (21:00 SGT)
+The configure check (`__apple_build_version__` in [17000000, 18000000)) selects exactly Xcode 16.3–26.3 on the
+runners and restores 291/287 (arm64) and 269 (x86_64) dispatch jumps per object. Unaffected Xcodes are left alone,
+which is required: clang ≤ 18 rejects `-tail-dup-pred-size` as an unknown option. Final-binary (LTO, ld64
+`-Wl,-mllvm`) verification and the speed impact (mac1b) are pending.

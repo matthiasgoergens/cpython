@@ -323,3 +323,19 @@ merged); they will be re-run after a local end-to-end check.
   (`__apple_build_version__` in [17000000, 18000000)), Darwin LTO uses -Wl,-mllvm (ld64). macOS patch probe launched.
 - 20:35 SGT mac1 launched (macos-15 arm64, 5 jobs, PGO+LTO): Xcode 16.4 (fully merged) and 26.3 (~60% merged),
   each main vs main+configure patch, + same-binary control → speed impact of Apple clang dispatch merging.
+
+## RESULTS (21:00 SGT): patched clang-19 check works end to end (exp9b, exp11b, macOS patch probe)
+- **exp11b (clang 19.1.7, --with-lto=thin, no PGO = FreeBSD ports config; 8 jobs): c19patched vs c19 −8.69%
+  [−9.23, −8.29]** (cluster bootstrap over jobs); per-job −10.4…−8.0. A/A +0.03% [−0.07, +0.14]. Dispatch jmps:
+  c19 1 (all 8 builds), patched 276 (all 8). .text identical across jobs (deterministic build).
+  Largest: unpack_sequence −24%, deepcopy_memo −22%; regressions regex_effbot +7.1%, regex_dna +2.3%.
+- **exp9b (clang 19, --enable-optimizations --with-lto, default linker, via configure; 6 jobs): −8.35% [−9.51, −6.90]**;
+  per-job −10.5…−4.9. A/A −0.15% [−0.29, −0.04] (small A/A bias; same binary per job, so it is a
+  position/measurement artefact at the 0.15% level — keep in mind as the floor for this setup). Dispatch: c19 1/6/7,
+  patched 359–365. Largest: nbody −21.5%, scimark_sor −20.8%, deepcopy_memo −19.9%; regex_effbot +8.9%.
+- **macOS patch probe:** configure decides yes exactly for Xcode 16.3–26.3 (clang-1700.x) and no for 15.x, 16.0–16.2,
+  26.4+. Per-object dispatch with the patch: 291 (16.3/16.4 arm64), 287 (26.x arm64), 269 (x86_64). Older clang
+  (≤18, Xcode ≤16.2) rejects `-mllvm -tail-dup-pred-size` ("Unknown command line argument"; confirmed with clang-18)
+  → the version gate is required, not just an optimisation. RESULT-LTO=0 was a probe bug (`python` is the
+  Python/ dir on case-insensitive APFS; the binary is python.exe). mac1 failed on the same bug in build_arms.py.
+  Fixed; relaunched as mac1b + a dedicated macOS LTO probe (Xcode 16.4/26.3 × base/patched × arm64/x86_64).

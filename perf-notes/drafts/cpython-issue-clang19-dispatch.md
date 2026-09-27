@@ -48,28 +48,44 @@ builds per arm, and a 95% cluster-bootstrap CI over builds. A same-binary contro
 | Clang 19 + flag vs GCC 13 | −1.6% | [−1.8, −1.3] |
 
 All 6 builds agreed, with per-build values between −6.0% and −10.2%.
-<!-- TODO: add exp11 (clang 19, --with-lto=thin, no PGO = FreeBSD's configuration) and exp9 (configure path). -->
+With the proposed configure change applied (same design, same-binary control in each):
+
+| configuration | geomean, patched vs unpatched | 95% CI | dispatch jumps (unpatched → patched) |
+|---|---|---|---|
+| Clang 19, `--with-lto=thin`, no PGO (FreeBSD ports' configuration), 8 builds | **−8.7%** | [−9.2, −8.3] | 1 → 276 |
+| Clang 19, `--enable-optimizations --with-lto`, 6 builds | **−8.4%** | [−9.5, −6.9] | 1–7 → 359–365 |
+
+The largest gains are 20–24% (unpack_sequence, deepcopy_memo, nbody, scimark_sor). The one consistent regression is
+regex_effbot, +7–9%.
 
 ### Who is affected (verified from the `[Clang …]` string in shipped binaries where possible)
 
 * **FreeBSD 14.x and 15.x packages** python311–python314 (base clang 19.1.7, thin LTO, computed goto).
 * **OpenBSD 7.8 and 7.9** python 3.12 and 3.13 (base clang 19.1.7).
 * **OpenMandriva Lx 6.0** python 3.11 (clang 19.1.7).
-* **macOS builds made with Xcode 16.3–16.4** (Apple clang 1700.0.13.x, LLVM 19 based), for example MacPorts
-  python313 and python314 on macOS 15. <!-- TODO: confirm with the macOS probe; Xcode 26.0–26.3 is "partial" -->
+* **macOS builds made with Xcode 16.3–16.4** (Apple clang 1700.0.13.x, LLVM 19 based): 1 dispatch jump left, on
+  arm64 and x86-64. An example is MacPorts python313 and python314 on macOS 15.
+* **macOS builds made with Xcode 26.0–26.3** (Apple clang 1700.3–1700.6): partly merged, with 123 of ~290 (arm64) or
+  112 of ~269 (x86-64) left. An example is Homebrew's macOS 15 (Sequoia) bottles. Xcode 26.4+ (Apple clang 2100)
+  still merges some: 200 of 328.
+  <!-- TODO: speed impact from mac1b -->
 * Earlier python-build-standalone/uv (Jan–Feb 2025) and conda-forge macOS builds used Clang 19 too. Those
   have since moved on.
 
 ### Proposed fix
 
 A small configure check. It follows the existing Clang 22 workaround for gh-148284: when the compiler
-is (non-Apple) Clang 19 and computed gotos are enabled, add `-mllvm -tail-dup-pred-size=1000` to
-`CFLAGS_CEVAL`, and to `LDFLAGS_NODIST` under LTO, because code generation then happens at link time.
-I verified that Clang 19 goes from 1 to 269 dispatch jumps and that Clang 21 is left alone. PR to follow.
-<!-- TODO: Apple clang detection by __apple_build_version__ range once the probe results are in. -->
+is Clang 19 or Apple clang 1700.x and computed gotos are enabled, add `-mllvm -tail-dup-pred-size=1000` to
+`CFLAGS_CEVAL`. Under LTO, code generation happens at link time, so the option also goes to the linker's LTO
+backend: `-Wl,-plugin-opt=` for GNU ld and lld, `-Wl,-mllvm,` for ld64. A plain `-mllvm` on the link line is
+silently ignored ("argument unused").
+
+The version gate is necessary: Clang ≤ 18 rejects the option. I verified that the check selects exactly the
+affected compilers: Clang 19.1.7, and Xcode 16.3–26.3 on GitHub's macOS runners. Clang 18, Clang 21, Xcode ≤ 16.2
+and Xcode 26.4+ are left alone. PR to follow.
 
 ### CPython versions tested on:
 CPython main branch
 
 ### Operating systems tested on:
-Linux
+Linux, macOS

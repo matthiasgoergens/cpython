@@ -269,3 +269,13 @@ Note: exp1–exp4 ran with PYTHONHASHSEED pinned to 0; exp5/exp6 sample the seed
   not detected.
 - **typecache inline** (branch perf/typecache-inline): inline heap-type cache probe on the GIL build; type tests pass;
   exp8 (20 jobs) measures it against main.
+
+## exp10a–d (queued ~18:10 SGT): leave-one-out ablation of GCC 13's -O3 over -O2
+-O3 = -O2 + 14 flags (gcse-after-reload, ipa-cp-clone, loop-interchange, loop-unroll-and-jam, peel-loops,
+predictive-commoning, split-loops, split-paths, tree-loop-distribution, tree-partial-pre,
+unroll-completely-grow-size, unswitch-loops, version-loops-for-strides, vect-cost-model dynamic vs very-cheap)
++ larger inlining params (early-inlining-insns 6→14, inline-heuristics-hint-percent 200→600,
+inline-min-speedup 30→15, max-inline-insns-auto 15→30, max-inline-insns-single 70→200).
+Arms: -O3 with one flag disabled (or -O2's inlining params), vs -O3 base; 6 jobs each, PGO+LTO.
+Hypothesis (user): the -O3 package is a mixed bag, so some passes may hurt; the 5.4% -O2 gap may be mostly inlining.
+Also in flight: research on who ships clang-19 computed-goto builds (CLANG19_EXPOSURE.md).

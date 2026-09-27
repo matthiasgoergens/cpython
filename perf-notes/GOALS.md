@@ -36,3 +36,7 @@ Branch: `claude/cpython-performance-optimization-vv6mlp` on `matthiasgoergens/cp
 - Before believing a proxy, check it against real timing on at least a few
   pyperformance benchmarks.
 - Don't break the test suite: run the relevant `test_*` modules for each change.
+
+## Standing rules
+- No AI attribution anywhere: no "Generated with/by Claude Code" footers in PRs, issues or comments, and no
+  Co-Authored-By / Claude-Session trailers in commit messages (user instruction, 2026-09-28).

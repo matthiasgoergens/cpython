@@ -70,8 +70,8 @@ def env_for():
     return env
 
 
-def worker_cmd(python, script, extra, loops):
-    return [python, '-u', script, '--worker', '--loops', str(loops), '--warmups', '1',
+def worker_cmd(python, script, extra, loops, warmups=1):
+    return [python, '-u', script, '--worker', '--loops', str(loops), '--warmups', str(warmups),
             '--values', '1', '--processes', '1', '--inherit-environ', 'PYTHONPATH,PYTHONHASHSEED'] + extra
 
 
@@ -95,7 +95,8 @@ def run_cg(python, script, extra, loops, sim):
             cmd += ['--cache-sim=yes', '--branch-sim=yes']
         else:
             cmd += ['--cache-sim=no']
-        cmd += worker_cmd(python, script, extra, loops)
+        # No warmup value: the 2K-minus-K difference already cancels startup and warmup.
+        cmd += worker_cmd(python, script, extra, loops, warmups=0)
         p = subprocess.run(cmd, env=env_for(), capture_output=True, text=True,
                            cwd=os.path.dirname(script), timeout=3600)
         if p.returncode:

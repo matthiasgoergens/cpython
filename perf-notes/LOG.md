@@ -364,3 +364,16 @@ Dispatch jmps (final binary): x164 1, x164p 356–357, x263 110–121, x263p 356
   regex_v8 +2.3%, typing_runtime_protocols +2.4%, xml_etree +2.0% → reproduces the timing regression (exp5 +0.50%).
 - PGO A/A (two PGO builds of the same commit): +0.07% Ir: the Ir floor between PGO builds.
 - vecfast vs PGO base: −0.14% Ir, i.e. about 2× the A/A floor. This is consistent with the timing null (exp6 +0.08%): not worth pursuing.
+
+## #150160 root cause (per-function callgrind on richards, (40−20)-iteration difference; 17:30 SGT)
+- The first attempt was invalid: the pyperformance script failed on `import pyperf`, so only startup was profiled. Fixed: rich_mod.py.
+- tc-after vs tc-before (both PGO+LTO): **+5.98% instructions** per iteration. All of it is type-attribute lookup:
+  the global method cache probe was inlined into `_PyObject_GenericGetAttrWithDict` / `_PyObject_GetMethodStackRef`
+  (≈11 instr/lookup). After the change, `_PyType_LookupStackRefAndVersion` (per-type cache) is called out of line
+  15.4M times per 20 iterations, at ≈45 instr/lookup: `MCACHE_CACHEABLE_NAME` check, per-type `cache->version_tag` check,
+  `hash & cache->mask`, atomic loads, and the stackref conversion.
+- The inline fix (tcinline vs main6af, both non-PGO): −2.10% instructions on richards, which recovers ~⅓ of the Ir regression.
+  Timing with PGO (exp8) showed no significant recovery, so PGO probably already inlines the hot path.
+- The remaining cost is intrinsic to the per-type lookup sequence. Idea: move the `MCACHE_CACHEABLE_NAME` check to the miss/insert
+  path, since non-cacheable names are never inserted and so can never hit (~9% of the lookup's instructions). Bigger lever:
+  keep a small global (type-version, name) front cache in front of the per-type table.

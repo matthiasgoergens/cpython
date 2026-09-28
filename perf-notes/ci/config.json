@@ -1,0 +1,22 @@
+{
+ "arms": {
+  "stab_main": {
+   "ref": "a57d16507cccb69d3d76ae05b52f01627d0bc479",
+   "stabilizer": true
+  },
+  "stab_same": {
+   "same_as": "stab_main"
+  },
+  "stab_asmgoto": {
+   "ref": "8148c9d46ba3b6e05264794bc29227191daee8dd",
+   "stabilizer": true
+  }
+ },
+ "jobs": 8,
+ "blocks_per_job": 5,
+ "rounds": 3,
+ "values": 1,
+ "scale": 1,
+ "bench": "^regex_",
+ "note": "Under Stabilizer (LLVM 21 szc, fresh code layout per process): is _sre with its dispatch kept merged (asm goto target) faster than the default un-merged _sre, per CPU? stab_same is the A/A control."
+}

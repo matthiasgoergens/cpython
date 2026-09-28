@@ -1,0 +1,39 @@
+{
+ "arms": {
+  "c19": {
+   "ref": "6af40a682881f8442e1bdae67d34b186ef42826a",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin"
+  },
+  "c19_srenolto": {
+   "ref": "6af40a682881f8442e1bdae67d34b186ef42826a",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin",
+   "makefile_sed": [
+    "s|-c $(srcdir)/Modules/_sre/sre.c -o Modules/_sre/sre.o|-fno-lto -c $(srcdir)/Modules/_sre/sre.c -o Modules/_sre/sre.o|"
+   ]
+  },
+  "c19patched": {
+   "ref": "3d46d2d3f9e1b4d400dda36b26be7080ef5a0ff5",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin"
+  },
+  "c19patched_srenolto": {
+   "ref": "3d46d2d3f9e1b4d400dda36b26be7080ef5a0ff5",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin",
+   "makefile_sed": [
+    "s|-c $(srcdir)/Modules/_sre/sre.c -o Modules/_sre/sre.o|-fno-lto -c $(srcdir)/Modules/_sre/sre.c -o Modules/_sre/sre.o|"
+   ]
+  },
+  "c19same": {
+   "same_as": "c19"
+  }
+ },
+ "jobs": 12,
+ "blocks_per_job": 4,
+ "rounds": 3,
+ "values": 1,
+ "scale": 1,
+ "bench": "^regex_"
+}

@@ -4,6 +4,10 @@
 Arm spec forms in config["arms"]:
   "name": "<sha>"                                   build <sha> with config["configure"]
   "name": {"ref": "<sha>", "configure_extra": "..."} same, with extra configure flags
+  "name": {"ref": "<sha>", "makefile_sed": ["s|a|b|", ...]}
+                                                    same, with sed expressions applied to the
+                                                    generated Makefile before make (each must
+                                                    change it, or the build fails)
   "name": {"same_as": "<arm>"}                      same binary as <arm> (run-to-run control)
   "name": {"same_as": "<arm>", "sitecustomize": "..."}
                                                     wrapper around <arm>'s binary that runs the
@@ -68,7 +72,7 @@ for name, spec in arms.items():
         spec = {'ref': spec}
     if 'ref' not in spec:
         continue
-    key = (spec['ref'], spec.get('configure_extra', ''))
+    key = (spec['ref'], spec.get('configure_extra', ''), tuple(spec.get('makefile_sed', ())))
     bdir = f'{HOME}/b-{name}'
     src = f'{HOME}/src-{spec["ref"][:12]}'
     if not os.path.exists(src):
@@ -100,6 +104,14 @@ for name, spec in arms.items():
         os.makedirs(bdir, exist_ok=True)
     try:
         sh(f'{src}/configure {configure} {spec.get("configure_extra", "")} > configure.log 2>&1', cwd=bdir, env=env)
+        for expr in spec.get('makefile_sed', ()):
+            with open(f'{bdir}/Makefile') as f:
+                before = f.read()
+            subprocess.run(['sed', '-i', '-e', expr, 'Makefile'], cwd=bdir, check=True)
+            with open(f'{bdir}/Makefile') as f:
+                if f.read() == before:
+                    sys.exit(f'{name}: makefile_sed {expr!r} did not change the Makefile')
+            print(f'{name}: applied makefile_sed {expr!r}', flush=True)
         sh(f'make -j{os.cpu_count()} > make.log 2>&1', cwd=bdir, env=env)
         if sys.platform == 'darwin':
             with open(f'{arm_dir}/python', 'w') as f:

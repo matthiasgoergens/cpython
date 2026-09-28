@@ -69,7 +69,25 @@ def run_cell_json(python, script, extra, loops, values, tmpdir, hashseed=0):
     return res
 
 
+def cpu_model():
+    """CPU model string of this machine, recorded in every result row: GitHub
+    runners of one label come with different CPUs, and effects can differ by CPU."""
+    try:
+        with open('/proc/cpuinfo') as f:
+            for line in f:
+                if line.startswith('model name'):
+                    return line.split(':', 1)[1].strip()
+    except OSError:
+        pass
+    try:
+        return subprocess.check_output(['sysctl', '-n', 'machdep.cpu.brand_string'], text=True).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return 'unknown'
+
+
 def cmd_run(args):
+    cpu = cpu_model()
+    print(f'cpu: {cpu}', file=sys.stderr, flush=True)
     arms = {}
     for spec in args.arm:
         name, paths = spec.split('=', 1)
@@ -111,7 +129,7 @@ def cmd_run(args):
                             out.write(json.dumps({
                                 'tag': args.tag, 'block': f'{args.tag}:{block}', 'bench': sub or name,
                                 'arm': arm, 'build': build, 'round': rnd, 'pos': pos, 'loops': loops_n,
-                                'hashseed': hashseed,
+                                'hashseed': hashseed, 'cpu': cpu,
                                 'values': v, 't': time.time()}) + '\n')
                         pos += 1
                 out.flush()
@@ -139,6 +157,16 @@ def cmd_analyze(args):
     for path in args.files:
         with open(path) as f:
             rows += [json.loads(l) for l in f if l.strip()]
+    cpus = {}
+    for r in rows:
+        cpus[r.get('cpu', 'unrecorded')] = cpus.get(r.get('cpu', 'unrecorded'), set()) | {r['block']}
+    print('blocks per cpu: ' + '; '.join(f'{c}: {len(b)}' for c, b in sorted(cpus.items())))
+    if args.cpu:
+        pat = re.compile(args.cpu)
+        rows = [r for r in rows if pat.search(r.get('cpu', 'unrecorded'))]
+        print(f'--cpu {args.cpu!r}: {len({r["block"] for r in rows})} blocks kept')
+        if not rows:
+            sys.exit('no rows match --cpu')
     # response per cell: median of values; average log over builds of an arm in a block
     cell = {}
     for r in rows:
@@ -222,6 +250,7 @@ def main():
     a = sp.add_parser('analyze')
     a.add_argument('files', nargs='+')
     a.add_argument('--base', default='base')
+    a.add_argument('--cpu', help='only blocks whose recorded CPU model matches this regex')
     a.add_argument('-q', '--quiet', action='store_true')
     args = ap.parse_args()
     {'run': cmd_run, 'analyze': cmd_analyze}[args.cmd](args)

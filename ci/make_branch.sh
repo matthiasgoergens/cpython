@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Create and push a throwaway perf-ci/<name> branch that runs perf-block.yml.
 #
-#   perf-notes/ci/make_branch.sh NAME CONFIG.json [WORKFLOW.yml]
+#   PERF_CI_REMOTE=<fork remote> perf-notes/ci/make_branch.sh NAME CONFIG.json [WORKFLOW.yml]
 # (WORKFLOW defaults to perf-notes/ci/perf-block.yml)
 #
 # CONFIG.json: {"arms": {...}, "jobs": N, "blocks_per_job": B, "scale": S, "values": V,
@@ -53,4 +53,6 @@ commit=$(git commit-tree "$tree" "${parents[@]}" -m "perf-ci: $name
 $(cat "$tmp/config.json")")
 rm -rf "$tmp"
 echo "commit $commit"
-git push -f origin "$commit:refs/heads/perf-ci/$name"
+# Push to an explicitly named remote (the fork), never to whatever "origin" is in
+# this clone, and never with --force: a perf-ci/<name> branch is created once.
+git push "${PERF_CI_REMOTE:?set PERF_CI_REMOTE to the fork remote}" "$commit:refs/heads/perf-ci/$name"

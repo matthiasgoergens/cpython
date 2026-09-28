@@ -1,0 +1,92 @@
+{
+ "arms": {
+  "main_s1": {
+   "ref": "a57d16507cccb69d3d76ae05b52f01627d0bc479",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin",
+   "configure_extra": "LDFLAGS=-fuse-ld=lld",
+   "makefile_sed": [
+    "s|^\\(CONFIGURE_LDFLAGS_NODIST=.*\\)$|\\1 -ffunction-sections -Wl,--shuffle-sections=.text*=1|"
+   ]
+  },
+  "main_s2": {
+   "ref": "a57d16507cccb69d3d76ae05b52f01627d0bc479",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin",
+   "configure_extra": "LDFLAGS=-fuse-ld=lld",
+   "makefile_sed": [
+    "s|^\\(CONFIGURE_LDFLAGS_NODIST=.*\\)$|\\1 -ffunction-sections -Wl,--shuffle-sections=.text*=2|"
+   ]
+  },
+  "main_s3": {
+   "ref": "a57d16507cccb69d3d76ae05b52f01627d0bc479",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin",
+   "configure_extra": "LDFLAGS=-fuse-ld=lld",
+   "makefile_sed": [
+    "s|^\\(CONFIGURE_LDFLAGS_NODIST=.*\\)$|\\1 -ffunction-sections -Wl,--shuffle-sections=.text*=3|"
+   ]
+  },
+  "pr_s1": {
+   "ref": "65772c6be36aee53f623f63c6e7df51bcf86defe",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin",
+   "configure_extra": "LDFLAGS=-fuse-ld=lld",
+   "makefile_sed": [
+    "s|^\\(CONFIGURE_LDFLAGS_NODIST=.*\\)$|\\1 -ffunction-sections -Wl,--shuffle-sections=.text*=1|"
+   ]
+  },
+  "pr_s2": {
+   "ref": "65772c6be36aee53f623f63c6e7df51bcf86defe",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin",
+   "configure_extra": "LDFLAGS=-fuse-ld=lld",
+   "makefile_sed": [
+    "s|^\\(CONFIGURE_LDFLAGS_NODIST=.*\\)$|\\1 -ffunction-sections -Wl,--shuffle-sections=.text*=2|"
+   ]
+  },
+  "pr_s3": {
+   "ref": "65772c6be36aee53f623f63c6e7df51bcf86defe",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin",
+   "configure_extra": "LDFLAGS=-fuse-ld=lld",
+   "makefile_sed": [
+    "s|^\\(CONFIGURE_LDFLAGS_NODIST=.*\\)$|\\1 -ffunction-sections -Wl,--shuffle-sections=.text*=3|"
+   ]
+  },
+  "prasmgoto_s1": {
+   "ref": "e7413cc130d4dcb757ca50a81565ffd90b4f6e49",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin",
+   "configure_extra": "LDFLAGS=-fuse-ld=lld",
+   "makefile_sed": [
+    "s|^\\(CONFIGURE_LDFLAGS_NODIST=.*\\)$|\\1 -ffunction-sections -Wl,--shuffle-sections=.text*=1|"
+   ]
+  },
+  "prasmgoto_s2": {
+   "ref": "e7413cc130d4dcb757ca50a81565ffd90b4f6e49",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin",
+   "configure_extra": "LDFLAGS=-fuse-ld=lld",
+   "makefile_sed": [
+    "s|^\\(CONFIGURE_LDFLAGS_NODIST=.*\\)$|\\1 -ffunction-sections -Wl,--shuffle-sections=.text*=2|"
+   ]
+  },
+  "prasmgoto_s3": {
+   "ref": "e7413cc130d4dcb757ca50a81565ffd90b4f6e49",
+   "cc": "clang-19",
+   "configure": "--with-lto=thin",
+   "configure_extra": "LDFLAGS=-fuse-ld=lld",
+   "makefile_sed": [
+    "s|^\\(CONFIGURE_LDFLAGS_NODIST=.*\\)$|\\1 -ffunction-sections -Wl,--shuffle-sections=.text*=3|"
+   ]
+  }
+ },
+ "jobs": 12,
+ "blocks_per_job": 3,
+ "rounds": 3,
+ "values": 1,
+ "scale": 1,
+ "bench": "^regex_",
+ "note": "Is the Zen 3 regex_effbot penalty of gh-158286 a code-layout accident? Each arm linked with lld --shuffle-sections under 3 seeds; prasmgoto keeps _sre's dispatch merged."
+}

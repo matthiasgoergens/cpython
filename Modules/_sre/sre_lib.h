@@ -646,11 +646,7 @@ typedef struct {
 
 #if USE_COMPUTED_GOTOS
     #define TARGET(OP) TARGET_ ## OP
-    #define DISPATCH                       \
-        do {                               \
-            MAYBE_CHECK_SIGNALS;           \
-            goto *sre_targets[*pattern++]; \
-        } while (0)
+    #define DISPATCH goto dispatch
 #else
     #define TARGET(OP) case OP
     #define DISPATCH goto dispatch
@@ -700,7 +696,14 @@ entrance:
     }
 
 #if USE_COMPUTED_GOTOS
-    DISPATCH;
+    /* All opcodes dispatch through this one block.  Making it the target of
+       an (empty) asm goto stops LLVM from tail-duplicating it into every
+       opcode, which a large -tail-dup-pred-size (gh-158283) would otherwise
+       do; the merged dispatch is faster here on some CPUs. */
+    __asm__ goto ("" :::: dispatch);
+dispatch:
+    MAYBE_CHECK_SIGNALS;
+    goto *sre_targets[*pattern++];
 #else
 dispatch:
     MAYBE_CHECK_SIGNALS;

@@ -1,0 +1,45 @@
+From e7413cc130d4dcb757ca50a81565ffd90b4f6e49 Mon Sep 17 00:00:00 2001
+From: Matthias Goergens <matthias.goergens@gmail.com>
+Date: Mon, 28 Sep 2026 22:33:07 +0800
+Subject: [PATCH] Experiment: keep _sre dispatch merged via asm goto target
+
+---
+ Modules/_sre/sre_lib.h | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/Modules/_sre/sre_lib.h b/Modules/_sre/sre_lib.h
+index fbdbaefb399..90f6de71d9c 100644
+--- a/Modules/_sre/sre_lib.h
++++ b/Modules/_sre/sre_lib.h
+@@ -646,11 +646,7 @@ typedef struct {
+ 
+ #if USE_COMPUTED_GOTOS
+     #define TARGET(OP) TARGET_ ## OP
+-    #define DISPATCH                       \
+-        do {                               \
+-            MAYBE_CHECK_SIGNALS;           \
+-            goto *sre_targets[*pattern++]; \
+-        } while (0)
++    #define DISPATCH goto dispatch
+ #else
+     #define TARGET(OP) case OP
+     #define DISPATCH goto dispatch
+@@ -700,7 +696,14 @@ SRE(match)(SRE_STATE* state, const SRE_CODE* pattern, int toplevel)
+     }
+ 
+ #if USE_COMPUTED_GOTOS
+-    DISPATCH;
++    /* All opcodes dispatch through this one block.  Making it the target of
++       an (empty) asm goto stops LLVM from tail-duplicating it into every
++       opcode, which a large -tail-dup-pred-size (gh-158283) would otherwise
++       do; the merged dispatch is faster here on some CPUs. */
++    __asm__ goto ("" :::: dispatch);
++dispatch:
++    MAYBE_CHECK_SIGNALS;
++    goto *sre_targets[*pattern++];
+ #else
+ dispatch:
+     MAYBE_CHECK_SIGNALS;
+-- 
+2.55.0
+

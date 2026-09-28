@@ -380,3 +380,16 @@ Dispatch jmps (final binary): x164 1, x164p 356–357, x263 110–121, x263p 356
 - TODO (user OK'd, 06:45 SGT): try both #150160 ideas. (a) Move the MCACHE_CACHEABLE_NAME check to the miss/insert path.
   (b) Add a front cache keyed by (tp_version_tag, name): shared per interpreter under the GIL, but per-thread
   (or off) in the free-threaded build, to avoid reintroducing the seqlock and cache-line sharing that #150160 removed.
+
+## RESULTS (exp10a–d, GCC 13 -O3 leave-one-out ablation; PGO+LTO, 6 jobs each; 10:00 SGT 28 Sep)
+Geomean vs base (-O3) [cluster CI over builds]; A/A controls −0.16…−0.01%.
+- Individual -O3-only passes turned off: gcse-after-reload +0.29 [−0.28,+0.86], ipa-cp-clone +0.13, loop-interchange
+  −0.12, loop-unroll-and-jam +0.09, peel-loops +0.40 [−0.07,+0.85], predictive-commoning +0.08, split-loops −0.03,
+  split-paths −0.01, tree-loop-distribution −0.10, tree-partial-pre +0.18, unroll-completely-grow-size +0.06,
+  **unswitch-loops −0.47 [−0.95, +0.05]**, version-loops-for-strides −0.06, vect-cost-model=very-cheap −0.25 [−0.59,+0.18].
+  None significant on the geomean.
+- **-O2 inlining params under -O3: +5.21% [+4.77, +5.66]**. Together with exp4 (-O2 +5.44%), essentially the whole
+  -O3 benefit comes from -O3's more aggressive inlining limits, not from the loop/vectorizer passes.
+- no_unswitch_loops: base16_large −21%, ascii85_large −13%, base16_small −12%, ascii85_small −4% (all binascii).
+  Loop unswitching hurts binascii's encoders. Niche but large; candidate for a per-file flag or a source change in
+  Modules/binascii.c. Needs confirmation.

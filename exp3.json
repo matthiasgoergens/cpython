@@ -1,0 +1,11 @@
+{"arms": {
+  "base": "6af40a6",
+  "same": {"same_as": "base"},
+  "gcc_switch": {"ref": "6af40a6", "configure_extra": "--without-computed-gotos"},
+  "c19": {"ref": "6af40a6", "cc": "clang-19", "configure_extra": "LDFLAGS_NODIST=-fuse-ld=lld"},
+  "c19fix": {"ref": "6af40a6", "cc": "clang-19", "configure_extra": "CFLAGS_NODIST='-mllvm -tail-dup-pred-size=1000' LDFLAGS_NODIST='-fuse-ld=lld -Wl,-mllvm,-tail-dup-pred-size=1000'"},
+  "c21": {"ref": "6af40a6", "cc": "clang-21", "configure_extra": "LDFLAGS_NODIST=-fuse-ld=lld"},
+  "c21tc": {"ref": "6af40a6", "cc": "clang-21", "configure_extra": "--with-tail-call-interp LDFLAGS_NODIST=-fuse-ld=lld"}
+ },
+ "jobs": 6, "blocks_per_job": 2, "rounds": 3, "values": 1, "scale": 4, "bench": "",
+ "configure": "--enable-optimizations --with-lto"}

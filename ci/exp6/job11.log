@@ -1,0 +1,458 @@
+﻿2026-09-27T07:56:18.0902414Z Current runner version: '2.337.0'
+2026-09-27T07:56:18.0927949Z ##[group]Runner Image Provisioner
+2026-09-27T07:56:18.0928864Z Hosted Compute Agent
+2026-09-27T07:56:18.0929429Z Version: 20260828.587
+2026-09-27T07:56:18.0930031Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-09-27T07:56:18.0930721Z Build Date: 2026-08-28T16:44:25Z
+2026-09-27T07:56:18.0931369Z Worker ID: {97c53143-c451-438c-93c5-2c19e54fdd28}
+2026-09-27T07:56:18.0932030Z Azure Region: westus3
+2026-09-27T07:56:18.0932564Z ##[endgroup]
+2026-09-27T07:56:18.0934032Z ##[group]Operating System
+2026-09-27T07:56:18.0934664Z Ubuntu
+2026-09-27T07:56:18.0935165Z 24.04.5
+2026-09-27T07:56:18.0935648Z LTS
+2026-09-27T07:56:18.0936177Z ##[endgroup]
+2026-09-27T07:56:18.0936809Z ##[group]Runner Image
+2026-09-27T07:56:18.0937840Z Image: ubuntu-24.04
+2026-09-27T07:56:18.0938395Z Version: 20260920.314.1
+2026-09-27T07:56:18.0939591Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260920.314/images/ubuntu/Ubuntu2404-Readme.md
+2026-09-27T07:56:18.0940946Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260920.314
+2026-09-27T07:56:18.0941837Z ##[endgroup]
+2026-09-27T07:56:18.0942856Z ##[group]GITHUB_TOKEN Permissions
+2026-09-27T07:56:18.0945110Z Contents: read
+2026-09-27T07:56:18.0945664Z Metadata: read
+2026-09-27T07:56:18.0946210Z ##[endgroup]
+2026-09-27T07:56:18.0948565Z Secret source: Actions
+2026-09-27T07:56:18.0949487Z Cache mode: write
+2026-09-27T07:56:18.0950147Z Prepare workflow directory
+2026-09-27T07:56:18.1331657Z Prepare all required actions
+2026-09-27T07:56:18.1381910Z Getting action download info
+2026-09-27T07:56:18.4449553Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-09-27T07:56:18.5530675Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-09-27T07:56:18.7353534Z Complete job name: block (11)
+2026-09-27T07:56:18.8140397Z ##[group]Run actions/checkout@v4
+2026-09-27T07:56:18.8141288Z with:
+2026-09-27T07:56:18.8141817Z   fetch-depth: 1
+2026-09-27T07:56:18.8142296Z   path: ci
+2026-09-27T07:56:18.8142795Z   repository: matthiasgoergens/cpython
+2026-09-27T07:56:18.8146588Z   token: ***
+2026-09-27T07:56:18.8147064Z   ssh-strict: true
+2026-09-27T07:56:18.8147565Z   ssh-user: git
+2026-09-27T07:56:18.8148081Z   persist-credentials: true
+2026-09-27T07:56:18.8148617Z   clean: true
+2026-09-27T07:56:18.8149186Z   sparse-checkout-cone-mode: true
+2026-09-27T07:56:18.8149753Z   fetch-tags: false
+2026-09-27T07:56:18.8150253Z   show-progress: true
+2026-09-27T07:56:18.8150762Z   lfs: false
+2026-09-27T07:56:18.8151224Z   submodules: false
+2026-09-27T07:56:18.8265393Z   set-safe-directory: true
+2026-09-27T07:56:18.8266224Z   allow-unsafe-pr-checkout: false
+2026-09-27T07:56:18.8268499Z ##[endgroup]
+2026-09-27T07:56:18.9265263Z Syncing repository: matthiasgoergens/cpython
+2026-09-27T07:56:18.9267345Z ##[group]Getting Git version info
+2026-09-27T07:56:18.9268017Z Working directory is '/home/runner/work/cpython/cpython/ci'
+2026-09-27T07:56:18.9268955Z [command]/usr/bin/git version
+2026-09-27T07:56:18.9342538Z git version 2.55.0
+2026-09-27T07:56:18.9363079Z ##[endgroup]
+2026-09-27T07:56:18.9377324Z Temporarily overriding HOME='/home/runner/work/_temp/eb263033-23f1-4b32-82d3-9b6bcdb402b7' before making global git config changes
+2026-09-27T07:56:18.9378577Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-27T07:56:18.9382831Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/cpython/cpython/ci
+2026-09-27T07:56:18.9427866Z ##[group]Initializing the repository
+2026-09-27T07:56:18.9432391Z [command]/usr/bin/git init /home/runner/work/cpython/cpython/ci
+2026-09-27T07:56:18.9526544Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-09-27T07:56:18.9528324Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-09-27T07:56:18.9529353Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-09-27T07:56:18.9530362Z hint: call:
+2026-09-27T07:56:18.9530829Z hint:
+2026-09-27T07:56:18.9531402Z hint: 	git config --global init.defaultBranch <name>
+2026-09-27T07:56:18.9532039Z hint:
+2026-09-27T07:56:18.9532651Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-09-27T07:56:18.9533587Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-09-27T07:56:18.9534343Z hint:
+2026-09-27T07:56:18.9534805Z hint: 	git branch -m <name>
+2026-09-27T07:56:18.9535325Z hint:
+2026-09-27T07:56:18.9536182Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-09-27T07:56:18.9538170Z Initialized empty Git repository in /home/runner/work/cpython/cpython/ci/.git/
+2026-09-27T07:56:18.9541004Z [command]/usr/bin/git remote add origin https://github.com/matthiasgoergens/cpython
+2026-09-27T07:56:18.9581159Z ##[endgroup]
+2026-09-27T07:56:18.9581947Z ##[group]Disabling automatic garbage collection
+2026-09-27T07:56:18.9584679Z [command]/usr/bin/git config --local gc.auto 0
+2026-09-27T07:56:18.9612367Z ##[endgroup]
+2026-09-27T07:56:18.9613086Z ##[group]Setting up auth
+2026-09-27T07:56:18.9619510Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-27T07:56:18.9647394Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-27T07:56:18.9996823Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-27T07:56:19.0027427Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-27T07:56:19.0207852Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-27T07:56:19.0235172Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-27T07:56:19.0420454Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-09-27T07:56:19.0452438Z ##[endgroup]
+2026-09-27T07:56:19.0453736Z ##[group]Fetching the repository
+2026-09-27T07:56:19.0462815Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +cac78d437d88b1b384037e40f5bde2b3803219d6:refs/remotes/origin/perf-ci/exp6-vecfast-power
+2026-09-27T07:56:24.5425715Z From https://github.com/matthiasgoergens/cpython
+2026-09-27T07:56:24.5427739Z  * [new ref]         cac78d437d88b1b384037e40f5bde2b3803219d6 -> origin/perf-ci/exp6-vecfast-power
+2026-09-27T07:56:24.5430520Z ##[endgroup]
+2026-09-27T07:56:24.5431253Z ##[group]Determining the checkout info
+2026-09-27T07:56:24.5432690Z ##[endgroup]
+2026-09-27T07:56:24.5439746Z [command]/usr/bin/git sparse-checkout disable
+2026-09-27T07:56:24.5490032Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-09-27T07:56:24.5518674Z ##[group]Checking out the ref
+2026-09-27T07:56:24.5524689Z [command]/usr/bin/git checkout --progress --force -B perf-ci/exp6-vecfast-power refs/remotes/origin/perf-ci/exp6-vecfast-power
+2026-09-27T07:56:25.1556552Z Switched to a new branch 'perf-ci/exp6-vecfast-power'
+2026-09-27T07:56:25.1569060Z branch 'perf-ci/exp6-vecfast-power' set up to track 'origin/perf-ci/exp6-vecfast-power'.
+2026-09-27T07:56:25.1573394Z ##[endgroup]
+2026-09-27T07:56:25.1617929Z [command]/usr/bin/git log -1 --format=%H
+2026-09-27T07:56:25.1638831Z cac78d437d88b1b384037e40f5bde2b3803219d6
+2026-09-27T07:56:25.1828777Z ##[group]Run # libmpdec-dev is not in plain Ubuntu 24.04; without it _decimal is missing and the
+2026-09-27T07:56:25.1829587Z [36;1m# libmpdec-dev is not in plain Ubuntu 24.04; without it _decimal is missing and the[0m
+2026-09-27T07:56:25.1830201Z [36;1m# decimal benchmarks silently fall back to the (very slow) pure-Python module.[0m
+2026-09-27T07:56:25.1831020Z [36;1m# Minimal set: only what the benchmarked modules need (no gdb/lcov/strace/xvfb/tk/cmake).[0m
+2026-09-27T07:56:25.1831571Z [36;1msudo add-apt-repository -y ppa:deadsnakes/ppa[0m
+2026-09-27T07:56:25.1832082Z [36;1msudo apt-get install -yq --no-install-recommends build-essential pkg-config \[0m
+2026-09-27T07:56:25.1832669Z [36;1m  libmpdec-dev zlib1g-dev libbz2-dev liblzma-dev libffi-dev libssl-dev \[0m
+2026-09-27T07:56:25.1833194Z [36;1m  libzstd-dev libb2-dev uuid-dev libsqlite3-dev libexpat1-dev[0m
+2026-09-27T07:56:25.2021795Z shell: /usr/bin/bash -e {0}
+2026-09-27T07:56:25.2022231Z ##[endgroup]
+2026-09-27T07:56:28.2308084Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-09-27T07:56:28.2494263Z Get:6 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
+2026-09-27T07:56:28.2678504Z Hit:2 http://azure.archive.ubuntu.com/ubuntu noble InRelease
+2026-09-27T07:56:28.2700434Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+2026-09-27T07:56:28.2760494Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+2026-09-27T07:56:28.2809322Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+2026-09-27T07:56:28.3278411Z Get:7 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [446 kB]
+2026-09-27T07:56:28.3408882Z Get:8 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [498 kB]
+2026-09-27T07:56:28.4220153Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1319 kB]
+2026-09-27T07:56:28.4309261Z Get:10 http://azure.archive.ubuntu.com/ubuntu noble-updates/main Translation-en [299 kB]
+2026-09-27T07:56:28.4319354Z Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Components [181 kB]
+2026-09-27T07:56:28.4345616Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1697 kB]
+2026-09-27T07:56:28.4438726Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe Translation-en [340 kB]
+2026-09-27T07:56:28.4461123Z Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Components [388 kB]
+2026-09-27T07:56:28.4483885Z Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [1654 kB]
+2026-09-27T07:56:28.4578815Z Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [377 kB]
+2026-09-27T07:56:28.4599409Z Get:17 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Components [940 B]
+2026-09-27T07:56:28.4769045Z Get:18 http://azure.archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages [40.6 kB]
+2026-09-27T07:56:28.5217373Z Get:19 http://azure.archive.ubuntu.com/ubuntu noble-backports/main amd64 Components [5760 B]
+2026-09-27T07:56:28.5228888Z Get:20 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages [31.0 kB]
+2026-09-27T07:56:28.5240045Z Get:21 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe Translation-en [18.6 kB]
+2026-09-27T07:56:28.5251625Z Get:22 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe amd64 Components [12.6 kB]
+2026-09-27T07:56:28.5263646Z Get:23 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Packages [1053 kB]
+2026-09-27T07:56:28.5313949Z Get:24 http://azure.archive.ubuntu.com/ubuntu noble-security/main Translation-en [219 kB]
+2026-09-27T07:56:28.5331552Z Get:25 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Components [46.5 kB]
+2026-09-27T07:56:28.5344351Z Get:26 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1220 kB]
+2026-09-27T07:56:28.5412378Z Get:27 http://azure.archive.ubuntu.com/ubuntu noble-security/universe Translation-en [245 kB]
+2026-09-27T07:56:28.5432328Z Get:28 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Components [76.3 kB]
+2026-09-27T07:56:28.5448218Z Get:29 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1535 kB]
+2026-09-27T07:56:28.5514246Z Get:30 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [353 kB]
+2026-09-27T07:56:29.1416660Z Get:31 https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble InRelease [17.8 kB]
+2026-09-27T07:56:29.4525567Z Get:32 https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble/main amd64 Packages [44.1 kB]
+2026-09-27T07:56:29.7162451Z Get:33 https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble/main Translation-en [6096 B]
+2026-09-27T07:56:33.2102119Z Fetched 12.5 MB in 2s (8234 kB/s)
+2026-09-27T07:56:34.1252388Z Reading package lists...
+2026-09-27T07:56:34.1378712Z Repository: 'Types: deb
+2026-09-27T07:56:34.1379960Z URIs: https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu/
+2026-09-27T07:56:34.1380977Z Suites: noble
+2026-09-27T07:56:34.1381528Z Components: main
+2026-09-27T07:56:34.1382089Z '
+2026-09-27T07:56:34.1382581Z Description:
+2026-09-27T07:56:34.1383441Z This PPA contains more recent Python versions packaged for Ubuntu.
+2026-09-27T07:56:34.1384274Z 
+2026-09-27T07:56:34.1386552Z Disclaimer: there's no guarantee of timely updates in case of security problems or other issues. If you want to use them in a security-or-otherwise-critical environment (say, on a production server), you do so at your own risk.
+2026-09-27T07:56:34.1389090Z 
+2026-09-27T07:56:34.1389299Z Update Note
+2026-09-27T07:56:34.1389772Z ===========
+2026-09-27T07:56:34.1390486Z Please use this repository instead of ppa:fkrull/deadsnakes.
+2026-09-27T07:56:34.1391177Z 
+2026-09-27T07:56:34.1391656Z Reporting Issues
+2026-09-27T07:56:34.1392181Z ================
+2026-09-27T07:56:34.1392479Z 
+2026-09-27T07:56:34.1392846Z Issues can be reported in the master issue tracker at:
+2026-09-27T07:56:34.1393734Z https://github.com/deadsnakes/issues/issues
+2026-09-27T07:56:34.1394276Z 
+2026-09-27T07:56:34.1394530Z Supported Ubuntu and Python Versions
+2026-09-27T07:56:34.1395201Z ====================================
+2026-09-27T07:56:34.1395633Z 
+2026-09-27T07:56:34.1395954Z - Ubuntu 22.04 (jammy) Python3.7+ (NOT Python3.10)
+2026-09-27T07:56:34.1396909Z - Ubuntu 24.04 (noble) Python3.7+ (NOT Python3.12)
+2026-09-27T07:56:34.1397818Z - Ubuntu 26.04 (resolute) Python3.7+ (NOT Python3.14)
+2026-09-27T07:56:34.1399552Z - Note: Python 3.10 (jammy), Python3.12 (noble), Python3.14 (resolute) are not provided by deadsnakes as upstream ubuntu provides those packages.
+2026-09-27T07:56:34.1400993Z 
+2026-09-27T07:56:34.1401247Z Why some packages aren't built:
+2026-09-27T07:56:34.1402311Z - Note: for 22.04+, older python versions requre libssl<3 so they are not currently built
+2026-09-27T07:56:34.1403682Z - If you need these, reach out to asottile to set up a private ppa
+2026-09-27T07:56:34.1404390Z 
+2026-09-27T07:56:34.1405175Z The packages may also work on other versions of Ubuntu or Debian, but that is not tested or supported.
+2026-09-27T07:56:34.1406224Z 
+2026-09-27T07:56:34.1406778Z Packages
+2026-09-27T07:56:34.1407239Z ========
+2026-09-27T07:56:34.1407505Z 
+2026-09-27T07:56:34.1410910Z The packages provided here are loosely based on the debian upstream packages with some modifications to make them more usable as non-default pythons and on ubuntu.  As such, the packages follow debian's patterns and often do not include a full python distribution with just `apt install python#.#`.  Here is a list of packages that may be useful along with the default install:
+2026-09-27T07:56:34.1413606Z 
+2026-09-27T07:56:34.1413953Z - `python#.#-dev`: includes development headers for building C extensions
+2026-09-27T07:56:34.1414604Z - `python#.#-venv`: provides the standard library `venv` module
+2026-09-27T07:56:34.1415712Z - `python#.#-distutils`: provides the standard library `distutils` module
+2026-09-27T07:56:34.1416726Z - `python#.#-lib2to3`: provides the `2to3-#.#` utility as well as the standard library `lib2to3` module
+2026-09-27T07:56:34.1417479Z - `python#.#-gdbm`: provides the standard library `dbm.gnu` module
+2026-09-27T07:56:34.1418085Z - `python#.#-tk`: provides the standard library `tkinter` module
+2026-09-27T07:56:34.1418691Z 
+2026-09-27T07:56:34.1418831Z Third-Party Python Modules
+2026-09-27T07:56:34.1419158Z ==========================
+2026-09-27T07:56:34.1419354Z 
+2026-09-27T07:56:34.1420803Z Python modules in the official Ubuntu repositories are packaged to work with the Python interpreters from the official repositories. Accordingly, they generally won't work with the Python interpreters from this PPA. As an exception, pure-Python modules for Python 3 will work, but any compiled extension modules won't.
+2026-09-27T07:56:34.1422370Z 
+2026-09-27T07:56:34.1423276Z To install 3rd-party Python modules, you should use the common Python packaging tools.  For an introduction into the Python packaging ecosystem and its tools, refer to the Python Packaging User Guide:
+2026-09-27T07:56:34.1424525Z https://packaging.python.org/installing/
+2026-09-27T07:56:34.1424818Z 
+2026-09-27T07:56:34.1424937Z Sources
+2026-09-27T07:56:34.1425187Z =======
+2026-09-27T07:56:34.1425477Z The package sources are available at:
+2026-09-27T07:56:34.1425898Z https://github.com/deadsnakes/
+2026-09-27T07:56:34.1426131Z 
+2026-09-27T07:56:34.1426252Z Nightly Builds
+2026-09-27T07:56:34.1427027Z ==============
+2026-09-27T07:56:34.1427255Z 
+2026-09-27T07:56:34.1427773Z For nightly builds, see ppa:deadsnakes/nightly https://launchpad.net/~deadsnakes/+archive/ubuntu/nightly
+2026-09-27T07:56:34.1428531Z More info: https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa
+2026-09-27T07:56:34.1429016Z Adding repository.
+2026-09-27T07:56:34.2343085Z Reading package lists...
+2026-09-27T07:56:34.4440010Z Building dependency tree...
+2026-09-27T07:56:34.4448170Z Reading state information...
+2026-09-27T07:56:34.6308195Z pkg-config is already the newest version (1.8.1-2build1).
+2026-09-27T07:56:34.6308972Z zlib1g-dev is already the newest version (1:1.3.dfsg-3.1ubuntu2.2).
+2026-09-27T07:56:34.6309654Z libffi-dev is already the newest version (3.4.6-1build1).
+2026-09-27T07:56:34.6310243Z libffi-dev set to manually installed.
+2026-09-27T07:56:34.6310917Z libssl-dev is already the newest version (3.0.13-0ubuntu3.15).
+2026-09-27T07:56:34.6311655Z libzstd-dev is already the newest version (1.5.5+dfsg2-2build1.1).
+2026-09-27T07:56:34.6312251Z libzstd-dev set to manually installed.
+2026-09-27T07:56:34.6312957Z libsqlite3-dev is already the newest version (3.45.1-1ubuntu2.8).
+2026-09-27T07:56:34.6313588Z The following additional packages will be installed:
+2026-09-27T07:56:34.6320138Z   libb2-1 libexpat1 libmpdec4
+2026-09-27T07:56:34.6332520Z Suggested packages:
+2026-09-27T07:56:34.6333007Z   liblzma-doc
+2026-09-27T07:56:34.6333488Z Recommended packages:
+2026-09-27T07:56:34.6334002Z   bzip2-doc
+2026-09-27T07:56:34.6680060Z The following NEW packages will be installed:
+2026-09-27T07:56:34.6683925Z   build-essential libb2-1 libb2-dev libbz2-dev liblzma-dev libmpdec-dev
+2026-09-27T07:56:34.6693289Z   libmpdec4 uuid-dev
+2026-09-27T07:56:34.6699660Z The following packages will be upgraded:
+2026-09-27T07:56:34.6705662Z   libexpat1 libexpat1-dev
+2026-09-27T07:56:34.6902570Z 2 upgraded, 8 newly installed, 0 to remove and 30 not upgraded.
+2026-09-27T07:56:34.6903325Z Need to get 752 kB of archives.
+2026-09-27T07:56:34.6903682Z After this operation, 1992 kB of additional disk space will be used.
+2026-09-27T07:56:34.6904128Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+2026-09-27T07:56:34.7537147Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libexpat1-dev amd64 2.6.1-2ubuntu0.6 [147 kB]
+2026-09-27T07:56:34.8106698Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libexpat1 amd64 2.6.1-2ubuntu0.6 [98.9 kB]
+2026-09-27T07:56:34.8578942Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 build-essential amd64 12.10ubuntu1 [4928 B]
+2026-09-27T07:56:34.9038466Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 libb2-1 amd64 0.98.1-1.1build1 [45.0 kB]
+2026-09-27T07:56:34.9501310Z Get:6 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 libb2-dev amd64 0.98.1-1.1build1 [48.3 kB]
+2026-09-27T07:56:34.9973975Z Get:7 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libbz2-dev amd64 1.0.8-5.1ubuntu0.1 [33.6 kB]
+2026-09-27T07:56:35.0435906Z Get:8 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 liblzma-dev amd64 5.6.1+really5.4.5-1ubuntu0.3 [176 kB]
+2026-09-27T07:56:35.0918358Z Get:9 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 uuid-dev amd64 2.39.3-9ubuntu6.6 [33.5 kB]
+2026-09-27T07:56:35.4008688Z Get:10 https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble/main amd64 libmpdec4 amd64 4.0.1-6+noble1 [79.0 kB]
+2026-09-27T07:56:35.7895544Z Get:11 https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu noble/main amd64 libmpdec-dev amd64 4.0.1-6+noble1 [85.6 kB]
+2026-09-27T07:56:36.1095431Z Fetched 752 kB in 1s (638 kB/s)
+2026-09-27T07:56:36.1499853Z (Reading database ... 
+2026-09-27T07:56:36.1500286Z (Reading database ... 5%
+2026-09-27T07:56:36.1500685Z (Reading database ... 10%
+2026-09-27T07:56:36.1500929Z (Reading database ... 15%
+2026-09-27T07:56:36.1501152Z (Reading database ... 20%
+2026-09-27T07:56:36.1501398Z (Reading database ... 25%
+2026-09-27T07:56:36.1501705Z (Reading database ... 30%
+2026-09-27T07:56:36.1501937Z (Reading database ... 35%
+2026-09-27T07:56:36.1502158Z (Reading database ... 40%
+2026-09-27T07:56:36.1502376Z (Reading database ... 45%
+2026-09-27T07:56:36.1502598Z (Reading database ... 50%
+2026-09-27T07:56:36.1552888Z (Reading database ... 55%
+2026-09-27T07:56:36.2483472Z (Reading database ... 60%
+2026-09-27T07:56:36.4081898Z (Reading database ... 65%
+2026-09-27T07:56:36.5969579Z (Reading database ... 70%
+2026-09-27T07:56:36.7652160Z (Reading database ... 75%
+2026-09-27T07:56:36.9421289Z (Reading database ... 80%
+2026-09-27T07:56:37.1120825Z (Reading database ... 85%
+2026-09-27T07:56:37.2563515Z (Reading database ... 90%
+2026-09-27T07:56:37.3723769Z (Reading database ... 95%
+2026-09-27T07:56:37.3724216Z (Reading database ... 100%
+2026-09-27T07:56:37.3724573Z (Reading database ... 202190 files and directories currently installed.)
+2026-09-27T07:56:37.3769081Z Preparing to unpack .../0-libexpat1-dev_2.6.1-2ubuntu0.6_amd64.deb ...
+2026-09-27T07:56:37.3806753Z Unpacking libexpat1-dev:amd64 (2.6.1-2ubuntu0.6) over (2.6.1-2ubuntu0.4) ...
+2026-09-27T07:56:37.4365226Z Preparing to unpack .../1-libexpat1_2.6.1-2ubuntu0.6_amd64.deb ...
+2026-09-27T07:56:37.4398407Z Unpacking libexpat1:amd64 (2.6.1-2ubuntu0.6) over (2.6.1-2ubuntu0.4) ...
+2026-09-27T07:56:37.4583896Z Selecting previously unselected package build-essential.
+2026-09-27T07:56:37.4702202Z Preparing to unpack .../2-build-essential_12.10ubuntu1_amd64.deb ...
+2026-09-27T07:56:37.4709811Z Unpacking build-essential (12.10ubuntu1) ...
+2026-09-27T07:56:37.4872672Z Selecting previously unselected package libb2-1:amd64.
+2026-09-27T07:56:37.4986817Z Preparing to unpack .../3-libb2-1_0.98.1-1.1build1_amd64.deb ...
+2026-09-27T07:56:37.4996218Z Unpacking libb2-1:amd64 (0.98.1-1.1build1) ...
+2026-09-27T07:56:37.5154667Z Selecting previously unselected package libb2-dev:amd64.
+2026-09-27T07:56:37.5269374Z Preparing to unpack .../4-libb2-dev_0.98.1-1.1build1_amd64.deb ...
+2026-09-27T07:56:37.5277090Z Unpacking libb2-dev:amd64 (0.98.1-1.1build1) ...
+2026-09-27T07:56:37.5449391Z Selecting previously unselected package libbz2-dev:amd64.
+2026-09-27T07:56:37.5563764Z Preparing to unpack .../5-libbz2-dev_1.0.8-5.1ubuntu0.1_amd64.deb ...
+2026-09-27T07:56:37.5575611Z Unpacking libbz2-dev:amd64 (1.0.8-5.1ubuntu0.1) ...
+2026-09-27T07:56:37.5731527Z Selecting previously unselected package liblzma-dev:amd64.
+2026-09-27T07:56:37.5847400Z Preparing to unpack .../6-liblzma-dev_5.6.1+really5.4.5-1ubuntu0.3_amd64.deb ...
+2026-09-27T07:56:37.5856811Z Unpacking liblzma-dev:amd64 (5.6.1+really5.4.5-1ubuntu0.3) ...
+2026-09-27T07:56:37.6094451Z Selecting previously unselected package libmpdec4:amd64.
+2026-09-27T07:56:37.6208790Z Preparing to unpack .../7-libmpdec4_4.0.1-6+noble1_amd64.deb ...
+2026-09-27T07:56:37.6216514Z Unpacking libmpdec4:amd64 (4.0.1-6+noble1) ...
+2026-09-27T07:56:37.6383533Z Selecting previously unselected package libmpdec-dev:amd64.
+2026-09-27T07:56:37.6534041Z Preparing to unpack .../8-libmpdec-dev_4.0.1-6+noble1_amd64.deb ...
+2026-09-27T07:56:37.6546180Z Unpacking libmpdec-dev:amd64 (4.0.1-6+noble1) ...
+2026-09-27T07:56:37.6733518Z Selecting previously unselected package uuid-dev:amd64.
+2026-09-27T07:56:37.6846771Z Preparing to unpack .../9-uuid-dev_2.39.3-9ubuntu6.6_amd64.deb ...
+2026-09-27T07:56:37.6858854Z Unpacking uuid-dev:amd64 (2.39.3-9ubuntu6.6) ...
+2026-09-27T07:56:37.7224119Z Setting up libexpat1:amd64 (2.6.1-2ubuntu0.6) ...
+2026-09-27T07:56:37.7245824Z Setting up libb2-1:amd64 (0.98.1-1.1build1) ...
+2026-09-27T07:56:37.7265256Z Setting up libexpat1-dev:amd64 (2.6.1-2ubuntu0.6) ...
+2026-09-27T07:56:37.7281561Z Setting up libb2-dev:amd64 (0.98.1-1.1build1) ...
+2026-09-27T07:56:37.7297395Z Setting up uuid-dev:amd64 (2.39.3-9ubuntu6.6) ...
+2026-09-27T07:56:37.7313228Z Setting up liblzma-dev:amd64 (5.6.1+really5.4.5-1ubuntu0.3) ...
+2026-09-27T07:56:37.7330430Z Setting up libmpdec4:amd64 (4.0.1-6+noble1) ...
+2026-09-27T07:56:37.7350180Z Setting up build-essential (12.10ubuntu1) ...
+2026-09-27T07:56:37.7366804Z Setting up libbz2-dev:amd64 (1.0.8-5.1ubuntu0.1) ...
+2026-09-27T07:56:37.7384174Z Setting up libmpdec-dev:amd64 (4.0.1-6+noble1) ...
+2026-09-27T07:56:37.7406410Z Processing triggers for man-db (2.12.0-4build2) ...
+2026-09-27T07:56:37.7425831Z Not building database; man-db/auto-update is not 'true'.
+2026-09-27T07:56:37.7437781Z Processing triggers for libc-bin (2.39-0ubuntu8.9) ...
+2026-09-27T07:56:38.1161266Z 
+2026-09-27T07:56:38.1161853Z Running kernel seems to be up-to-date.
+2026-09-27T07:56:38.1162359Z 
+2026-09-27T07:56:38.1162521Z Restarting services...
+2026-09-27T07:56:38.1490304Z  systemctl restart php8.3-fpm.service polkit.service
+2026-09-27T07:56:38.2293576Z 
+2026-09-27T07:56:38.2294463Z Service restarts being deferred:
+2026-09-27T07:56:38.2295367Z  /etc/needrestart/restart.d/dbus.service
+2026-09-27T07:56:38.2296116Z  systemctl restart networkd-dispatcher.service
+2026-09-27T07:56:38.2296974Z  systemctl restart walinuxagent.service
+2026-09-27T07:56:38.2297603Z 
+2026-09-27T07:56:38.2297890Z No containers need to be restarted.
+2026-09-27T07:56:38.2298233Z 
+2026-09-27T07:56:38.2298514Z No user sessions are running outdated binaries.
+2026-09-27T07:56:38.2298920Z 
+2026-09-27T07:56:38.2299309Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-09-27T07:56:39.1867453Z ##[group]Run nproc; lscpu | grep -E 'Model name|MHz|L3'; free -g
+2026-09-27T07:56:39.1868015Z [36;1mnproc; lscpu | grep -E 'Model name|MHz|L3'; free -g[0m
+2026-09-27T07:56:39.1910021Z shell: /usr/bin/bash -e {0}
+2026-09-27T07:56:39.1910328Z ##[endgroup]
+2026-09-27T07:56:39.2074589Z 4
+2026-09-27T07:56:39.2106823Z Model name:                              Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz
+2026-09-27T07:56:39.2107325Z CPU(s) scaling MHz:                      124%
+2026-09-27T07:56:39.2107629Z CPU max MHz:                             2800.0000
+2026-09-27T07:56:39.2107941Z CPU min MHz:                             800.0000
+2026-09-27T07:56:39.2108283Z L3 cache:                                48 MiB (1 instance)
+2026-09-27T07:56:39.2120488Z                total        used        free      shared  buff/cache   available
+2026-09-27T07:56:39.2121147Z Mem:              15           1          11           0           3          14
+2026-09-27T07:56:39.2121640Z Swap:              2           0           2
+2026-09-27T07:56:39.2154118Z ##[group]Run python3 ci/perf-notes/ci/build_arms.py ci/perf-notes/ci/config.json ci
+2026-09-27T07:56:39.2154689Z [36;1mpython3 ci/perf-notes/ci/build_arms.py ci/perf-notes/ci/config.json ci[0m
+2026-09-27T07:56:39.2194052Z shell: /usr/bin/bash -e {0}
+2026-09-27T07:56:39.2194347Z ##[endgroup]
+2026-09-27T07:56:39.2501504Z + git -C ci fetch -q --depth=1 origin 8e4bbcab8c2c7a92f310c1ecde750b7b46c3eb5f
+2026-09-27T07:56:39.9561564Z + git -C ci worktree add -q --detach /home/runner/src-8e4bbcab8c2c FETCH_HEAD
+2026-09-27T07:56:40.5662511Z + /home/runner/src-8e4bbcab8c2c/configure --enable-optimizations --with-lto  > configure.log 2>&1
+2026-09-27T07:57:01.0059164Z + make -j4 > make.log 2>&1
+2026-09-27T08:10:57.8207970Z + grep -m1 "^CC=" Makefile; /home/runner/b-base/python -c "import sys; print(sys.version)"
+2026-09-27T08:10:57.8223864Z CC=		gcc
+2026-09-27T08:10:57.8319576Z 3.16.0a0 (8e4bbca-dirty:8e4bbca, Sep 27 2026, 08:07:38) [GCC 13.3.0]
+2026-09-27T08:10:57.8342629Z + /home/runner/b-base/python -c "import _decimal, _pickle, _json, _elementtree, _sqlite3"
+2026-09-27T08:10:57.8578514Z + git -C ci fetch -q --depth=1 origin cd1ad813bf671d8b809c99f788968646d0654b4e
+2026-09-27T08:10:58.5779798Z + git -C ci worktree add -q --detach /home/runner/src-cd1ad813bf67 FETCH_HEAD
+2026-09-27T08:10:59.1859780Z + /home/runner/src-cd1ad813bf67/configure --enable-optimizations --with-lto  > configure.log 2>&1
+2026-09-27T08:11:18.7128321Z + make -j4 > make.log 2>&1
+2026-09-27T08:25:09.3792035Z + grep -m1 "^CC=" Makefile; /home/runner/b-vecfast/python -c "import sys; print(sys.version)"
+2026-09-27T08:25:09.3808663Z CC=		gcc
+2026-09-27T08:25:09.3900671Z 3.16.0a0 (cd1ad81-dirty:cd1ad81, Sep 27 2026, 08:21:49) [GCC 13.3.0]
+2026-09-27T08:25:09.3923155Z + /home/runner/b-vecfast/python -c "import _decimal, _pickle, _json, _elementtree, _sqlite3"
+2026-09-27T08:25:09.5300058Z HASH base binary=1df61776f314c52d text=2bad0581fc3b05e3 3.16.0a0 (2000, 10, 10)
+2026-09-27T08:25:11.1993903Z DISPATCH base: indirect jmps in _PyEval_EvalFrameDefault*: 234 {'_PyEval_EvalFrameDefault.cold': 1, '_PyEval_EvalFrameDefault': 233}
+2026-09-27T08:25:11.2684820Z HASH same binary=1df61776f314c52d text=2bad0581fc3b05e3 3.16.0a0 (2000, 10, 10)
+2026-09-27T08:25:12.8665529Z DISPATCH same: indirect jmps in _PyEval_EvalFrameDefault*: 234 {'_PyEval_EvalFrameDefault.cold': 1, '_PyEval_EvalFrameDefault': 233}
+2026-09-27T08:25:12.9337477Z HASH vecfast binary=859bc14270ccec58 text=45cc54d6719e5882 3.16.0a0 (2000, 10, 10)
+2026-09-27T08:25:14.5630117Z DISPATCH vecfast: indirect jmps in _PyEval_EvalFrameDefault*: 234 {'_PyEval_EvalFrameDefault.cold': 1, '_PyEval_EvalFrameDefault': 233}
+2026-09-27T08:25:14.5703971Z ##[group]Run python3 -m venv "$HOME/drv"
+2026-09-27T08:25:14.5704321Z [36;1mpython3 -m venv "$HOME/drv"[0m
+2026-09-27T08:25:14.5704649Z [36;1m"$HOME/drv/bin/pip" install -q pyperf pyperformance[0m
+2026-09-27T08:25:14.5705095Z [36;1m"$HOME/drv/bin/pip" install -q --no-deps --target "$HOME/pyperf-lib" pyperf[0m
+2026-09-27T08:25:14.5742074Z shell: /usr/bin/bash -e {0}
+2026-09-27T08:25:14.5742354Z ##[endgroup]
+2026-09-27T08:25:19.6828517Z ##[group]Run set -eux
+2026-09-27T08:25:19.6828804Z [36;1mset -eux[0m
+2026-09-27T08:25:19.6829041Z [36;1mcfg=ci/perf-notes/ci/config.json[0m
+2026-09-27T08:25:19.6829330Z [36;1margs=$(python3 - <<EOF[0m
+2026-09-27T08:25:19.6829576Z [36;1mimport json, os[0m
+2026-09-27T08:25:19.6829816Z [36;1mc = json.load(open("$cfg"))[0m
+2026-09-27T08:25:19.6830080Z [36;1mhome = os.environ["HOME"][0m
+2026-09-27T08:25:19.6830395Z [36;1ma = [f"--arm {k}={home}/b-{k}/python" for k in c["arms"]][0m
+2026-09-27T08:25:19.6830942Z [36;1ma += ["--blocks", str(c.get("blocks_per_job", 1)), "--values", str(c.get("values", 1)), "--rounds", str(c.get("rounds", 3)),[0m
+2026-09-27T08:25:19.6831474Z [36;1m      "--scale", str(c.get("scale", 1.0))][0m
+2026-09-27T08:25:19.6831759Z [36;1mif c.get("bench"):[0m
+2026-09-27T08:25:19.6832026Z [36;1m    a += ["--bench", "'" + c["bench"] + "'"][0m
+2026-09-27T08:25:19.6832307Z [36;1mprint(" ".join(a))[0m
+2026-09-27T08:25:19.6832536Z [36;1mEOF[0m
+2026-09-27T08:25:19.6832770Z [36;1m)[0m
+2026-09-27T08:25:19.6833094Z [36;1meval "$HOME/drv/bin/python" ci/perf-notes/tools/blockbench.py run $args \[0m
+2026-09-27T08:25:19.6833515Z [36;1m  --loops ci/perf-notes/ci/loops.json \[0m
+2026-09-27T08:25:19.6833870Z [36;1m  --tag "${GITHUB_RUN_ID}-11" --seed "${GITHUB_RUN_ID}11" \[0m
+2026-09-27T08:25:19.6834205Z [36;1m  --out "$HOME/results.jsonl"[0m
+2026-09-27T08:25:19.6869465Z shell: /usr/bin/bash -e {0}
+2026-09-27T08:25:19.6869724Z env:
+2026-09-27T08:25:19.6869948Z   PERF_PYPERF_LIB: /home/runner/pyperf-lib
+2026-09-27T08:25:19.6870365Z ##[endgroup]
+2026-09-27T08:25:19.6923438Z + cfg=ci/perf-notes/ci/config.json
+2026-09-27T08:25:19.6927052Z ++ python3 -
+2026-09-27T08:25:19.7148448Z + args='--arm base=/home/runner/b-base/python --arm same=/home/runner/b-same/python --arm vecfast=/home/runner/b-vecfast/python --blocks 1 --values 1 --rounds 4 --scale 1'
+2026-09-27T08:25:19.7150094Z + eval /home/runner/drv/bin/python ci/perf-notes/tools/blockbench.py run --arm base=/home/runner/b-base/python --arm same=/home/runner/b-same/python --arm vecfast=/home/runner/b-vecfast/python --blocks 1 --values 1 --rounds 4 --scale 1 --loops ci/perf-notes/ci/loops.json --tag 36303903612-11 --seed 3630390361211 --out /home/runner/results.jsonl
+2026-09-27T08:25:19.7152142Z ++ /home/runner/drv/bin/python ci/perf-notes/tools/blockbench.py run --arm base=/home/runner/b-base/python --arm same=/home/runner/b-same/python --arm vecfast=/home/runner/b-vecfast/python --blocks 1 --values 1 --rounds 4 --scale 1 --loops ci/perf-notes/ci/loops.json --tag 36303903612-11 --seed 3630390361211 --out /home/runner/results.jsonl
+2026-09-27T08:32:18.0563403Z block 0 done in 418s
+2026-09-27T08:32:18.0716984Z ##[group]Run "$HOME/drv/bin/python" ci/perf-notes/tools/blockbench.py analyze "$HOME/results.jsonl" --base "$(python3 -c "import json;print(next(iter(json.load(open('ci/perf-notes/ci/config.json'))['arms'])))")" || true
+2026-09-27T08:32:18.0718292Z [36;1m"$HOME/drv/bin/python" ci/perf-notes/tools/blockbench.py analyze "$HOME/results.jsonl" --base "$(python3 -c "import json;print(next(iter(json.load(open('ci/perf-notes/ci/config.json'))['arms'])))")" || true[0m
+2026-09-27T08:32:18.0719060Z [36;1mecho "=====BEGIN-RESULTS-B64====="[0m
+2026-09-27T08:32:18.0719396Z [36;1mgzip -9c "$HOME/results.jsonl" | base64 -w 0; echo[0m
+2026-09-27T08:32:18.0719718Z [36;1mecho "=====END-RESULTS-B64====="[0m
+2026-09-27T08:32:18.0754630Z shell: /usr/bin/bash -e {0}
+2026-09-27T08:32:18.0754907Z ##[endgroup]
+2026-09-27T08:32:18.1690416Z 
+2026-09-27T08:32:18.1690893Z === same vs base  (negative = faster)  blocks=1
+2026-09-27T08:32:18.1691227Z 
+2026-09-27T08:32:18.1691510Z === vecfast vs base  (negative = faster)  blocks=1
+2026-09-27T08:32:18.1798016Z =====BEGIN-RESULTS-B64=====
+2026-09-27T08:32:18.2097119Z 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
+2026-09-27T08:32:18.2246306Z =====END-RESULTS-B64=====
+2026-09-27T08:32:18.2298264Z ##[group]Run actions/upload-artifact@v4
+2026-09-27T08:32:18.2298682Z with:
+2026-09-27T08:32:18.2298885Z   name: results-11
+2026-09-27T08:32:18.2299097Z   path: ~/results.jsonl
+2026-09-27T08:32:18.2299332Z   if-no-files-found: warn
+2026-09-27T08:32:18.2299564Z   compression-level: 6
+2026-09-27T08:32:18.2299775Z   overwrite: false
+2026-09-27T08:32:18.2300019Z   include-hidden-files: false
+2026-09-27T08:32:18.2300259Z ##[endgroup]
+2026-09-27T08:32:18.4075457Z (node:39409) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-09-27T08:32:18.4076718Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-09-27T08:32:18.4121741Z With the provided path, there will be 1 file uploaded
+2026-09-27T08:32:18.4126478Z Artifact name is valid!
+2026-09-27T08:32:18.4127092Z Root directory input is valid!
+2026-09-27T08:32:18.7559184Z Beginning upload of artifact content to blob storage
+2026-09-27T08:32:18.7796762Z (node:39409) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-09-27T08:32:19.0288748Z Uploaded bytes 27022
+2026-09-27T08:32:19.0893761Z Finished uploading artifact content to blob storage!
+2026-09-27T08:32:19.0894739Z SHA256 digest of uploaded artifact zip is 5371900f8b228d7727d97532486f7d7d0020586f46ad2f7814628b9f236f30a2
+2026-09-27T08:32:19.0896668Z Finalizing artifact upload
+2026-09-27T08:32:19.3400741Z Artifact results-11.zip successfully finalized. Artifact ID 10927661736
+2026-09-27T08:32:19.3401740Z Artifact results-11 has been successfully uploaded! Final size is 27022 bytes. Artifact ID is 10927661736
+2026-09-27T08:32:19.3407989Z Artifact download URL: https://github.com/matthiasgoergens/cpython/actions/runs/36303903612/artifacts/10927661736
+2026-09-27T08:32:19.3599114Z Post job cleanup.
+2026-09-27T08:32:19.4430880Z [command]/usr/bin/git version
+2026-09-27T08:32:19.4446768Z git version 2.55.0
+2026-09-27T08:32:19.4482875Z Temporarily overriding HOME='/home/runner/work/_temp/e697b4bd-56ef-43cb-9cde-3729e4949493' before making global git config changes
+2026-09-27T08:32:19.4484173Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-27T08:32:19.4488422Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/cpython/cpython/ci
+2026-09-27T08:32:19.4523290Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-27T08:32:19.4554961Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-27T08:32:19.4749591Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-27T08:32:19.4774294Z http.https://github.com/.extraheader
+2026-09-27T08:32:19.4783158Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-09-27T08:32:19.4812785Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-27T08:32:19.5004762Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-27T08:32:19.5036743Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-27T08:32:19.5348566Z Cleaning up orphan processes
+2026-09-27T08:32:19.5600595Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

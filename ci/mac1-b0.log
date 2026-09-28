@@ -1,0 +1,370 @@
+﻿2026-09-27T12:35:21.2478450Z Current runner version: '2.337.0'
+2026-09-27T12:35:21.2495010Z ##[group]Runner Image Provisioner
+2026-09-27T12:35:21.2495570Z Hosted Compute Agent
+2026-09-27T12:35:21.2495960Z Version: 20260828.587
+2026-09-27T12:35:21.2496400Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-09-27T12:35:21.2496900Z Build Date: 2026-08-28T16:44:25Z
+2026-09-27T12:35:21.2497360Z Worker ID: {75992242-02c4-4186-90b3-3be219fa6f5e}
+2026-09-27T12:35:21.2497840Z Azure Region: westus
+2026-09-27T12:35:21.2498230Z ##[endgroup]
+2026-09-27T12:35:21.2499090Z ##[group]Operating System
+2026-09-27T12:35:21.2499490Z macOS
+2026-09-27T12:35:21.2499870Z 15.7.9
+2026-09-27T12:35:21.2500270Z 24G830
+2026-09-27T12:35:21.2500620Z ##[endgroup]
+2026-09-27T12:35:21.2500970Z ##[group]Runner Image
+2026-09-27T12:35:21.2501360Z Image: macos-15-arm64
+2026-09-27T12:35:21.2501720Z Version: 20260907.0337.1
+2026-09-27T12:35:21.2502580Z Included Software: https://github.com/actions/runner-images/blob/macos-15-arm64/20260907.0337/images/macos/macos-15-arm64-Readme.md
+2026-09-27T12:35:21.2503610Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-15-arm64%2F20260907.0337
+2026-09-27T12:35:21.2504250Z ##[endgroup]
+2026-09-27T12:35:21.2504990Z ##[group]GITHUB_TOKEN Permissions
+2026-09-27T12:35:21.2505990Z Contents: read
+2026-09-27T12:35:21.2506330Z Metadata: read
+2026-09-27T12:35:21.2506670Z ##[endgroup]
+2026-09-27T12:35:21.2507920Z Secret source: Actions
+2026-09-27T12:35:21.2508470Z Cache mode: write
+2026-09-27T12:35:21.2508890Z Prepare workflow directory
+2026-09-27T12:35:21.2720590Z Prepare all required actions
+2026-09-27T12:35:21.2755380Z Getting action download info
+2026-09-27T12:35:21.5420670Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-09-27T12:35:21.8444720Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-09-27T12:35:22.0454970Z Complete job name: block (0)
+2026-09-27T12:35:22.0908400Z ##[group]Run actions/checkout@v4
+2026-09-27T12:35:22.0909010Z with:
+2026-09-27T12:35:22.0909320Z   fetch-depth: 1
+2026-09-27T12:35:22.0909640Z   path: ci
+2026-09-27T12:35:22.0909960Z   repository: matthiasgoergens/cpython
+2026-09-27T12:35:22.0912590Z   token: ***
+2026-09-27T12:35:22.0912900Z   ssh-strict: true
+2026-09-27T12:35:22.0913220Z   ssh-user: git
+2026-09-27T12:35:22.0913550Z   persist-credentials: true
+2026-09-27T12:35:22.0913900Z   clean: true
+2026-09-27T12:35:22.0914230Z   sparse-checkout-cone-mode: true
+2026-09-27T12:35:22.0914610Z   fetch-tags: false
+2026-09-27T12:35:22.0914940Z   show-progress: true
+2026-09-27T12:35:22.0915260Z   lfs: false
+2026-09-27T12:35:22.0915570Z   submodules: false
+2026-09-27T12:35:22.0916070Z   set-safe-directory: true
+2026-09-27T12:35:22.0916520Z   allow-unsafe-pr-checkout: false
+2026-09-27T12:35:22.0917180Z ##[endgroup]
+2026-09-27T12:35:22.4246260Z Syncing repository: matthiasgoergens/cpython
+2026-09-27T12:35:22.4247870Z ##[group]Getting Git version info
+2026-09-27T12:35:22.4248370Z Working directory is '/Users/runner/work/cpython/cpython/ci'
+2026-09-27T12:35:22.4249350Z [command]/opt/homebrew/bin/git version
+2026-09-27T12:35:22.5032900Z git version 2.55.0
+2026-09-27T12:35:22.5046970Z ##[endgroup]
+2026-09-27T12:35:22.5052650Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/ed3c937f-18a3-4daa-821e-49546a1845ca/.gitconfig'
+2026-09-27T12:35:22.5059520Z Temporarily overriding HOME='/Users/runner/work/_temp/ed3c937f-18a3-4daa-821e-49546a1845ca' before making global git config changes
+2026-09-27T12:35:22.5060450Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-27T12:35:22.5062710Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/cpython/cpython/ci
+2026-09-27T12:35:22.5193540Z ##[group]Initializing the repository
+2026-09-27T12:35:22.5194410Z [command]/opt/homebrew/bin/git init /Users/runner/work/cpython/cpython/ci
+2026-09-27T12:35:22.5402090Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-09-27T12:35:22.5403320Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-09-27T12:35:22.5404070Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-09-27T12:35:22.5404630Z hint: call:
+2026-09-27T12:35:22.5404930Z hint:
+2026-09-27T12:35:22.5405350Z hint: 	git config --global init.defaultBranch <name>
+2026-09-27T12:35:22.5405770Z hint:
+2026-09-27T12:35:22.5406190Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-09-27T12:35:22.5406830Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-09-27T12:35:22.5407350Z hint:
+2026-09-27T12:35:22.5407660Z hint: 	git branch -m <name>
+2026-09-27T12:35:22.5408000Z hint:
+2026-09-27T12:35:22.5408450Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-09-27T12:35:22.5409250Z Initialized empty Git repository in /Users/runner/work/cpython/cpython/ci/.git/
+2026-09-27T12:35:22.5412570Z [command]/opt/homebrew/bin/git remote add origin https://github.com/matthiasgoergens/cpython
+2026-09-27T12:35:22.5482740Z ##[endgroup]
+2026-09-27T12:35:22.5483480Z ##[group]Disabling automatic garbage collection
+2026-09-27T12:35:22.5485340Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-09-27T12:35:22.5549160Z ##[endgroup]
+2026-09-27T12:35:22.5549840Z ##[group]Setting up auth
+2026-09-27T12:35:22.5553870Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-27T12:35:22.5611110Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-27T12:35:22.7017790Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-27T12:35:22.7111410Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-27T12:35:22.8503070Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-27T12:35:22.8814700Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-27T12:35:23.0258530Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-09-27T12:35:23.0266540Z ##[endgroup]
+2026-09-27T12:35:23.0271220Z ##[group]Fetching the repository
+2026-09-27T12:35:23.0281700Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +4bd947cf8fcd3cc584ae5855e3c90d7531ce08a4:refs/remotes/origin/perf-ci/mac1-apple-clang-impact
+2026-09-27T12:35:29.3581770Z From https://github.com/matthiasgoergens/cpython
+2026-09-27T12:35:29.3586520Z  * [new ref]         4bd947cf8fcd3cc584ae5855e3c90d7531ce08a4 -> origin/perf-ci/mac1-apple-clang-impact
+2026-09-27T12:35:29.3594890Z ##[endgroup]
+2026-09-27T12:35:29.3597990Z ##[group]Determining the checkout info
+2026-09-27T12:35:29.3599430Z ##[endgroup]
+2026-09-27T12:35:29.3600300Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-09-27T12:35:29.3682560Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-09-27T12:35:29.3753230Z ##[group]Checking out the ref
+2026-09-27T12:35:29.3755240Z [command]/opt/homebrew/bin/git checkout --progress --force -B perf-ci/mac1-apple-clang-impact refs/remotes/origin/perf-ci/mac1-apple-clang-impact
+2026-09-27T12:35:30.5255780Z Updating files:  60% (3875/6391)
+2026-09-27T12:35:30.5309440Z Updating files:  61% (3899/6391)
+2026-09-27T12:35:30.5354210Z Updating files:  62% (3963/6391)
+2026-09-27T12:35:30.5426470Z Updating files:  63% (4027/6391)
+2026-09-27T12:35:30.5473910Z Updating files:  64% (4091/6391)
+2026-09-27T12:35:30.5877930Z Updating files:  65% (4155/6391)
+2026-09-27T12:35:30.5956650Z Updating files:  66% (4219/6391)
+2026-09-27T12:35:30.6071740Z Updating files:  67% (4282/6391)
+2026-09-27T12:35:30.6176970Z Updating files:  68% (4346/6391)
+2026-09-27T12:35:30.6537790Z Updating files:  69% (4410/6391)
+2026-09-27T12:35:30.6646540Z Updating files:  70% (4474/6391)
+2026-09-27T12:35:30.6725280Z Updating files:  71% (4538/6391)
+2026-09-27T12:35:30.6775050Z Updating files:  72% (4602/6391)
+2026-09-27T12:35:30.6834620Z Updating files:  73% (4666/6391)
+2026-09-27T12:35:30.7704620Z Updating files:  74% (4730/6391)
+2026-09-27T12:35:30.7908380Z Updating files:  75% (4794/6391)
+2026-09-27T12:35:30.8054910Z Updating files:  76% (4858/6391)
+2026-09-27T12:35:30.8159000Z Updating files:  77% (4922/6391)
+2026-09-27T12:35:30.8625150Z Updating files:  78% (4985/6391)
+2026-09-27T12:35:30.8728490Z Updating files:  79% (5049/6391)
+2026-09-27T12:35:30.8835160Z Updating files:  80% (5113/6391)
+2026-09-27T12:35:30.8916750Z Updating files:  81% (5177/6391)
+2026-09-27T12:35:30.9401560Z Updating files:  82% (5241/6391)
+2026-09-27T12:35:30.9510840Z Updating files:  83% (5305/6391)
+2026-09-27T12:35:30.9693000Z Updating files:  84% (5369/6391)
+2026-09-27T12:35:30.9845390Z Updating files:  85% (5433/6391)
+2026-09-27T12:35:30.9946810Z Updating files:  86% (5497/6391)
+2026-09-27T12:35:31.0366220Z Updating files:  87% (5561/6391)
+2026-09-27T12:35:31.0482790Z Updating files:  88% (5625/6391)
+2026-09-27T12:35:31.0533950Z Updating files:  89% (5688/6391)
+2026-09-27T12:35:31.0598130Z Updating files:  90% (5752/6391)
+2026-09-27T12:35:31.1033290Z Updating files:  91% (5816/6391)
+2026-09-27T12:35:31.1092580Z Updating files:  92% (5880/6391)
+2026-09-27T12:35:31.1201580Z Updating files:  93% (5944/6391)
+2026-09-27T12:35:31.1305870Z Updating files:  94% (6008/6391)
+2026-09-27T12:35:31.1640880Z Updating files:  95% (6072/6391)
+2026-09-27T12:35:31.1703110Z Updating files:  96% (6136/6391)
+2026-09-27T12:35:31.1764980Z Updating files:  97% (6200/6391)
+2026-09-27T12:35:31.1836200Z Updating files:  98% (6264/6391)
+2026-09-27T12:35:31.2226010Z Updating files:  99% (6328/6391)
+2026-09-27T12:35:31.2226590Z Updating files: 100% (6391/6391)
+2026-09-27T12:35:31.2226850Z Updating files: 100% (6391/6391), done.
+2026-09-27T12:35:31.2300550Z Switched to a new branch 'perf-ci/mac1-apple-clang-impact'
+2026-09-27T12:35:31.2309360Z branch 'perf-ci/mac1-apple-clang-impact' set up to track 'origin/perf-ci/mac1-apple-clang-impact'.
+2026-09-27T12:35:31.2317460Z ##[endgroup]
+2026-09-27T12:35:31.2416730Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-09-27T12:35:31.2484010Z 4bd947cf8fcd3cc584ae5855e3c90d7531ce08a4
+2026-09-27T12:35:31.2732800Z ##[group]Run brew install -q mpdecimal openssl@3 xz zstd pkg-config || true
+2026-09-27T12:35:31.2733450Z [36;1mbrew install -q mpdecimal openssl@3 xz zstd pkg-config || true[0m
+2026-09-27T12:35:31.2780740Z shell: /bin/bash -e {0}
+2026-09-27T12:35:31.2781000Z ##[endgroup]
+2026-09-27T12:35:33.3863930Z ##[group]Run sysctl -n machdep.cpu.brand_string hw.ncpu hw.memsize; sw_vers; ls -d /Applications/Xcode*.app
+2026-09-27T12:35:33.3864770Z [36;1msysctl -n machdep.cpu.brand_string hw.ncpu hw.memsize; sw_vers; ls -d /Applications/Xcode*.app[0m
+2026-09-27T12:35:33.3919130Z shell: /bin/bash -e {0}
+2026-09-27T12:35:33.3920140Z ##[endgroup]
+2026-09-27T12:35:33.4491390Z Apple M1 (Virtual)
+2026-09-27T12:35:33.4492840Z 3
+2026-09-27T12:35:33.4496300Z 7516192768
+2026-09-27T12:35:33.4911850Z ProductName:		macOS
+2026-09-27T12:35:33.4921160Z ProductVersion:		15.7.9
+2026-09-27T12:35:33.4923930Z BuildVersion:		24G830
+2026-09-27T12:35:33.5301760Z /Applications/Xcode_16.0.0.app
+2026-09-27T12:35:33.5303250Z /Applications/Xcode_16.0.app
+2026-09-27T12:35:33.5303760Z /Applications/Xcode_16.1.0.app
+2026-09-27T12:35:33.5304370Z /Applications/Xcode_16.1.app
+2026-09-27T12:35:33.5305490Z /Applications/Xcode_16.2.0.app
+2026-09-27T12:35:33.5306030Z /Applications/Xcode_16.2.app
+2026-09-27T12:35:33.5308320Z /Applications/Xcode_16.3.0.app
+2026-09-27T12:35:33.5309050Z /Applications/Xcode_16.3.app
+2026-09-27T12:35:33.5309550Z /Applications/Xcode_16.4.0.app
+2026-09-27T12:35:33.5310330Z /Applications/Xcode_16.4.app
+2026-09-27T12:35:33.5310730Z /Applications/Xcode_16.app
+2026-09-27T12:35:33.5311750Z /Applications/Xcode_26.0.1.app
+2026-09-27T12:35:33.5312880Z /Applications/Xcode_26.0.app
+2026-09-27T12:35:33.5315250Z /Applications/Xcode_26.1.1.app
+2026-09-27T12:35:33.5316560Z /Applications/Xcode_26.1.app
+2026-09-27T12:35:33.5318110Z /Applications/Xcode_26.2.0.app
+2026-09-27T12:35:33.5318900Z /Applications/Xcode_26.2.app
+2026-09-27T12:35:33.5319720Z /Applications/Xcode_26.3.0.app
+2026-09-27T12:35:33.5320580Z /Applications/Xcode_26.3.app
+2026-09-27T12:35:33.5321200Z /Applications/Xcode.app
+2026-09-27T12:35:33.5738300Z ##[group]Run python3 ci/perf-notes/ci/build_arms.py ci/perf-notes/ci/config.json ci
+2026-09-27T12:35:33.5739110Z [36;1mpython3 ci/perf-notes/ci/build_arms.py ci/perf-notes/ci/config.json ci[0m
+2026-09-27T12:35:33.5820750Z shell: /bin/bash -e {0}
+2026-09-27T12:35:33.5821240Z ##[endgroup]
+2026-09-27T12:35:33.8779070Z + git -C ci fetch -q --depth=1 origin 6af40a682881f8442e1bdae67d34b186ef42826a
+2026-09-27T12:35:34.8411470Z + git -C ci worktree add -q --detach /Users/runner/src-6af40a682881 FETCH_HEAD
+2026-09-27T12:35:36.5710410Z + /Users/runner/src-6af40a682881/configure --enable-optimizations --with-lto  > configure.log 2>&1
+2026-09-27T12:36:41.5992730Z + make -j3 > make.log 2>&1
+2026-09-27T12:43:49.1817950Z + grep -m1 "^CC=" Makefile; /Users/runner/b-x164/python -c "import sys; print(sys.version)"
+2026-09-27T12:43:49.2073040Z CC=		clang
+2026-09-27T12:43:49.2098870Z /bin/sh: /Users/runner/b-x164/python: is a directory
+2026-09-27T12:43:49.2112110Z + tail -60 /Users/runner/b-x164/configure.log /Users/runner/b-x164/make.log || true
+2026-09-27T12:43:49.2246210Z ==> /Users/runner/b-x164/configure.log <==
+2026-09-27T12:43:49.2254380Z checking for stdlib extension module _socket... yes
+2026-09-27T12:43:49.2269940Z checking for stdlib extension module grp... yes
+2026-09-27T12:43:49.2270650Z checking for stdlib extension module pwd... yes
+2026-09-27T12:43:49.2271810Z checking for stdlib extension module resource... yes
+2026-09-27T12:43:49.2273350Z checking for stdlib extension module _scproxy... yes
+2026-09-27T12:43:49.2273870Z checking for stdlib extension module syslog... yes
+2026-09-27T12:43:49.2274360Z checking for stdlib extension module termios... yes
+2026-09-27T12:43:49.2274840Z checking for stdlib extension module pyexpat... yes
+2026-09-27T12:43:49.2275460Z checking for stdlib extension module _elementtree... yes
+2026-09-27T12:43:49.2276230Z checking whether C compiler accepts -msse -msse2 -msse3 -msse4.1 -msse4.2... no
+2026-09-27T12:43:49.2278180Z checking whether C compiler accepts -mavx2... no
+2026-09-27T12:43:49.2279110Z checking for HACL* library linking type... shared
+2026-09-27T12:43:49.2282110Z checking for stdlib extension module _md5... yes
+2026-09-27T12:43:49.2282820Z checking for stdlib extension module _sha1... yes
+2026-09-27T12:43:49.2284240Z checking for stdlib extension module _sha2... yes
+2026-09-27T12:43:49.2284750Z checking for stdlib extension module _sha3... yes
+2026-09-27T12:43:49.2285490Z checking for stdlib extension module _blake2... yes
+2026-09-27T12:43:49.2286400Z checking for stdlib extension module _hmac... yes
+2026-09-27T12:43:49.2287860Z checking for stdlib extension module _ctypes... yes
+2026-09-27T12:43:49.2288940Z checking for stdlib extension module _curses... yes
+2026-09-27T12:43:49.2289940Z checking for stdlib extension module _curses_panel... yes
+2026-09-27T12:43:49.2290680Z checking for stdlib extension module _decimal... yes
+2026-09-27T12:43:49.2291370Z checking for stdlib extension module _dbm... yes
+2026-09-27T12:43:49.2293160Z checking for stdlib extension module _gdbm... missing
+2026-09-27T12:43:49.2293660Z checking for stdlib extension module readline... yes
+2026-09-27T12:43:49.2294520Z checking for stdlib extension module _sqlite3... yes
+2026-09-27T12:43:49.2295130Z checking for stdlib extension module _tkinter... missing
+2026-09-27T12:43:49.2295800Z checking for stdlib extension module _uuid... yes
+2026-09-27T12:43:49.2296170Z checking for stdlib extension module zlib... yes
+2026-09-27T12:43:49.2311130Z checking for stdlib extension module _bz2... yes
+2026-09-27T12:43:49.2311870Z checking for stdlib extension module _lzma... yes
+2026-09-27T12:43:49.2312520Z checking for stdlib extension module _zstd... yes
+2026-09-27T12:43:49.2313430Z checking for stdlib extension module _ssl... yes
+2026-09-27T12:43:49.2313930Z checking for stdlib extension module _hashlib... yes
+2026-09-27T12:43:49.2314600Z checking for stdlib extension module _testcapi... yes
+2026-09-27T12:43:49.2315020Z checking for stdlib extension module _testclinic... yes
+2026-09-27T12:43:49.2330760Z checking for stdlib extension module _testclinic_limited... yes
+2026-09-27T12:43:49.2331560Z checking for stdlib extension module _testlimitedcapi... yes
+2026-09-27T12:43:49.2332320Z checking for stdlib extension module _testinternalcapi... yes
+2026-09-27T12:43:49.2332880Z checking for stdlib extension module _testbuffer... yes
+2026-09-27T12:43:49.2333610Z checking for stdlib extension module _testimportmultiple... yes
+2026-09-27T12:43:49.2335580Z checking for stdlib extension module _testmultiphase... yes
+2026-09-27T12:43:49.2336330Z checking for stdlib extension module _testsinglephase... yes
+2026-09-27T12:43:49.2337380Z checking for stdlib extension module xxsubtype... yes
+2026-09-27T12:43:49.2337750Z checking for stdlib extension module _xxtestfuzz... yes
+2026-09-27T12:43:49.2338230Z checking for stdlib extension module _ctypes_test... yes
+2026-09-27T12:43:49.2338600Z checking for stdlib extension module xxlimited... yes
+2026-09-27T12:43:49.2339080Z checking for stdlib extension module xxlimited_35... yes
+2026-09-27T12:43:49.2339510Z checking for stdlib extension module xxlimited_3_13... yes
+2026-09-27T12:43:49.2339920Z configure: creating ./config.status
+2026-09-27T12:43:49.2340330Z config.status: creating Makefile.pre
+2026-09-27T12:43:49.2340780Z config.status: creating Misc/python.pc
+2026-09-27T12:43:49.2341110Z config.status: creating Misc/python-embed.pc
+2026-09-27T12:43:49.2341450Z config.status: creating Misc/python-config.sh
+2026-09-27T12:43:49.2341860Z config.status: creating Modules/Setup.bootstrap
+2026-09-27T12:43:49.2342230Z config.status: creating Modules/Setup.stdlib
+2026-09-27T12:43:49.2342600Z config.status: creating Modules/ld_so_aix
+2026-09-27T12:43:49.2342920Z config.status: creating pyconfig.h
+2026-09-27T12:43:49.2343310Z configure: creating Modules/Setup.local
+2026-09-27T12:43:49.2343650Z configure: creating Makefile
+2026-09-27T12:43:49.2344000Z 
+2026-09-27T12:43:49.2344070Z ==> /Users/runner/b-x164/make.log <==
+2026-09-27T12:43:49.2345080Z ./Programs/_freeze_module getpath /Users/runner/src-6af40a682881/Modules/getpath.py Python/frozen_modules/getpath.h
+2026-09-27T12:43:49.2346120Z ./Programs/_freeze_module importlib._bootstrap /Users/runner/src-6af40a682881/Lib/importlib/_bootstrap.py Python/frozen_modules/importlib._bootstrap.h
+2026-09-27T12:43:49.2347310Z ./Programs/_freeze_module importlib._bootstrap_external /Users/runner/src-6af40a682881/Lib/importlib/_bootstrap_external.py Python/frozen_modules/importlib._bootstrap_external.h
+2026-09-27T12:43:49.2348290Z ./Programs/_freeze_module zipimport /Users/runner/src-6af40a682881/Lib/zipimport.py Python/frozen_modules/zipimport.h
+2026-09-27T12:43:49.2349030Z ./Programs/_freeze_module builtins /Users/runner/src-6af40a682881/Lib/_pybuiltins.py Python/frozen_modules/builtins.h
+2026-09-27T12:43:49.2352100Z clang -c -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer  -fno-strict-overflow -Wsign-compare -Wunreachable-code -DNDEBUG -g -O3 -Wall    -flto=thin -std=c11 -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wstrict-prototypes -Werror=implicit-function-declaration -fvisibility=hidden -Werror=unguarded-availability -fprofile-instr-use=/Users/runner/b-x164/code.profclangd -I/Users/runner/src-6af40a682881/Include/internal -I/Users/runner/src-6af40a682881/Include/internal/mimalloc -IObjects -IInclude -IPython -I. -I/Users/runner/src-6af40a682881/Include    -DPy_BUILD_CORE -DPYTHONPATH='""' \
+2026-09-27T12:43:49.2354960Z 		-DPREFIX='"/usr/local"' \
+2026-09-27T12:43:49.2355270Z 		-DEXEC_PREFIX='"/usr/local"' \
+2026-09-27T12:43:49.2355560Z 		-DVERSION='"3.16"' \
+2026-09-27T12:43:49.2355870Z 		-DVPATH='"/Users/runner/src-6af40a682881"' \
+2026-09-27T12:43:49.2356160Z 		-DPLATLIBDIR='"lib"' \
+2026-09-27T12:43:49.2356470Z 		-DPYTHONFRAMEWORK='""' \
+2026-09-27T12:43:49.2356780Z 		-o Modules/getpath.o /Users/runner/src-6af40a682881/Modules/getpath.c
+2026-09-27T12:43:49.2359760Z clang -c -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer  -fno-strict-overflow -Wsign-compare -Wunreachable-code -DNDEBUG -g -O3 -Wall    -flto=thin -std=c11 -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wstrict-prototypes -Werror=implicit-function-declaration -fvisibility=hidden -Werror=unguarded-availability -fprofile-instr-use=/Users/runner/b-x164/code.profclangd -I/Users/runner/src-6af40a682881/Include/internal -I/Users/runner/src-6af40a682881/Include/internal/mimalloc -IObjects -IInclude -IPython -I. -I/Users/runner/src-6af40a682881/Include    -DPy_BUILD_CORE -o Programs/_bootstrap_python.o /Users/runner/src-6af40a682881/Programs/_bootstrap_python.c
+2026-09-27T12:43:49.2362210Z warning: no profile data available for file "_bootstrap_python.c" [-Wprofile-instr-unprofiled]
+2026-09-27T12:43:49.2367430Z 1 warning generated.
+2026-09-27T12:43:49.2384170Z clang   -flto=thin  -o _bootstrap_python Modules/getbuildinfo.o Parser/token.o  Parser/pegen.o Parser/pegen_errors.o Parser/action_helpers.o Parser/parser.o Parser/string_parser.o Parser/peg_api.o Parser/lexer/lexer.o Parser/lexer/layout.o Parser/lexer/number.o Parser/lexer/state.o Parser/lexer/string.o Parser/tokenizer/decoder.o Parser/tokenizer/api.o Parser/tokenizer/reader.o Parser/tokenizer/source.o Parser/tokenizer/helpers.o Parser/myreadline.o Objects/abstract.o Objects/boolobject.o Objects/bytes_methods.o Objects/bytearrayobject.o Objects/bytesobject.o Objects/call.o Objects/capsule.o Objects/cellobject.o Objects/classobject.o Objects/codeobject.o Objects/complexobject.o Objects/descrobject.o Objects/enumobject.o Objects/exceptions.o Objects/genericaliasobject.o Objects/genobject.o Objects/fileobject.o Objects/floatobject.o Objects/frameobject.o Objects/funcobject.o Objects/interpolationobject.o Objects/iterobject.o Objects/lazyimportobject.o Objects/listobject.o Objects/longobject.o Objects/dictobject.o Objects/odictobject.o Objects/memoryobject.o Objects/methodobject.o Objects/moduleobject.o Objects/namespaceobject.o Objects/object.o Objects/obmalloc.o Objects/picklebufobject.o Objects/rangeobject.o Objects/sentinelobject.o Objects/setobject.o Objects/sliceobject.o Objects/structseq.o Objects/templateobject.o Objects/tupleobject.o Objects/typeobject.o Objects/typevarobject.o Objects/unicode_format.o Objects/unicode_formatter.o Objects/unicode_writer.o Objects/unicodectype.o Objects/unicodeobject.o Objects/unionobject.o Objects/weakrefobject.o Python/asm_trampoline_aarch64.o Python/_contextvars.o Python/_warnings.o Python/Python-ast.o Python/Python-tokenize.o Python/asdl.o Python/assemble.o Python/ast.o Python/ast_preprocess.o Python/ast_unparse.o Python/bltinmodule.o Python/brc.o Python/ceval.o Python/codecs.o Python/codegen.o Python/compile.o Python/context.o Python/critical_section.o Python/crossinterp.o Python/dynamic_annotations.o Python/errors.o Python/flowgraph.o Python/frame.o Python/frozenmain.o Python/future.o Python/gc.o Python/gc_free_threading.o Python/gc_gil.o Python/getargs.o Python/getcompiler.o Python/getcopyright.o Python/getplatform.o Python/getversion.o Python/ceval_gil.o Python/hamt.o Python/hashtable.o Python/import.o Python/importdl.o Python/index_pool.o Python/initconfig.o Python/interpconfig.o Python/instrumentation.o Python/instruction_sequence.o Python/intrinsics.o Python/jit.o Python/jit_publish.o  Python/legacy_tracing.o Python/lock.o Python/marshal.o Python/modsupport.o Python/mysnprintf.o Python/mystrtoul.o Python/object_stack.o Python/optimizer.o Python/optimizer_analysis.o Python/optimizer_symbols.o Python/parking_lot.o Python/pathconfig.o Python/preconfig.o Python/pyarena.o Python/pyctype.o Python/pyfpe.o Python/pyhash.o Python/pylifecycle.o Python/pymath.o Python/pystate.o Python/pystats.o Python/pythonrun.o Python/pytime.o Python/qsbr.o Python/bootstrap_hash.o Python/specialize.o Python/slots.o Python/slots_generated.o Python/stackrefs.o Python/structmember.o Python/symtable.o Python/sysmodule.o Python/thread.o Python/traceback.o Python/tracemalloc.o Python/typecache.o Python/uniqueid.o Python/getopt.o Python/pystrcmp.o Python/pystrtod.o Python/pystrhex.o Python/dtoa.o Python/fileutils.o Python/suggestions.o Python/perf_trampoline.o Python/perf_jit_trampoline.o Python/jit_unwind.o Python/remote_debugging.o Python/dynload_shlib.o     Modules/config.o Modules/main.o Modules/gcmodule.o Modules/_asynciomodule.o  Modules/atexitmodule.o  Modules/faulthandler.o  Modules/posixmodule.o  Modules/signalmodule.o  Modules/_tracemalloc.o  Modules/_suggestions.o  Modules/_datetimemodule.o  Modules/_codecsmodule.o  Modules/_collectionsmodule.o  Modules/errnomodule.o  Modules/_io/_iomodule.o Modules/_io/iobase.o Modules/_io/fileio.o Modules/_io/bytesio.o Modules/_io/bufferedio.o Modules/_io/textio.o Modules/_io/stringio.o  Modules/itertoolsmodule.o  Modules/_sre/sre.o  Modules/_sysconfig.o  Modules/_threadmodule.o  Modules/timemodule.o  Modules/_typesmodule.o  Modules/_typingmodule.o  Modules/_weakref.o  Modules/_abc.o  Modules/_functoolsmodule.o  Modules/_localemodule.o  Modules/_opcode.o  Modules/_operator.o  Modules/_stat.o  Modules/symtablemodule.o  Modules/pwdmodule.o \
+2026-09-27T12:43:49.2397740Z 		Programs/_bootstrap_python.o Modules/getpath.o -liconv -ldl  -framework CoreFoundation                               
+2026-09-27T12:43:49.2398390Z # Dummy pybuilddir.txt  is needed for _bootstrap_python to be runnable
+2026-09-27T12:43:49.2399150Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py abc /Users/runner/src-6af40a682881/Lib/abc.py Python/frozen_modules/abc.h
+2026-09-27T12:43:49.2400180Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py codecs /Users/runner/src-6af40a682881/Lib/codecs.py Python/frozen_modules/codecs.h
+2026-09-27T12:43:49.2401100Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py io /Users/runner/src-6af40a682881/Lib/io.py Python/frozen_modules/io.h
+2026-09-27T12:43:49.2402230Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py _collections_abc /Users/runner/src-6af40a682881/Lib/_collections_abc.py Python/frozen_modules/_collections_abc.h
+2026-09-27T12:43:49.2403330Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py _sitebuiltins /Users/runner/src-6af40a682881/Lib/_sitebuiltins.py Python/frozen_modules/_sitebuiltins.h
+2026-09-27T12:43:49.2404550Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py genericpath /Users/runner/src-6af40a682881/Lib/genericpath.py Python/frozen_modules/genericpath.h
+2026-09-27T12:43:49.2405730Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py ntpath /Users/runner/src-6af40a682881/Lib/ntpath.py Python/frozen_modules/ntpath.h
+2026-09-27T12:43:49.2406730Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py posixpath /Users/runner/src-6af40a682881/Lib/posixpath.py Python/frozen_modules/posixpath.h
+2026-09-27T12:43:49.2407730Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py os /Users/runner/src-6af40a682881/Lib/os.py Python/frozen_modules/os.h
+2026-09-27T12:43:49.2408700Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py site /Users/runner/src-6af40a682881/Lib/site.py Python/frozen_modules/site.h
+2026-09-27T12:43:49.2409670Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py stat /Users/runner/src-6af40a682881/Lib/stat.py Python/frozen_modules/stat.h
+2026-09-27T12:43:49.2410620Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py linecache /Users/runner/src-6af40a682881/Lib/linecache.py Python/frozen_modules/linecache.h
+2026-09-27T12:43:49.2412210Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py importlib.util /Users/runner/src-6af40a682881/Lib/importlib/util.py Python/frozen_modules/importlib.util.h
+2026-09-27T12:43:49.2413420Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py importlib.machinery /Users/runner/src-6af40a682881/Lib/importlib/machinery.py Python/frozen_modules/importlib.machinery.h
+2026-09-27T12:43:49.2414670Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py runpy /Users/runner/src-6af40a682881/Lib/runpy.py Python/frozen_modules/runpy.h
+2026-09-27T12:43:49.2415670Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py __hello__ /Users/runner/src-6af40a682881/Lib/__hello__.py Python/frozen_modules/__hello__.h
+2026-09-27T12:43:49.2416770Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py __phello__ /Users/runner/src-6af40a682881/Lib/__phello__/__init__.py Python/frozen_modules/__phello__.h
+2026-09-27T12:43:49.2417910Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py __phello__.ham /Users/runner/src-6af40a682881/Lib/__phello__/ham/__init__.py Python/frozen_modules/__phello__.ham.h
+2026-09-27T12:43:49.2419000Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py __phello__.ham.eggs /Users/runner/src-6af40a682881/Lib/__phello__/ham/eggs.py Python/frozen_modules/__phello__.ham.eggs.h
+2026-09-27T12:43:49.2420080Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py __phello__.spam /Users/runner/src-6af40a682881/Lib/__phello__/spam.py Python/frozen_modules/__phello__.spam.h
+2026-09-27T12:43:49.2421110Z ./_bootstrap_python /Users/runner/src-6af40a682881/Programs/_freeze_module.py frozen_only /Users/runner/src-6af40a682881/Tools/freeze/flag.py Python/frozen_modules/frozen_only.h
+2026-09-27T12:43:49.2423590Z clang -c -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer  -fno-strict-overflow -Wsign-compare -Wunreachable-code -DNDEBUG -g -O3 -Wall    -flto=thin -std=c11 -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wstrict-prototypes -Werror=implicit-function-declaration -fvisibility=hidden -Werror=unguarded-availability -fprofile-instr-use=/Users/runner/b-x164/code.profclangd -I/Users/runner/src-6af40a682881/Include/internal -I/Users/runner/src-6af40a682881/Include/internal/mimalloc -IObjects -IInclude -IPython -I. -I/Users/runner/src-6af40a682881/Include    -DPy_BUILD_CORE -o Python/frozen.o /Users/runner/src-6af40a682881/Python/frozen.c
+2026-09-27T12:43:49.2425760Z rm -f libpython3.16.a
+2026-09-27T12:43:49.2438590Z /usr/bin/xcrun ar rcs libpython3.16.a Modules/getbuildinfo.o Parser/token.o  Parser/pegen.o Parser/pegen_errors.o Parser/action_helpers.o Parser/parser.o Parser/string_parser.o Parser/peg_api.o Parser/lexer/lexer.o Parser/lexer/layout.o Parser/lexer/number.o Parser/lexer/state.o Parser/lexer/string.o Parser/tokenizer/decoder.o Parser/tokenizer/api.o Parser/tokenizer/reader.o Parser/tokenizer/source.o Parser/tokenizer/helpers.o Parser/myreadline.o Objects/abstract.o Objects/boolobject.o Objects/bytes_methods.o Objects/bytearrayobject.o Objects/bytesobject.o Objects/call.o Objects/capsule.o Objects/cellobject.o Objects/classobject.o Objects/codeobject.o Objects/complexobject.o Objects/descrobject.o Objects/enumobject.o Objects/exceptions.o Objects/genericaliasobject.o Objects/genobject.o Objects/fileobject.o Objects/floatobject.o Objects/frameobject.o Objects/funcobject.o Objects/interpolationobject.o Objects/iterobject.o Objects/lazyimportobject.o Objects/listobject.o Objects/longobject.o Objects/dictobject.o Objects/odictobject.o Objects/memoryobject.o Objects/methodobject.o Objects/moduleobject.o Objects/namespaceobject.o Objects/object.o Objects/obmalloc.o Objects/picklebufobject.o Objects/rangeobject.o Objects/sentinelobject.o Objects/setobject.o Objects/sliceobject.o Objects/structseq.o Objects/templateobject.o Objects/tupleobject.o Objects/typeobject.o Objects/typevarobject.o Objects/unicode_format.o Objects/unicode_formatter.o Objects/unicode_writer.o Objects/unicodectype.o Objects/unicodeobject.o Objects/unionobject.o Objects/weakrefobject.o Python/asm_trampoline_aarch64.o Python/_contextvars.o Python/_warnings.o Python/Python-ast.o Python/Python-tokenize.o Python/asdl.o Python/assemble.o Python/ast.o Python/ast_preprocess.o Python/ast_unparse.o Python/bltinmodule.o Python/brc.o Python/ceval.o Python/codecs.o Python/codegen.o Python/compile.o Python/context.o Python/critical_section.o Python/crossinterp.o Python/dynamic_annotations.o Python/errors.o Python/flowgraph.o Python/frame.o Python/frozenmain.o Python/future.o Python/gc.o Python/gc_free_threading.o Python/gc_gil.o Python/getargs.o Python/getcompiler.o Python/getcopyright.o Python/getplatform.o Python/getversion.o Python/ceval_gil.o Python/hamt.o Python/hashtable.o Python/import.o Python/importdl.o Python/index_pool.o Python/initconfig.o Python/interpconfig.o Python/instrumentation.o Python/instruction_sequence.o Python/intrinsics.o Python/jit.o Python/jit_publish.o  Python/legacy_tracing.o Python/lock.o Python/marshal.o Python/modsupport.o Python/mysnprintf.o Python/mystrtoul.o Python/object_stack.o Python/optimizer.o Python/optimizer_analysis.o Python/optimizer_symbols.o Python/parking_lot.o Python/pathconfig.o Python/preconfig.o Python/pyarena.o Python/pyctype.o Python/pyfpe.o Python/pyhash.o Python/pylifecycle.o Python/pymath.o Python/pystate.o Python/pystats.o Python/pythonrun.o Python/pytime.o Python/qsbr.o Python/bootstrap_hash.o Python/specialize.o Python/slots.o Python/slots_generated.o Python/stackrefs.o Python/structmember.o Python/symtable.o Python/sysmodule.o Python/thread.o Python/traceback.o Python/tracemalloc.o Python/typecache.o Python/uniqueid.o Python/getopt.o Python/pystrcmp.o Python/pystrtod.o Python/pystrhex.o Python/dtoa.o Python/fileutils.o Python/suggestions.o Python/perf_trampoline.o Python/perf_jit_trampoline.o Python/jit_unwind.o Python/remote_debugging.o Python/dynload_shlib.o     Modules/config.o Modules/main.o Modules/gcmodule.o Modules/_asynciomodule.o  Modules/atexitmodule.o  Modules/faulthandler.o  Modules/posixmodule.o  Modules/signalmodule.o  Modules/_tracemalloc.o  Modules/_suggestions.o  Modules/_datetimemodule.o  Modules/_codecsmodule.o  Modules/_collectionsmodule.o  Modules/errnomodule.o  Modules/_io/_iomodule.o Modules/_io/iobase.o Modules/_io/fileio.o Modules/_io/bytesio.o Modules/_io/bufferedio.o Modules/_io/textio.o Modules/_io/stringio.o  Modules/itertoolsmodule.o  Modules/_sre/sre.o  Modules/_sysconfig.o  Modules/_threadmodule.o  Modules/timemodule.o  Modules/_typesmodule.o  Modules/_typingmodule.o  Modules/_weakref.o  Modules/_abc.o  Modules/_functoolsmodule.o  Modules/_localemodule.o  Modules/_opcode.o  Modules/_operator.o  Modules/_stat.o  Modules/symtablemodule.o  Modules/pwdmodule.o Modules/getpath.o Python/frozen.o
+2026-09-27T12:43:49.2473860Z clang    -flto=thin -Wl,-export_dynamic -Wl,-object_path_lto,"".lto -g  -Wl,-stack_size,1000000  -framework CoreFoundation -o python.exe Programs/python.o Modules/getbuildinfo.o Parser/token.o  Parser/pegen.o Parser/pegen_errors.o Parser/action_helpers.o Parser/parser.o Parser/string_parser.o Parser/peg_api.o Parser/lexer/lexer.o Parser/lexer/layout.o Parser/lexer/number.o Parser/lexer/state.o Parser/lexer/string.o Parser/tokenizer/decoder.o Parser/tokenizer/api.o Parser/tokenizer/reader.o Parser/tokenizer/source.o Parser/tokenizer/helpers.o Parser/myreadline.o Objects/abstract.o Objects/boolobject.o Objects/bytes_methods.o Objects/bytearrayobject.o Objects/bytesobject.o Objects/call.o Objects/capsule.o Objects/cellobject.o Objects/classobject.o Objects/codeobject.o Objects/complexobject.o Objects/descrobject.o Objects/enumobject.o Objects/exceptions.o Objects/genericaliasobject.o Objects/genobject.o Objects/fileobject.o Objects/floatobject.o Objects/frameobject.o Objects/funcobject.o Objects/interpolationobject.o Objects/iterobject.o Objects/lazyimportobject.o Objects/listobject.o Objects/longobject.o Objects/dictobject.o Objects/odictobject.o Objects/memoryobject.o Objects/methodobject.o Objects/moduleobject.o Objects/namespaceobject.o Objects/object.o Objects/obmalloc.o Objects/picklebufobject.o Objects/rangeobject.o Objects/sentinelobject.o Objects/setobject.o Objects/sliceobject.o Objects/structseq.o Objects/templateobject.o Objects/tupleobject.o Objects/typeobject.o Objects/typevarobject.o Objects/unicode_format.o Objects/unicode_formatter.o Objects/unicode_writer.o Objects/unicodectype.o Objects/unicodeobject.o Objects/unionobject.o Objects/weakrefobject.o Python/asm_trampoline_aarch64.o Python/_contextvars.o Python/_warnings.o Python/Python-ast.o Python/Python-tokenize.o Python/asdl.o Python/assemble.o Python/ast.o Python/ast_preprocess.o Python/ast_unparse.o Python/bltinmodule.o Python/brc.o Python/ceval.o Python/codecs.o Python/codegen.o Python/compile.o Python/context.o Python/critical_section.o Python/crossinterp.o Python/dynamic_annotations.o Python/errors.o Python/flowgraph.o Python/frame.o Python/frozenmain.o Python/future.o Python/gc.o Python/gc_free_threading.o Python/gc_gil.o Python/getargs.o Python/getcompiler.o Python/getcopyright.o Python/getplatform.o Python/getversion.o Python/ceval_gil.o Python/hamt.o Python/hashtable.o Python/import.o Python/importdl.o Python/index_pool.o Python/initconfig.o Python/interpconfig.o Python/instrumentation.o Python/instruction_sequence.o Python/intrinsics.o Python/jit.o Python/jit_publish.o  Python/legacy_tracing.o Python/lock.o Python/marshal.o Python/modsupport.o Python/mysnprintf.o Python/mystrtoul.o Python/object_stack.o Python/optimizer.o Python/optimizer_analysis.o Python/optimizer_symbols.o Python/parking_lot.o Python/pathconfig.o Python/preconfig.o Python/pyarena.o Python/pyctype.o Python/pyfpe.o Python/pyhash.o Python/pylifecycle.o Python/pymath.o Python/pystate.o Python/pystats.o Python/pythonrun.o Python/pytime.o Python/qsbr.o Python/bootstrap_hash.o Python/specialize.o Python/slots.o Python/slots_generated.o Python/stackrefs.o Python/structmember.o Python/symtable.o Python/sysmodule.o Python/thread.o Python/traceback.o Python/tracemalloc.o Python/typecache.o Python/uniqueid.o Python/getopt.o Python/pystrcmp.o Python/pystrtod.o Python/pystrhex.o Python/dtoa.o Python/fileutils.o Python/suggestions.o Python/perf_trampoline.o Python/perf_jit_trampoline.o Python/jit_unwind.o Python/remote_debugging.o Python/dynload_shlib.o     Modules/config.o Modules/main.o Modules/gcmodule.o Modules/_asynciomodule.o  Modules/atexitmodule.o  Modules/faulthandler.o  Modules/posixmodule.o  Modules/signalmodule.o  Modules/_tracemalloc.o  Modules/_suggestions.o  Modules/_datetimemodule.o  Modules/_codecsmodule.o  Modules/_collectionsmodule.o  Modules/errnomodule.o  Modules/_io/_iomodule.o Modules/_io/iobase.o Modules/_io/fileio.o Modules/_io/bytesio.o Modules/_io/bufferedio.o Modules/_io/textio.o Modules/_io/stringio.o  Modules/itertoolsmodule.o  Modules/_sre/sre.o  Modules/_sysconfig.o  Modules/_threadmodule.o  Modules/timemodule.o  Modules/_typesmodule.o  Modules/_typingmodule.o  Modules/_weakref.o  Modules/_abc.o  Modules/_functoolsmodule.o  Modules/_localemodule.o  Modules/_opcode.o  Modules/_operator.o  Modules/_stat.o  Modules/symtablemodule.o  Modules/pwdmodule.o Modules/getpath.o Python/frozen.o -liconv -ldl  -framework CoreFoundation                               
+2026-09-27T12:43:49.2504150Z clang    -flto=thin -Wl,-export_dynamic -Wl,-object_path_lto,"".lto -g  -Wl,-stack_size,1000000  -framework CoreFoundation -o Programs/_testembed Programs/_testembed.o Modules/getbuildinfo.o Parser/token.o  Parser/pegen.o Parser/pegen_errors.o Parser/action_helpers.o Parser/parser.o Parser/string_parser.o Parser/peg_api.o Parser/lexer/lexer.o Parser/lexer/layout.o Parser/lexer/number.o Parser/lexer/state.o Parser/lexer/string.o Parser/tokenizer/decoder.o Parser/tokenizer/api.o Parser/tokenizer/reader.o Parser/tokenizer/source.o Parser/tokenizer/helpers.o Parser/myreadline.o Objects/abstract.o Objects/boolobject.o Objects/bytes_methods.o Objects/bytearrayobject.o Objects/bytesobject.o Objects/call.o Objects/capsule.o Objects/cellobject.o Objects/classobject.o Objects/codeobject.o Objects/complexobject.o Objects/descrobject.o Objects/enumobject.o Objects/exceptions.o Objects/genericaliasobject.o Objects/genobject.o Objects/fileobject.o Objects/floatobject.o Objects/frameobject.o Objects/funcobject.o Objects/interpolationobject.o Objects/iterobject.o Objects/lazyimportobject.o Objects/listobject.o Objects/longobject.o Objects/dictobject.o Objects/odictobject.o Objects/memoryobject.o Objects/methodobject.o Objects/moduleobject.o Objects/namespaceobject.o Objects/object.o Objects/obmalloc.o Objects/picklebufobject.o Objects/rangeobject.o Objects/sentinelobject.o Objects/setobject.o Objects/sliceobject.o Objects/structseq.o Objects/templateobject.o Objects/tupleobject.o Objects/typeobject.o Objects/typevarobject.o Objects/unicode_format.o Objects/unicode_formatter.o Objects/unicode_writer.o Objects/unicodectype.o Objects/unicodeobject.o Objects/unionobject.o Objects/weakrefobject.o Python/asm_trampoline_aarch64.o Python/_contextvars.o Python/_warnings.o Python/Python-ast.o Python/Python-tokenize.o Python/asdl.o Python/assemble.o Python/ast.o Python/ast_preprocess.o Python/ast_unparse.o Python/bltinmodule.o Python/brc.o Python/ceval.o Python/codecs.o Python/codegen.o Python/compile.o Python/context.o Python/critical_section.o Python/crossinterp.o Python/dynamic_annotations.o Python/errors.o Python/flowgraph.o Python/frame.o Python/frozenmain.o Python/future.o Python/gc.o Python/gc_free_threading.o Python/gc_gil.o Python/getargs.o Python/getcompiler.o Python/getcopyright.o Python/getplatform.o Python/getversion.o Python/ceval_gil.o Python/hamt.o Python/hashtable.o Python/import.o Python/importdl.o Python/index_pool.o Python/initconfig.o Python/interpconfig.o Python/instrumentation.o Python/instruction_sequence.o Python/intrinsics.o Python/jit.o Python/jit_publish.o  Python/legacy_tracing.o Python/lock.o Python/marshal.o Python/modsupport.o Python/mysnprintf.o Python/mystrtoul.o Python/object_stack.o Python/optimizer.o Python/optimizer_analysis.o Python/optimizer_symbols.o Python/parking_lot.o Python/pathconfig.o Python/preconfig.o Python/pyarena.o Python/pyctype.o Python/pyfpe.o Python/pyhash.o Python/pylifecycle.o Python/pymath.o Python/pystate.o Python/pystats.o Python/pythonrun.o Python/pytime.o Python/qsbr.o Python/bootstrap_hash.o Python/specialize.o Python/slots.o Python/slots_generated.o Python/stackrefs.o Python/structmember.o Python/symtable.o Python/sysmodule.o Python/thread.o Python/traceback.o Python/tracemalloc.o Python/typecache.o Python/uniqueid.o Python/getopt.o Python/pystrcmp.o Python/pystrtod.o Python/pystrhex.o Python/dtoa.o Python/fileutils.o Python/suggestions.o Python/perf_trampoline.o Python/perf_jit_trampoline.o Python/jit_unwind.o Python/remote_debugging.o Python/dynload_shlib.o     Modules/config.o Modules/main.o Modules/gcmodule.o Modules/_asynciomodule.o  Modules/atexitmodule.o  Modules/faulthandler.o  Modules/posixmodule.o  Modules/signalmodule.o  Modules/_tracemalloc.o  Modules/_suggestions.o  Modules/_datetimemodule.o  Modules/_codecsmodule.o  Modules/_collectionsmodule.o  Modules/errnomodule.o  Modules/_io/_iomodule.o Modules/_io/iobase.o Modules/_io/fileio.o Modules/_io/bytesio.o Modules/_io/bufferedio.o Modules/_io/textio.o Modules/_io/stringio.o  Modules/itertoolsmodule.o  Modules/_sre/sre.o  Modules/_sysconfig.o  Modules/_threadmodule.o  Modules/timemodule.o  Modules/_typesmodule.o  Modules/_typingmodule.o  Modules/_weakref.o  Modules/_abc.o  Modules/_functoolsmodule.o  Modules/_localemodule.o  Modules/_opcode.o  Modules/_operator.o  Modules/_stat.o  Modules/symtablemodule.o  Modules/pwdmodule.o Modules/getpath.o Python/frozen.o -liconv -ldl  -framework CoreFoundation                               
+2026-09-27T12:43:49.2518170Z ./python.exe -E -S -X pathconfig_warnings=0 -m sysconfig --generate-posix-vars ;\
+2026-09-27T12:43:49.2518560Z 	if test $? -ne 0 ; then \
+2026-09-27T12:43:49.2518930Z 		echo "generate-posix-vars failed" ; \
+2026-09-27T12:43:49.2519190Z 		rm -f ./pybuilddir.txt ; \
+2026-09-27T12:43:49.2519800Z 		exit 1 ; \
+2026-09-27T12:43:49.2520060Z 	fi
+2026-09-27T12:43:49.2520330Z Written build/lib.macosx-15.7-arm64-3.16/_sysconfigdata__darwin_darwin.py
+2026-09-27T12:43:49.2524580Z Written build/lib.macosx-15.7-arm64-3.16/_sysconfig_vars__darwin_darwin.json
+2026-09-27T12:43:49.2525310Z ./python.exe -E -c 'import sys ; from sysconfig import get_platform ; print("%s-%d.%d" % (get_platform(), *sys.version_info[:2]))' >platform
+2026-09-27T12:43:49.2526090Z ./python.exe -E /Users/runner/src-6af40a682881/Tools/build/generate-build-details.py `cat pybuilddir.txt`/build-details.json
+2026-09-27T12:43:49.2527050Z The necessary bits to build these optional modules were not found:
+2026-09-27T12:43:49.2527500Z _gdbm                 _tkinter                                 
+2026-09-27T12:43:49.2527950Z To find the necessary bits, look in configure.ac and config.log.
+2026-09-27T12:43:49.2528230Z 
+2026-09-27T12:43:49.2528480Z Checked 116 modules (37 built-in, 77 shared, 0 n/a on macosx-15.7-arm64, 0 disabled, 2 missing, 0 failed on import)
+2026-09-27T12:43:49.2914480Z Traceback (most recent call last):
+2026-09-27T12:43:49.2917980Z   File "/Users/runner/work/cpython/cpython/ci/perf-notes/ci/build_arms.py", line 97, in <module>
+2026-09-27T12:43:49.2918870Z     sh(f'grep -m1 "^CC=" Makefile; {bdir}/python -c "import sys; print(sys.version)"', cwd=bdir, env=env)
+2026-09-27T12:43:49.2919860Z     ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-27T12:43:49.2920550Z   File "/Users/runner/work/cpython/cpython/ci/perf-notes/ci/build_arms.py", line 27, in sh
+2026-09-27T12:43:49.2921180Z     subprocess.run(cmd, shell=True, check=True, **kw)
+2026-09-27T12:43:49.2921580Z     ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-09-27T12:43:49.2922290Z   File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 578, in run
+2026-09-27T12:43:49.2922930Z     raise CalledProcessError(retcode, process.args,
+2026-09-27T12:43:49.2923400Z                              output=stdout, stderr=stderr)
+2026-09-27T12:43:49.2924120Z subprocess.CalledProcessError: Command 'grep -m1 "^CC=" Makefile; /Users/runner/b-x164/python -c "import sys; print(sys.version)"' returned non-zero exit status 126.
+2026-09-27T12:43:49.3096460Z ##[error]Process completed with exit code 1.
+2026-09-27T12:43:49.3319780Z ##[group]Run "$HOME/drv/bin/python" ci/perf-notes/tools/blockbench.py analyze "$HOME/results.jsonl" --base "$(python3 -c "import json;print(next(iter(json.load(open('ci/perf-notes/ci/config.json'))['arms'])))")" || true
+2026-09-27T12:43:49.3321190Z [36;1m"$HOME/drv/bin/python" ci/perf-notes/tools/blockbench.py analyze "$HOME/results.jsonl" --base "$(python3 -c "import json;print(next(iter(json.load(open('ci/perf-notes/ci/config.json'))['arms'])))")" || true[0m
+2026-09-27T12:43:49.3321950Z [36;1mecho "=====BEGIN-RESULTS-B64====="[0m
+2026-09-27T12:43:49.3322250Z [36;1mgzip -9c "$HOME/results.jsonl" | base64 | tr -d '\n'; echo[0m
+2026-09-27T12:43:49.3322700Z [36;1mecho "=====END-RESULTS-B64====="[0m
+2026-09-27T12:43:49.3702890Z shell: /bin/bash -e {0}
+2026-09-27T12:43:49.3704010Z ##[endgroup]
+2026-09-27T12:43:49.6204020Z /Users/runner/work/_temp/1c25040c-d479-450a-9caa-96595d78917b.sh: line 1: /Users/runner/drv/bin/python: No such file or directory
+2026-09-27T12:43:49.6205500Z =====BEGIN-RESULTS-B64=====
+2026-09-27T12:43:49.6264770Z gzip: can't stat: /Users/runner/results.jsonl (/Users/runner/results.jsonl): No such file or directory
+2026-09-27T12:43:49.6272160Z 
+2026-09-27T12:43:49.6273180Z =====END-RESULTS-B64=====
+2026-09-27T12:43:49.6448000Z ##[group]Run actions/upload-artifact@v4
+2026-09-27T12:43:49.6448830Z with:
+2026-09-27T12:43:49.6449250Z   name: results-0
+2026-09-27T12:43:49.6449730Z   path: ~/results.jsonl
+2026-09-27T12:43:49.6450240Z   if-no-files-found: warn
+2026-09-27T12:43:49.6450740Z   compression-level: 6
+2026-09-27T12:43:49.6451250Z   overwrite: false
+2026-09-27T12:43:49.6451720Z   include-hidden-files: false
+2026-09-27T12:43:49.6453220Z ##[endgroup]
+2026-09-27T12:43:50.2364200Z (node:27225) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-09-27T12:43:50.2366460Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-09-27T12:43:50.2426020Z ##[warning]No files were found with the provided path: ~/results.jsonl. No artifacts will be uploaded.
+2026-09-27T12:43:50.2747340Z Post job cleanup.
+2026-09-27T12:43:50.4610910Z [command]/opt/homebrew/bin/git version
+2026-09-27T12:43:50.5228980Z git version 2.55.0
+2026-09-27T12:43:50.5254310Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/4262398c-994d-4ddb-8e8f-862401307ef5/.gitconfig'
+2026-09-27T12:43:50.5262570Z Temporarily overriding HOME='/Users/runner/work/_temp/4262398c-994d-4ddb-8e8f-862401307ef5' before making global git config changes
+2026-09-27T12:43:50.5263300Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-27T12:43:50.5265760Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/cpython/cpython/ci
+2026-09-27T12:43:50.5533150Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-27T12:43:50.5639300Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-27T12:43:50.7502890Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-27T12:43:50.7589260Z http.https://github.com/.extraheader
+2026-09-27T12:43:50.7736100Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-09-27T12:43:50.7891460Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-27T12:43:50.9364520Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-27T12:43:50.9670830Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-27T12:43:51.1221760Z Cleaning up orphan processes
+2026-09-27T12:43:53.2758940Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

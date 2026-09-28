@@ -1,0 +1,27 @@
+{
+ "arms": {
+  "base": "6af40a6",
+  "same": {
+   "same_as": "base"
+  },
+  "no_version_loops_for_strides": {
+   "ref": "6af40a6",
+   "configure_extra": "OPT='-DNDEBUG -g -O3 -Wall -fno-version-loops-for-strides'"
+  },
+  "vect_very_cheap": {
+   "ref": "6af40a6",
+   "configure_extra": "OPT='-DNDEBUG -g -O3 -Wall -fvect-cost-model=very-cheap'"
+  },
+  "o2_inlining": {
+   "ref": "6af40a6",
+   "configure_extra": "OPT='-DNDEBUG -g -O3 -Wall --param=early-inlining-insns=6 --param=inline-heuristics-hint-percent=200 --param=inline-min-speedup=30 --param=max-inline-insns-auto=15 --param=max-inline-insns-single=70'"
+  }
+ },
+ "jobs": 6,
+ "blocks_per_job": 1,
+ "rounds": 3,
+ "values": 1,
+ "scale": 1,
+ "bench": "",
+ "configure": "--enable-optimizations --with-lto"
+}

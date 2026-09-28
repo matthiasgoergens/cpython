@@ -1,0 +1,28 @@
+{
+ "arms": {
+  "base": "6af40a6",
+  "same": {
+   "same_as": "base"
+  },
+  "m2_inline": "perf/m2-no-noinline",
+  "nofp": {
+   "ref": "6af40a6",
+   "configure_extra": "--without-frame-pointers"
+  },
+  "gc2x": {
+   "same_as": "base",
+   "sitecustomize": "import gc; t = gc.get_threshold(); gc.set_threshold(t[0] * 2, t[1], t[2])"
+  },
+  "gc4x": {
+   "same_as": "base",
+   "sitecustomize": "import gc; t = gc.get_threshold(); gc.set_threshold(t[0] * 4, t[1], t[2])"
+  }
+ },
+ "jobs": 8,
+ "blocks_per_job": 2,
+ "scale": 4,
+ "values": 1,
+ "bench": "",
+ "configure": "--enable-optimizations --with-lto",
+ "rounds": 4
+}

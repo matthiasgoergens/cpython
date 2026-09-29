@@ -34,3 +34,9 @@ process.
 `sweep/check_rule.py results/*.json` recomputes the rule: on x86-64 all 528 wrong cases, and
 none of the others, are structures of at most 16 bytes with a field under-aligned by `_pack_`.
 The same crash reproduces on 3.13 and on main (969af80daf0).
+
+## Describing the field as bytes does not help
+
+`bytes_variant.py` passes the same six bytes with `b` declared as `c_uint8 * 4` (so libffi sees
+nothing under-aligned) to the same C function: it still crashes, because libffi then passes the
+structure in registers while the callee expects it in memory.
